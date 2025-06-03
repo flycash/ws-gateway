@@ -7,12 +7,11 @@
 package channelv1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -1430,40 +1429,37 @@ func file_channel_v1_channel_proto_rawDescGZIP() []byte {
 	return file_channel_v1_channel_proto_rawDescData
 }
 
-var (
-	file_channel_v1_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
-	file_channel_v1_channel_proto_goTypes  = []any{
-		(*Channel)(nil),                                  // 0: channel.v1.Channel
-		(*ChannelPersonalInfo)(nil),                      // 1: channel.v1.ChannelPersonalInfo
-		(*CreateChannelRequest)(nil),                     // 2: channel.v1.CreateChannelRequest
-		(*CreateChannelResponse)(nil),                    // 3: channel.v1.CreateChannelResponse
-		(*GetInviteLinkRequest)(nil),                     // 4: channel.v1.GetInviteLinkRequest
-		(*GetInviteLinkResponse)(nil),                    // 5: channel.v1.GetInviteLinkResponse
-		(*JoinChannelRequest)(nil),                       // 6: channel.v1.JoinChannelRequest
-		(*JoinChannelResponse)(nil),                      // 7: channel.v1.JoinChannelResponse
-		(*JoinChannelByLinkRequest)(nil),                 // 8: channel.v1.JoinChannelByLinkRequest
-		(*JoinChannelByLinkResponse)(nil),                // 9: channel.v1.JoinChannelByLinkResponse
-		(*QuitChannelRequest)(nil),                       // 10: channel.v1.QuitChannelRequest
-		(*QuitChannelResponse)(nil),                      // 11: channel.v1.QuitChannelResponse
-		(*DisbandChannelRequest)(nil),                    // 12: channel.v1.DisbandChannelRequest
-		(*DisbandChannelResponse)(nil),                   // 13: channel.v1.DisbandChannelResponse
-		(*UpdateChannelInfoRequest)(nil),                 // 14: channel.v1.UpdateChannelInfoRequest
-		(*UpdateChannelInfoResponse)(nil),                // 15: channel.v1.UpdateChannelInfoResponse
-		(*GetChannelInfoRequest)(nil),                    // 16: channel.v1.GetChannelInfoRequest
-		(*GetChannelInfoByIdsRequest)(nil),               // 17: channel.v1.GetChannelInfoByIdsRequest
-		(*GetChannelInfoResponse)(nil),                   // 18: channel.v1.GetChannelInfoResponse
-		(*GetChannelInfoByIdsResponse)(nil),              // 19: channel.v1.GetChannelInfoByIdsResponse
-		(*GetChannelMembersRequest)(nil),                 // 20: channel.v1.GetChannelMembersRequest
-		(*GetChannelMembersResponse)(nil),                // 21: channel.v1.GetChannelMembersResponse
-		(*CreateOneToOneChannelRequest)(nil),             // 22: channel.v1.CreateOneToOneChannelRequest
-		(*CreateOneToOneChannelResponse)(nil),            // 23: channel.v1.CreateOneToOneChannelResponse
-		(*CreateOneToOneChannelWith2UserIDRequest)(nil),  // 24: channel.v1.CreateOneToOneChannelWith2UserIDRequest
-		(*CreateOneToOneChannelWith2UserIDResponse)(nil), // 25: channel.v1.CreateOneToOneChannelWith2UserIDResponse
-		(*DisbandOneToOneChannelRequest)(nil),            // 26: channel.v1.DisbandOneToOneChannelRequest
-		(*DisbandOneToOneChannelResponse)(nil),           // 27: channel.v1.DisbandOneToOneChannelResponse
-	}
-)
-
+var file_channel_v1_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_channel_v1_channel_proto_goTypes = []any{
+	(*Channel)(nil),                                  // 0: channel.v1.Channel
+	(*ChannelPersonalInfo)(nil),                      // 1: channel.v1.ChannelPersonalInfo
+	(*CreateChannelRequest)(nil),                     // 2: channel.v1.CreateChannelRequest
+	(*CreateChannelResponse)(nil),                    // 3: channel.v1.CreateChannelResponse
+	(*GetInviteLinkRequest)(nil),                     // 4: channel.v1.GetInviteLinkRequest
+	(*GetInviteLinkResponse)(nil),                    // 5: channel.v1.GetInviteLinkResponse
+	(*JoinChannelRequest)(nil),                       // 6: channel.v1.JoinChannelRequest
+	(*JoinChannelResponse)(nil),                      // 7: channel.v1.JoinChannelResponse
+	(*JoinChannelByLinkRequest)(nil),                 // 8: channel.v1.JoinChannelByLinkRequest
+	(*JoinChannelByLinkResponse)(nil),                // 9: channel.v1.JoinChannelByLinkResponse
+	(*QuitChannelRequest)(nil),                       // 10: channel.v1.QuitChannelRequest
+	(*QuitChannelResponse)(nil),                      // 11: channel.v1.QuitChannelResponse
+	(*DisbandChannelRequest)(nil),                    // 12: channel.v1.DisbandChannelRequest
+	(*DisbandChannelResponse)(nil),                   // 13: channel.v1.DisbandChannelResponse
+	(*UpdateChannelInfoRequest)(nil),                 // 14: channel.v1.UpdateChannelInfoRequest
+	(*UpdateChannelInfoResponse)(nil),                // 15: channel.v1.UpdateChannelInfoResponse
+	(*GetChannelInfoRequest)(nil),                    // 16: channel.v1.GetChannelInfoRequest
+	(*GetChannelInfoByIdsRequest)(nil),               // 17: channel.v1.GetChannelInfoByIdsRequest
+	(*GetChannelInfoResponse)(nil),                   // 18: channel.v1.GetChannelInfoResponse
+	(*GetChannelInfoByIdsResponse)(nil),              // 19: channel.v1.GetChannelInfoByIdsResponse
+	(*GetChannelMembersRequest)(nil),                 // 20: channel.v1.GetChannelMembersRequest
+	(*GetChannelMembersResponse)(nil),                // 21: channel.v1.GetChannelMembersResponse
+	(*CreateOneToOneChannelRequest)(nil),             // 22: channel.v1.CreateOneToOneChannelRequest
+	(*CreateOneToOneChannelResponse)(nil),            // 23: channel.v1.CreateOneToOneChannelResponse
+	(*CreateOneToOneChannelWith2UserIDRequest)(nil),  // 24: channel.v1.CreateOneToOneChannelWith2UserIDRequest
+	(*CreateOneToOneChannelWith2UserIDResponse)(nil), // 25: channel.v1.CreateOneToOneChannelWith2UserIDResponse
+	(*DisbandOneToOneChannelRequest)(nil),            // 26: channel.v1.DisbandOneToOneChannelRequest
+	(*DisbandOneToOneChannelResponse)(nil),           // 27: channel.v1.DisbandOneToOneChannelResponse
+}
 var file_channel_v1_channel_proto_depIdxs = []int32{
 	0,  // 0: channel.v1.CreateChannelResponse.channel:type_name -> channel.v1.Channel
 	0,  // 1: channel.v1.UpdateChannelInfoRequest.channel:type_name -> channel.v1.Channel

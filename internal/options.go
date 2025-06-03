@@ -1,4 +1,4 @@
-package websocket
+package internal
 
 import (
 	gateway "gitee.com/flycash/ws-gateway"

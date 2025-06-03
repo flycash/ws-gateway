@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gitee.com/flycash/ws-gateway/internal/pkg/jwt"
 	"net"
 	"net/url"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	channelv1 "gitee.com/flycash/ws-gateway/api/proto/gen/channel/v1"
-	jwt "gitee.com/flycash/ws-gateway/pkg/jwt"
 	"gitee.com/flycash/ws-gateway/websocket/consts"
 	"github.com/ecodeclub/ecache"
 	"github.com/gobwas/ws"

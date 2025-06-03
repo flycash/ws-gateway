@@ -7,12 +7,11 @@
 package gatewayapiv1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -395,19 +394,16 @@ func file_gatewayapi_v1_channel_proto_rawDescGZIP() []byte {
 	return file_gatewayapi_v1_channel_proto_rawDescData
 }
 
-var (
-	file_gatewayapi_v1_channel_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-	file_gatewayapi_v1_channel_proto_msgTypes  = make([]protoimpl.MessageInfo, 5)
-	file_gatewayapi_v1_channel_proto_goTypes   = []any{
-		(ChannelMessage_ContentType)(0),    // 0: gatewayapi.v1.ChannelMessage.ContentType
-		(*ChannelMessage)(nil),             // 1: gatewayapi.v1.ChannelMessage
-		(*ChannelMessageRequest)(nil),      // 2: gatewayapi.v1.ChannelMessageRequest
-		(*ChannelMessageResponse)(nil),     // 3: gatewayapi.v1.ChannelMessageResponse
-		(*PushChannelMessageRequest)(nil),  // 4: gatewayapi.v1.PushChannelMessageRequest
-		(*PushChannelMessageResponse)(nil), // 5: gatewayapi.v1.PushChannelMessageResponse
-	}
-)
-
+var file_gatewayapi_v1_channel_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_gatewayapi_v1_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_gatewayapi_v1_channel_proto_goTypes = []any{
+	(ChannelMessage_ContentType)(0),    // 0: gatewayapi.v1.ChannelMessage.ContentType
+	(*ChannelMessage)(nil),             // 1: gatewayapi.v1.ChannelMessage
+	(*ChannelMessageRequest)(nil),      // 2: gatewayapi.v1.ChannelMessageRequest
+	(*ChannelMessageResponse)(nil),     // 3: gatewayapi.v1.ChannelMessageResponse
+	(*PushChannelMessageRequest)(nil),  // 4: gatewayapi.v1.PushChannelMessageRequest
+	(*PushChannelMessageResponse)(nil), // 5: gatewayapi.v1.PushChannelMessageResponse
+}
 var file_gatewayapi_v1_channel_proto_depIdxs = []int32{
 	0, // 0: gatewayapi.v1.ChannelMessage.content_type:type_name -> gatewayapi.v1.ChannelMessage.ContentType
 	1, // 1: gatewayapi.v1.ChannelMessageRequest.msg:type_name -> gatewayapi.v1.ChannelMessage

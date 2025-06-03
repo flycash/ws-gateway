@@ -34,6 +34,7 @@ type linkEventHandler struct {
 	onFrontendSendMessageHandleFunc map[gatewayapiv1.Message_CommandType]func(lk gateway.Link, apiMessage *gatewayapiv1.Message) error
 	onBackendPushMessageHandleFunc  map[msgv1.Message_Type]func(lk gateway.Link, message *msgv1.Message) error
 	logger                          *elog.Component
+	bizClients                      map[int64]gatewayapiv1.MessageServiceClient
 }
 
 // NewHandler 创建一个Link生命周期事件管理器
@@ -128,6 +129,7 @@ func (l *linkEventHandler) handleOnMessageChannelMessageRequestCmd(lk gateway.Li
 
 	l.logger.Debug("收到消息", elog.Any("msg", req))
 
+	// 业务方管理
 	msgID := l.idGenerator.Generate()
 	sendTime := time.Now().UnixMilli()
 
@@ -151,7 +153,16 @@ func (l *linkEventHandler) handleOnMessageChannelMessageRequestCmd(lk gateway.Li
 	return nil
 }
 
-func (l *linkEventHandler) forwardToMessageService(lk gateway.Link, msgID, sendTime int64, req *gatewayapiv1.ChannelMessageRequest) error {
+//func (l *linkEventHandler) forwardToBiz(lk gateway.Link,
+//	bizID, msgID, sendTime int64,
+//	req *gatewayapiv1.ChannelMessageRequest) error {
+//	client := l.bizClients[bizID]
+//	client.OnReceive(ctx...)
+//}
+
+func (l *linkEventHandler) forwardToMessageService(lk gateway.Link,
+	msgID, sendTime int64,
+	req *gatewayapiv1.ChannelMessageRequest) error {
 	// 记录发送时间
 	channelMessage := &msgv1.ChannelMessage{
 		Id:          msgID,

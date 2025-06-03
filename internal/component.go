@@ -1,4 +1,4 @@
-package websocket
+package internal
 
 import (
 	"context"
@@ -397,4 +397,16 @@ func (s *Component) findLink(uid int64) (gateway.Link, error) {
 	}
 	lk, _ := v.(gateway.Link)
 	return lk, nil
+}
+
+func InitClients() {
+	type Service struct {
+		BizID int64
+		// 服务发现用的服务名
+		Name string
+	}
+	// gateway.backend.services
+	type Config struct {
+		BizServices []Service
+	}
 }

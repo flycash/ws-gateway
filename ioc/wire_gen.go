@@ -34,7 +34,7 @@ func InitServer(messageQueue mq.MQ, localCache ecache.Cache, channelServiceClien
 // wire.go:
 
 type WebsocketServer struct {
-	Websocket []*websocket.Component
+	Websocket []*internal.Component
 }
 
 func convertToWebsocketComponents(
@@ -42,7 +42,7 @@ func convertToWebsocketComponents(
 	localCache ecache.Cache,
 	channelServiceClient channelv1.ChannelServiceClient,
 	messageServiceClient msgv1.MessageServiceClient,
-) []*websocket.Component {
+) []*internal.Component {
 	config := econf.GetStringMap("gateway.websocket")
 
 	serializer, ok := config["serializer"].(string)
@@ -56,7 +56,7 @@ func convertToWebsocketComponents(
 		"protobuf": codec.NewProtoCodec(),
 	}
 
-	s := make([]*websocket.Component, 0, len(config))
+	s := make([]*internal.Component, 0, len(config))
 	for i := range config {
 		configKey := fmt.Sprintf("gateway.websocket.%s", i)
 		s = append(s, initWebSocketGateway(configKey, codecMapping[serializer], messageQueue, localCache, channelServiceClient, messageServiceClient))
@@ -69,11 +69,11 @@ func initWebSocketGateway(configKey string, codecHelper codec.Codec,
 	localCache ecache.Cache,
 	channelServiceClient channelv1.ChannelServiceClient,
 	messageServiceClient msgv1.MessageServiceClient,
-) *websocket.Component {
+) *internal.Component {
 	nodeID := econf.GetInt64(fmt.Sprintf("%s.id", configKey))
 	generator, err := id.NewGenerator(nodeID)
 	if err != nil {
 		panic(err)
 	}
-	return websocket.Load(configKey).Build(websocket.WithMQ(messageQueue), websocket.WithUpgrader(upgrader.New(localCache, channelServiceClient)), websocket.WithLinkEventHandler(linkevent.NewHandler(generator, messageServiceClient, codecHelper)), websocket.WithCache(localCache))
+	return internal.Load(configKey).Build(internal.WithMQ(messageQueue), internal.WithUpgrader(upgrader.New(localCache, channelServiceClient)), internal.WithLinkEventHandler(linkevent.NewHandler(generator, messageServiceClient, codecHelper)), internal.WithCache(localCache))
 }

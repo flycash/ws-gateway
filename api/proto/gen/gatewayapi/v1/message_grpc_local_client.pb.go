@@ -5,3 +5,24 @@
 // source: gatewayapi/v1/message.proto
 
 package gatewayapiv1
+
+import (
+	context "context"
+	grpc "google.golang.org/grpc"
+)
+
+var _ MessageServiceClient = (*messageServiceLocalClient)(nil)
+
+type messageServiceLocalClient struct {
+	server MessageServiceServer
+}
+
+func NewMessageServiceLocalClient(server MessageServiceServer) MessageServiceClient {
+	return &messageServiceLocalClient{
+		server: server,
+	}
+}
+
+func (s *messageServiceLocalClient) OnReceive(ctx context.Context, req *OnReceiveRequest, opts ...grpc.CallOption) (*OnReceiveResponse, error) {
+	return s.server.OnReceive(ctx, req)
+}

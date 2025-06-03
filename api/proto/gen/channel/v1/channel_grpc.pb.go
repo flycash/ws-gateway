@@ -8,7 +8,6 @@ package channelv1
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -253,51 +252,39 @@ type UnimplementedChannelServiceServer struct{}
 func (UnimplementedChannelServiceServer) CreateChannel(context.Context, *CreateChannelRequest) (*CreateChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateChannel not implemented")
 }
-
 func (UnimplementedChannelServiceServer) GetInviteLink(context.Context, *GetInviteLinkRequest) (*GetInviteLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInviteLink not implemented")
 }
-
 func (UnimplementedChannelServiceServer) JoinChannel(context.Context, *JoinChannelRequest) (*JoinChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JoinChannel not implemented")
 }
-
 func (UnimplementedChannelServiceServer) JoinChannelByLink(context.Context, *JoinChannelByLinkRequest) (*JoinChannelByLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JoinChannelByLink not implemented")
 }
-
 func (UnimplementedChannelServiceServer) QuitChannel(context.Context, *QuitChannelRequest) (*QuitChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QuitChannel not implemented")
 }
-
 func (UnimplementedChannelServiceServer) DisbandChannel(context.Context, *DisbandChannelRequest) (*DisbandChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DisbandChannel not implemented")
 }
-
 func (UnimplementedChannelServiceServer) UpdateChannelInfo(context.Context, *UpdateChannelInfoRequest) (*UpdateChannelInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateChannelInfo not implemented")
 }
-
 func (UnimplementedChannelServiceServer) GetChannelInfo(context.Context, *GetChannelInfoRequest) (*GetChannelInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChannelInfo not implemented")
 }
-
 func (UnimplementedChannelServiceServer) GetChannelInfoByIds(context.Context, *GetChannelInfoByIdsRequest) (*GetChannelInfoByIdsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChannelInfoByIds not implemented")
 }
-
 func (UnimplementedChannelServiceServer) GetChannelMembers(context.Context, *GetChannelMembersRequest) (*GetChannelMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChannelMembers not implemented")
 }
-
 func (UnimplementedChannelServiceServer) CreateOneToOneChannel(context.Context, *CreateOneToOneChannelRequest) (*CreateOneToOneChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOneToOneChannel not implemented")
 }
-
 func (UnimplementedChannelServiceServer) CreateOneToOneChannelWith2UserID(context.Context, *CreateOneToOneChannelWith2UserIDRequest) (*CreateOneToOneChannelWith2UserIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOneToOneChannelWith2UserID not implemented")
 }
-
 func (UnimplementedChannelServiceServer) DisbandOneToOneChannel(context.Context, *DisbandOneToOneChannelRequest) (*DisbandOneToOneChannelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DisbandOneToOneChannel not implemented")
 }

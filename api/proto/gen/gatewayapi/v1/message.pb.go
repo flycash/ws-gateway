@@ -7,13 +7,12 @@
 package gatewayapiv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -26,10 +25,12 @@ const (
 type Message_CommandType int32
 
 const (
-	Message_COMMAND_TYPE_INVALID_UNSPECIFIED           Message_CommandType = 0
-	Message_COMMAND_TYPE_HEARTBEAT                     Message_CommandType = 1 // 心跳消息,body为空即可,前端主动发送、后端原样返回
-	Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST       Message_CommandType = 2 // 上行聊天消息请求
-	Message_COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE      Message_CommandType = 3 // 上行聊天消息响应
+	Message_COMMAND_TYPE_INVALID_UNSPECIFIED Message_CommandType = 0
+	Message_COMMAND_TYPE_HEARTBEAT           Message_CommandType = 1 // 心跳消息,body为空即可,前端主动发送、后端原样返回
+	// A -> gateway 的消息
+	Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST  Message_CommandType = 2 // 上行聊天消息请求
+	Message_COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE Message_CommandType = 3 // 上行聊天消息响应
+	// gateway -> B 的消息
 	Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST  Message_CommandType = 4 // 下行聊天推送请求
 	Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE Message_CommandType = 5 // 下行聊天推送响应
 )
@@ -91,11 +92,15 @@ func (Message_CommandType) EnumDescriptor() ([]byte, []int) {
 //
 //	下行(推送)请求消息是指后端主动发送给前端的消息,通常使用"PUSH_业务名_REQUEST"命名
 //	下行(推送)响应消息是指前端对收到的下行(推送)请求消息的响应消息,通常使用“PUSH_业务名_RESPONSE”命名,其中“业务名”应与对应的下行(推送)请求消息的“业务名”相同.
+//
+// 以 A -> B 为例
 type Message struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cmd           Message_CommandType    `protobuf:"varint,1,opt,name=cmd,proto3,enum=gatewayapi.v1.Message_CommandType" json:"cmd,omitempty"` // 消息类型
-	Seq           string                 `protobuf:"bytes,2,opt,name=seq,proto3" json:"seq,omitempty"`                                         // UUID, 后续当前端支持超时重传,后端需要用此seq来去重
-	Body          *anypb.Any             `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`                                       // 业务相关的具体消息体
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Cmd   Message_CommandType    `protobuf:"varint,1,opt,name=cmd,proto3,enum=gatewayapi.v1.Message_CommandType" json:"cmd,omitempty"` // 消息类型
+	// A -> gateway，是 A 生成；
+	Seq           string     `protobuf:"bytes,2,opt,name=seq,proto3" json:"seq,omitempty"`                   // UUID, 后续当前端支持超时重传,后端需要用此seq来去重
+	Body          *anypb.Any `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`                 // 业务相关的具体消息体
+	BizId         int64      `protobuf:"varint,4,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"` // 执行业务分发
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -151,22 +156,133 @@ func (x *Message) GetBody() *anypb.Any {
 	return nil
 }
 
+func (x *Message) GetBizId() int64 {
+	if x != nil {
+		return x.BizId
+	}
+	return 0
+}
+
+type OnReceiveRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Seq           string                 `protobuf:"bytes,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	Body          *anypb.Any             `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OnReceiveRequest) Reset() {
+	*x = OnReceiveRequest{}
+	mi := &file_gatewayapi_v1_message_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OnReceiveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OnReceiveRequest) ProtoMessage() {}
+
+func (x *OnReceiveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gatewayapi_v1_message_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OnReceiveRequest.ProtoReflect.Descriptor instead.
+func (*OnReceiveRequest) Descriptor() ([]byte, []int) {
+	return file_gatewayapi_v1_message_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *OnReceiveRequest) GetSeq() string {
+	if x != nil {
+		return x.Seq
+	}
+	return ""
+}
+
+func (x *OnReceiveRequest) GetBody() *anypb.Any {
+	if x != nil {
+		return x.Body
+	}
+	return nil
+}
+
+type OnReceiveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MsgId         int64                  `protobuf:"varint,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OnReceiveResponse) Reset() {
+	*x = OnReceiveResponse{}
+	mi := &file_gatewayapi_v1_message_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OnReceiveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OnReceiveResponse) ProtoMessage() {}
+
+func (x *OnReceiveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gatewayapi_v1_message_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OnReceiveResponse.ProtoReflect.Descriptor instead.
+func (*OnReceiveResponse) Descriptor() ([]byte, []int) {
+	return file_gatewayapi_v1_message_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *OnReceiveResponse) GetMsgId() int64 {
+	if x != nil {
+		return x.MsgId
+	}
+	return 0
+}
+
 var File_gatewayapi_v1_message_proto protoreflect.FileDescriptor
 
 const file_gatewayapi_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\x1a\x19google/protobuf/any.proto\"\x81\x03\n" +
+	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\x1a\x19google/protobuf/any.proto\"\x98\x03\n" +
 	"\aMessage\x124\n" +
 	"\x03cmd\x18\x01 \x01(\x0e2\".gatewayapi.v1.Message.CommandTypeR\x03cmd\x12\x10\n" +
 	"\x03seq\x18\x02 \x01(\tR\x03seq\x12(\n" +
-	"\x04body\x18\x03 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\x83\x02\n" +
+	"\x04body\x18\x03 \x01(\v2\x14.google.protobuf.AnyR\x04body\x12\x15\n" +
+	"\x06biz_id\x18\x04 \x01(\x03R\x05bizId\"\x83\x02\n" +
 	"\vCommandType\x12$\n" +
 	" COMMAND_TYPE_INVALID_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16COMMAND_TYPE_HEARTBEAT\x10\x01\x12(\n" +
 	"$COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST\x10\x02\x12)\n" +
 	"%COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE\x10\x03\x12-\n" +
 	")COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST\x10\x04\x12.\n" +
-	"*COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE\x10\x05B\xc6\x01\n" +
+	"*COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE\x10\x05\"N\n" +
+	"\x10OnReceiveRequest\x12\x10\n" +
+	"\x03seq\x18\x01 \x01(\tR\x03seq\x12(\n" +
+	"\x04body\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04body\"*\n" +
+	"\x11OnReceiveResponse\x12\x15\n" +
+	"\x06msg_id\x18\x01 \x01(\x03R\x05msgId2`\n" +
+	"\x0eMessageService\x12N\n" +
+	"\tOnReceive\x12\x1f.gatewayapi.v1.OnReceiveRequest\x1a .gatewayapi.v1.OnReceiveResponseB\xc6\x01\n" +
 	"\x11com.gatewayapi.v1B\fMessageProtoP\x01ZNgitee.com/flycash/permission-platform/api/proto/gen/gatewayapi/v1;gatewayapiv1\xa2\x02\x03GXX\xaa\x02\rGatewayapi.V1\xca\x02\rGatewayapi\\V1\xe2\x02\x19Gatewayapi\\V1\\GPBMetadata\xea\x02\x0eGatewayapi::V1b\x06proto3"
 
 var (
@@ -181,24 +297,26 @@ func file_gatewayapi_v1_message_proto_rawDescGZIP() []byte {
 	return file_gatewayapi_v1_message_proto_rawDescData
 }
 
-var (
-	file_gatewayapi_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-	file_gatewayapi_v1_message_proto_msgTypes  = make([]protoimpl.MessageInfo, 1)
-	file_gatewayapi_v1_message_proto_goTypes   = []any{
-		(Message_CommandType)(0), // 0: gatewayapi.v1.Message.CommandType
-		(*Message)(nil),          // 1: gatewayapi.v1.Message
-		(*anypb.Any)(nil),        // 2: google.protobuf.Any
-	}
-)
-
+var file_gatewayapi_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_gatewayapi_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_gatewayapi_v1_message_proto_goTypes = []any{
+	(Message_CommandType)(0),  // 0: gatewayapi.v1.Message.CommandType
+	(*Message)(nil),           // 1: gatewayapi.v1.Message
+	(*OnReceiveRequest)(nil),  // 2: gatewayapi.v1.OnReceiveRequest
+	(*OnReceiveResponse)(nil), // 3: gatewayapi.v1.OnReceiveResponse
+	(*anypb.Any)(nil),         // 4: google.protobuf.Any
+}
 var file_gatewayapi_v1_message_proto_depIdxs = []int32{
 	0, // 0: gatewayapi.v1.Message.cmd:type_name -> gatewayapi.v1.Message.CommandType
-	2, // 1: gatewayapi.v1.Message.body:type_name -> google.protobuf.Any
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	4, // 1: gatewayapi.v1.Message.body:type_name -> google.protobuf.Any
+	4, // 2: gatewayapi.v1.OnReceiveRequest.body:type_name -> google.protobuf.Any
+	2, // 3: gatewayapi.v1.MessageService.OnReceive:input_type -> gatewayapi.v1.OnReceiveRequest
+	3, // 4: gatewayapi.v1.MessageService.OnReceive:output_type -> gatewayapi.v1.OnReceiveResponse
+	4, // [4:5] is the sub-list for method output_type
+	3, // [3:4] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_gatewayapi_v1_message_proto_init() }
@@ -212,9 +330,9 @@ func file_gatewayapi_v1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gatewayapi_v1_message_proto_rawDesc), len(file_gatewayapi_v1_message_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   1,
+			NumMessages:   3,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_gatewayapi_v1_message_proto_goTypes,
 		DependencyIndexes: file_gatewayapi_v1_message_proto_depIdxs,

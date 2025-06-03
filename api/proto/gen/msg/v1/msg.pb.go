@@ -7,13 +7,12 @@
 package msgv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -389,20 +388,17 @@ func file_msg_v1_msg_proto_rawDescGZIP() []byte {
 	return file_msg_v1_msg_proto_rawDescData
 }
 
-var (
-	file_msg_v1_msg_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-	file_msg_v1_msg_proto_msgTypes  = make([]protoimpl.MessageInfo, 4)
-	file_msg_v1_msg_proto_goTypes   = []any{
-		(Message_Type)(0),               // 0: msg.v1.Message.Type
-		(ChannelMessage_ContentType)(0), // 1: msg.v1.ChannelMessage.ContentType
-		(*Message)(nil),                 // 2: msg.v1.Message
-		(*ChannelMessage)(nil),          // 3: msg.v1.ChannelMessage
-		(*SendRequest)(nil),             // 4: msg.v1.SendRequest
-		(*SendResponse)(nil),            // 5: msg.v1.SendResponse
-		(*anypb.Any)(nil),               // 6: google.protobuf.Any
-	}
-)
-
+var file_msg_v1_msg_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_msg_v1_msg_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_msg_v1_msg_proto_goTypes = []any{
+	(Message_Type)(0),               // 0: msg.v1.Message.Type
+	(ChannelMessage_ContentType)(0), // 1: msg.v1.ChannelMessage.ContentType
+	(*Message)(nil),                 // 2: msg.v1.Message
+	(*ChannelMessage)(nil),          // 3: msg.v1.ChannelMessage
+	(*SendRequest)(nil),             // 4: msg.v1.SendRequest
+	(*SendResponse)(nil),            // 5: msg.v1.SendResponse
+	(*anypb.Any)(nil),               // 6: google.protobuf.Any
+}
 var file_msg_v1_msg_proto_depIdxs = []int32{
 	0, // 0: msg.v1.Message.type:type_name -> msg.v1.Message.Type
 	6, // 1: msg.v1.Message.body:type_name -> google.protobuf.Any
