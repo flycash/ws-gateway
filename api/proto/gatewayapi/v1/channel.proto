@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package gatewayapi.v1;
+
+option go_package = "v1/gatewayapi;gatewayapiv1";
+
+message ChannelMessage {
+  // 添加消息类型的时候要同步修改ecodeim中消息、网关服务的RPC请求参数中的ContentType类型
+  enum ContentType {
+    CONTENT_TYPE_INVALID_UNSPECIFIED = 0;
+    CONTENT_TYPE_TEXT = 1;
+    CONTENT_TYPE_IMAGE = 2;
+    CONTENT_TYPE_VIDEO = 3;
+  }
+
+  int64 cid = 1; // 聊天群ID
+  ContentType content_type = 2; // 聊天消息类型
+  string content = 3; // 聊天消息内容
+}
+
+//  上行消息,由前端主动发起
+message ChannelMessageRequest {
+  // sendId需要后端从Token中自己解析
+  ChannelMessage msg = 1; // 聊天消息
+  // mentions：[]uid, 后续支持艾特功能时需要
+}
+
+message ChannelMessageResponse {
+  int64 msg_id = 1; // 聊天消息ID,由后端生成
+  int64 send_time = 2; // 收到消息的时间戳,由后端生成
+  string seq = 3; // 前端生成的 Message.seq，
+}
+
+// 下行消息,由后端主动推送
+message PushChannelMessageRequest {
+  int64 msg_id = 1; // 聊天消息ID,由后端生成
+  ChannelMessage msg = 2; // 聊天消息
+  int64 send_id = 3; // 发送者ID
+  int64 send_time = 4; // 后端收到消息的时间戳,用于前端展示时排序
+  // mentioned: 接受者是否被艾特，后续支持艾特功能时需要
+}
+
+message PushChannelMessageResponse {
+  int64 msg_id = 1; // 聊天消息,由后端生成
+}

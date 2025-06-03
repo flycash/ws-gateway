@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package channel.v1;
+
+option go_package = "channel/v1;channelv1";
+
+// 消息定义
+message Channel {
+  int64 id = 1;
+  string name = 2;
+  string avatar = 3;
+}
+
+message ChannelPersonalInfo {
+  string note = 1;
+  string nickname_in_channel = 2;
+  int64 priority = 3;
+  bool mute = 4;
+}
+
+message CreateChannelRequest {
+  string name = 1;
+  int64 user_id = 2;
+}
+
+message CreateChannelResponse {
+  Channel channel = 1;
+}
+
+message GetInviteLinkRequest {
+  int64 channel_id = 1;
+  int64 user_id = 2;
+}
+
+message GetInviteLinkResponse {
+  string link = 1;
+}
+
+message JoinChannelRequest {
+  int64 channel_id = 1;
+  int64 user_id = 2;
+}
+
+message JoinChannelResponse {}
+
+message JoinChannelByLinkRequest {
+  string link = 1;
+  int64 user_id = 2;
+}
+
+message JoinChannelByLinkResponse {}
+
+message QuitChannelRequest {
+  int64 channel_id = 1;
+  int64 user_id = 2;
+}
+
+message QuitChannelResponse {}
+
+message DisbandChannelRequest {
+  int64 channel_id = 1;
+}
+
+message DisbandChannelResponse {}
+
+message UpdateChannelInfoRequest {
+  Channel channel = 1;
+}
+
+message UpdateChannelInfoResponse {
+  Channel channel = 1;
+}
+
+message GetChannelInfoRequest {
+  int64 channel_id = 1;
+  int64 user_id = 2;
+}
+message GetChannelInfoByIdsRequest {
+  repeated int64 channel_ids = 1;
+}
+message GetChannelInfoResponse {
+  Channel channel = 1;
+  ChannelPersonalInfo personal_info = 2;
+}
+message GetChannelInfoByIdsResponse {
+  repeated Channel channel = 1;
+}
+message GetChannelMembersRequest {
+  int64 channel_id = 1;
+}
+
+message GetChannelMembersResponse {
+  repeated int64 user_id = 1;
+}
+
+message CreateOneToOneChannelRequest {
+  int64 user_id = 1;
+}
+
+message CreateOneToOneChannelResponse {
+  Channel channel = 1;
+}
+
+//这里的变量命名简陋了些，想表达的是user1和2没有方向之分，没加from/to这种字眼
+message CreateOneToOneChannelWith2UserIDRequest {
+  int64 user_id1 = 1;
+  int64 user_id2 = 2;
+}
+
+message CreateOneToOneChannelWith2UserIDResponse {
+  Channel channel = 1;
+}
+
+//这里之所以没传channelId，原因：如果传channelId的话用户服务需要来这里 先根据userId查到channelId，再把channelId传回来 调两次我们服务
+message DisbandOneToOneChannelRequest {
+  int64 channel_id = 1;
+}
+
+message DisbandOneToOneChannelResponse {}
+
+// 定义聊天群组服务
+service ChannelService {
+  // 群组业务CRUD
+  //tips：创建群组只暴露了不同方法，群的type属于channel服务内部逻辑，没暴露在接口里面，
+  //若新增群组type，这边就新增方法。比如rpc CreateRobotChannel(CreateRobotChannelRequest) returns (EmptyResponse);
+  // 创建群组-C
+  rpc CreateChannel(CreateChannelRequest) returns (CreateChannelResponse);
+  rpc GetInviteLink(GetInviteLinkRequest) returns (GetInviteLinkResponse);
+  // 加入群组—U
+  rpc JoinChannel(JoinChannelRequest) returns (JoinChannelResponse);
+  rpc JoinChannelByLink(JoinChannelByLinkRequest) returns (JoinChannelByLinkResponse);
+  // 退群-U
+  rpc QuitChannel(QuitChannelRequest) returns (QuitChannelResponse);
+  // 解散群组 解散英文Disband，接口命名贴近业务-U
+  rpc DisbandChannel(DisbandChannelRequest) returns (DisbandChannelResponse);
+  // 修改群组基本信息-U
+  rpc UpdateChannelInfo(UpdateChannelInfoRequest) returns (UpdateChannelInfoResponse);
+  // 查询群组基本信息-R
+  rpc GetChannelInfo(GetChannelInfoRequest) returns (GetChannelInfoResponse);
+  //批量查询聊天基本信息
+  rpc GetChannelInfoByIds(GetChannelInfoByIdsRequest) returns (GetChannelInfoByIdsResponse);
+
+  // 查询群组所有成员
+  rpc GetChannelMembers(GetChannelMembersRequest) returns (GetChannelMembersResponse);
+
+  //私聊业务CRUD
+  //发起单对单聊天（私聊）
+  rpc CreateOneToOneChannel(CreateOneToOneChannelRequest) returns (CreateOneToOneChannelResponse);
+  rpc CreateOneToOneChannelWith2UserID(CreateOneToOneChannelWith2UserIDRequest) returns (CreateOneToOneChannelWith2UserIDResponse);
+  //解散单对单聊天群组 （删除好友时调用）
+  rpc DisbandOneToOneChannel(DisbandOneToOneChannelRequest) returns (DisbandOneToOneChannelResponse);
+}

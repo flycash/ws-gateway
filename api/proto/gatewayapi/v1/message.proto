@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package gatewayapi.v1;
+
+import "google/protobuf/any.proto";
+
+option go_package = "v1/gatewayapi;gatewayapiv1";
+
+// 通用协议格式
+// 上行消息说明:
+//    上行请求消息是指前端主动发送给后端的消息,通常使用“业务命名_REQUEST后缀”命名
+//    上行响应消息是指后端对收到的上行请求消息的响应消息,通常使用"业务名+_RESPONSE后缀"命名,其中“业务名”应与对应的上行请求消息的“业务名”相同.
+// 下行消息说明:
+//    下行(推送)请求消息是指后端主动发送给前端的消息,通常使用"PUSH_业务名_REQUEST"命名
+//    下行(推送)响应消息是指前端对收到的下行(推送)请求消息的响应消息,通常使用“PUSH_业务名_RESPONSE”命名,其中“业务名”应与对应的下行(推送)请求消息的“业务名”相同.
+message Message {
+  enum CommandType {
+    COMMAND_TYPE_INVALID_UNSPECIFIED = 0;
+    COMMAND_TYPE_HEARTBEAT = 1; // 心跳消息,body为空即可,前端主动发送、后端原样返回
+    COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST = 2; // 上行聊天消息请求
+    COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE = 3; // 上行聊天消息响应
+    COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST = 4; // 下行聊天推送请求
+    COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE = 5; // 下行聊天推送响应
+    // 添加其他命令类型
+  }
+  CommandType cmd = 1; // 消息类型
+  string seq = 2; // UUID, 后续当前端支持超时重传,后端需要用此seq来去重
+  google.protobuf.Any body = 3; // 业务相关的具体消息体
+}

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# shellcheck disable=SC2034
+remote=$1
+url=$2
+echo >&2 "尝试将 $2 推送到 $1"
+
+# 运行代码规范检查器，如果失败则退出
+printf "运行代码规范检查器...\n"
+if ! RESULT=$(make lint); then
+  echo >&2 "make lint"
+  echo >&2 "请检查代码以通过规范检查。"
+  exit 1
+fi
+
+# 运行集成测试，如果失败则退出
+#printf "运行单元测试..."
+#if ! RESULT=$(make e2e); then
+#  echo >&2 "make e2e"
+#  echo >&2 "请检查代码以通过集成测试。"
+#  exit 1
+#fi
+
+exit 0

@@ -1,0 +1,30 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: gitee.com/flycash/permission-platform/api/proto/gen
+plugins:
+  # 默认用最新版本
+  - remote: buf.build/protocolbuffers/go
+    # 指定版本 buf.build/protocolbuffers/go:v1.28.1
+    # protoc-gen-go 插件
+    out: api/proto/gen
+    opt: paths=source_relative
+  - remote: buf.build/bufbuild/validate-go
+    # protoc-gen-validate 插件
+    # 生成路径要与上方protoc-gen-go插件代码生成路径一致
+    out: api/proto/gen
+    # 与protoc-gen-go插件保持一致
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    # protoc-gen-go-grpc 插件
+    out: api/proto/gen
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=false
+
+  - local: protoc-gen-go-grpc-local-client
+    # protoc-gen-go-grpc-local-client
+    out: api/proto/gen
+    opt: paths=source_relative
