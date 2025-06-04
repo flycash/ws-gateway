@@ -39,7 +39,7 @@ func New(cache ecache.Cache) gateway.Upgrader {
 }
 
 func (u *upgrader) Name() string {
-	return "websocket.upgrader"
+	return "gateway.upgrader"
 }
 
 func (u *upgrader) Upgrade(conn net.Conn) (gateway.Session, error) {
@@ -47,20 +47,18 @@ func (u *upgrader) Upgrade(conn net.Conn) (gateway.Session, error) {
 
 	upgrader := ws.Upgrader{
 		OnRequest: func(uri []byte) error {
-			sess, err := u.checkParams(string(uri))
+			sess, err := u.getSession(string(uri))
 			if err != nil {
-				u.logger.Error("upgrader",
-					elog.String("step", "检查参数合法性"),
+				u.logger.Error("获取session失败",
 					elog.FieldErr(err),
 				)
 				return fmt.Errorf("%w", err)
 			}
 
-			// todo: 当允许多端登录的时候,要拿用户端信息过来验证每个端是否已有连接建立
-			err = u.isAllowedToUpgrade(sess)
-			if err != nil {
-				u.logger.Error("upgrader",
-					elog.String("step", "是否允许升级连接"),
+			v := u.localCache.Get(context.Background(), consts.SessionCacheKey(session))
+			if !v.KeyNotFound() {
+				err = ErrExistedLink
+				u.logger.Error("Link已存在",
 					elog.FieldErr(err),
 				)
 				return fmt.Errorf("%w", err)
@@ -72,27 +70,22 @@ func (u *upgrader) Upgrade(conn net.Conn) (gateway.Session, error) {
 	}
 
 	_, err := upgrader.Upgrade(conn)
-	if err != nil {
-		return gateway.Session{}, err
-	}
-	return session, nil
+	return session, err
 }
 
-func (u *upgrader) checkParams(uri string) (gateway.Session, error) {
+func (u *upgrader) getSession(uri string) (gateway.Session, error) {
 	uu, err := url.Parse(uri)
 	if err != nil {
 		return gateway.Session{}, ErrInvalidURI
 	}
 
-	queryParams := uu.Query()
-
-	token := queryParams.Get("token")
-	user, err := u.parseToken(token)
+	params := uu.Query()
+	token := params.Get("token")
+	userClaims, err := u.parseToken(token)
 	if err != nil {
 		return gateway.Session{}, err
 	}
-
-	return gateway.Session{UserID: user.ID}, nil
+	return gateway.Session{BizID: userClaims.BizID, UserID: userClaims.ID}, nil
 }
 
 func (u *upgrader) parseToken(token string) (*jwt.UserClaims, error) {
@@ -104,12 +97,4 @@ func (u *upgrader) parseToken(token string) (*jwt.UserClaims, error) {
 		return nil, ErrInvalidCIDOrToken
 	}
 	return user, nil
-}
-
-func (u *upgrader) isAllowedToUpgrade(session gateway.Session) error {
-	uid := fmt.Sprintf("%d", session.UserID)
-	if v := u.localCache.Get(context.Background(), consts.UserWebSocketConnIDCacheKey(uid)); v.Err == nil {
-		return ErrExistedLink
-	}
-	return nil
 }

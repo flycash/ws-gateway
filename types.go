@@ -14,7 +14,8 @@ type Server interface {
 // Link 表示一个用户连接
 type Link interface {
 	ID() string
-	UID() int64
+	BizID() int64
+	UserID() int64
 	Send(payload []byte) error
 	Receive() <-chan []byte
 	HasClosed() <-chan struct{}

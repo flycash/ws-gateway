@@ -23,7 +23,6 @@ import (
 var (
 	_                  gateway.Server = &Component{}
 	ErrUnknownReceiver                = errors.New("未知接收者")
-	ErrDuplicatedLink                 = errors.New("重复的连接")
 )
 
 type Component struct {
@@ -39,10 +38,8 @@ type Component struct {
 
 	messageQueue mq.MQ
 
-	// todo: 分割成bucket将大锁变为小锁
-	links       *syncx.Map[string, gateway.Link]
-	uidToLinkID *syncx.Map[int64, string]
-	logger      *elog.Component
+	links  *syncx.Map[string, gateway.Link]
+	logger *elog.Component
 }
 
 func newComponent(c *Container) *Component {
@@ -57,7 +54,6 @@ func newComponent(c *Container) *Component {
 		ctxCancelFunc:    cancelFunc,
 		messageQueue:     c.messageQueue,
 		links:            &syncx.Map[string, gateway.Link]{},
-		uidToLinkID:      &syncx.Map[int64, string]{},
 		logger:           c.logger,
 	}
 }
@@ -77,9 +73,9 @@ func (s *Component) Init() error {
 }
 
 func (s *Component) Start() error {
-	err2 := s.initConsumer()
-	if err2 != nil {
-		return err2
+	err := s.initConsumers()
+	if err != nil {
+		return err
 	}
 
 	l, err := net.Listen(s.config.Network, s.config.Address())
@@ -87,31 +83,34 @@ func (s *Component) Start() error {
 		return err
 	}
 	go s.acceptConn(l)
+
 	<-s.ctx.Done()
 	return l.Close()
 }
 
-func (s *Component) initConsumer() error {
-	partitions := econf.GetInt("mq.kafka.channel_topic_partitions")
+func (s *Component) initConsumers() error {
+	partitions := econf.GetInt("mq.kafka.push_message_topic_partitions")
 	for i := 0; i < partitions; i++ {
 		partition := i
-		consumer, err := s.messageQueue.Consumer(econf.GetString("mq.kafka.channel_topic"), s.Name())
+		consumer, err := s.messageQueue.Consumer(econf.GetString("mq.kafka.push_message_topic"), s.Name())
 		if err != nil {
-			s.logger.Error(s.Name(),
+			s.logger.Error("获取MQ消费者失败",
 				elog.String("step", "Start"),
-				elog.String("step", "获取MQ消费者失败"),
-				elog.FieldErr(err))
+				elog.String("step", "initConsumers"),
+				elog.FieldErr(err),
+			)
 			return err
 		}
-		messageChan, err := consumer.ConsumeChan(context.Background())
+		ch, err := consumer.ConsumeChan(context.Background())
 		if err != nil {
-			s.logger.Error(s.Name(),
+			s.logger.Error("获取MQ消费者Chan失败",
 				elog.String("step", "Start"),
-				elog.String("step", "获取MQ消费者Chan失败"),
-				elog.FieldErr(err))
+				elog.String("step", "initConsumers"),
+				elog.FieldErr(err),
+			)
 			return err
 		}
-		go s.pushHandler(partition, messageChan)
+		go s.pushHandler(partition, ch)
 	}
 	return nil
 }
@@ -120,8 +119,8 @@ func (s *Component) acceptConn(l net.Listener) {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			s.logger.Error("websocket",
-				elog.String("step", "Accept"),
+			s.logger.Error("接受连接失败",
+				elog.String("step", "acceptConn"),
 				elog.FieldErr(err))
 
 			if errors.Is(err, net.ErrClosed) {
@@ -140,54 +139,46 @@ func (s *Component) handleConn(conn net.Conn) {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
-			s.logger.Error(s.Name(),
+			s.logger.Error("关闭Conn失败",
 				elog.String("step", "handleConn"),
-				elog.String("step", "Close Conn"),
-				elog.FieldErr(err))
+				elog.FieldErr(err),
+			)
 		}
 	}()
 
-	session, err := s.upgrader.Upgrade(conn)
+	sess, err := s.upgrader.Upgrade(conn)
 	if err != nil {
-		s.logger.Error(s.Name(),
+		s.logger.Error("升级Conn失败",
 			elog.String("step", "handleConn"),
-			elog.String("step", "Upgrade"),
-			elog.FieldErr(err))
+			elog.FieldErr(err),
+		)
+		return
+	}
+	if err1 := s.cacheSessionInfo(sess); err1 != nil {
 		return
 	}
 
-	linkID, err := s.generateLinkID(session)
-	if err != nil {
-		s.logger.Error(s.Name(),
-			elog.String("step", "handleConn"),
-			elog.String("step", "generateLinkID"),
-			elog.FieldErr(err))
-		return
-	}
-
-	lk := link.New(linkID, session.UserID, conn)
-	err = s.addLinkCacheInfo(lk, session)
-	if err != nil {
-		return
-	}
+	linkID := s.getLinkID(sess.BizID, sess.UserID)
+	lk := link.New(s.ctx, linkID, sess.BizID, sess.UserID, conn)
+	s.links.Store(linkID, lk)
 
 	defer func() {
-		s.deleteLinkCacheInfo(lk, session)
-		err := lk.Close()
-		if err != nil {
-			s.logger.Error(s.Name(),
+		if err1 := s.deleteSessionInfo(sess); err1 == nil {
+			s.links.Delete(lk.ID())
+		}
+		if err1 := lk.Close(); err1 != nil {
+			s.logger.Error("关闭Link失败",
 				elog.String("step", "handleConn"),
-				elog.String("step", "Close Link"),
-				elog.FieldErr(err))
+				elog.FieldErr(err1),
+			)
 		}
 	}()
 
-	if err := s.linkEventHandler.OnConnect(lk); err != nil {
-		// 记录日志
-		s.logger.Error(s.Name(),
+	if err1 := s.linkEventHandler.OnConnect(lk); err1 != nil {
+		s.logger.Error("处理连接事件失败",
 			elog.String("step", "handleConn"),
-			elog.String("step", "OnConnect"),
-			elog.FieldErr(err))
+			elog.FieldErr(err1),
+		)
 		return
 	}
 
@@ -198,14 +189,14 @@ func (s *Component) handleConn(conn net.Conn) {
 			if !ok {
 				return
 			}
-			if err := s.linkEventHandler.OnFrontendSendMessage(lk, message); err != nil {
+			if err1 := s.linkEventHandler.OnFrontendSendMessage(lk, message); err1 != nil {
 				// 记录日志
-				s.logger.Error(s.Name(),
+				s.logger.Error("处理前端发送的消息失败",
 					elog.String("step", "handleConn"),
-					elog.String("step", "OnFrontendSendMessage"),
-					elog.FieldErr(err))
+					elog.FieldErr(err1),
+				)
 				// 根据错误类型来判定是否终止循环,然后优雅关闭连接
-				if errors.Is(err, link.ErrLinkClosed) {
+				if errors.Is(err1, link.ErrLinkClosed) {
 					return
 				}
 			}
@@ -222,85 +213,46 @@ func (s *Component) handleConn(conn net.Conn) {
 				elog.String("ctx", "被关闭"),
 			)
 			// 优雅关闭link
-			if err := s.linkEventHandler.OnDisconnect(lk); err != nil {
-				// 记录日志
-				s.logger.Error(s.Name(),
+			if err1 := s.linkEventHandler.OnDisconnect(lk); err1 != nil {
+				s.logger.Error("处理断链事件失败",
 					elog.String("step", "handleConn"),
-					elog.String("step", "OnDisconnect"),
-					elog.FieldErr(err))
+					elog.FieldErr(err1))
 			}
 			return
 		}
 	}
 }
 
-func (s *Component) generateLinkID(session gateway.Session) (string, error) {
-	// todo: 生成link_id节点唯一即可, wsGateway_id + link_id即可找到连接
-	//       当前只认为一个用户一个连接
-	linkID := fmt.Sprintf("%d", session.UserID)
-
-	if _, ok := s.uidToLinkID.Load(session.UserID); ok {
-		return "", ErrDuplicatedLink
-	}
-
-	if _, ok := s.links.Load(linkID); ok {
-		return "", ErrDuplicatedLink
-	}
-
-	return linkID, nil
+func (s *Component) getLinkID(bizID, userID int64) string {
+	return fmt.Sprintf("%d-%d", bizID, userID)
 }
 
-func (s *Component) addLinkCacheInfo(lk gateway.Link, session gateway.Session) error {
-	s.links.Store(lk.ID(), lk)
-	s.uidToLinkID.Store(session.UserID, lk.ID())
-
-	uid := fmt.Sprintf("%d", session.UserID)
-	err := s.localCache.Set(context.Background(), uid, session, 0)
+func (s *Component) cacheSessionInfo(session gateway.Session) error {
+	key := consts.SessionCacheKey(session)
+	err := s.localCache.Set(context.Background(), key, session, 0)
 	if err != nil {
-		s.logger.Error(s.Name(),
+		s.logger.Error("记录Session失败",
 			elog.String("step", "handleConn"),
-			elog.String("step", "addLinkCacheInfo"),
-			elog.String("key", uid),
-			elog.String("记录Session", "失败"), elog.FieldErr(err))
-		return err
-	}
-
-	key := consts.UserWebSocketConnIDCacheKey(uid)
-	err = s.localCache.Set(context.Background(), key, uid+lk.ID(), 0)
-	if err != nil {
-		s.logger.Error(s.Name(),
-			elog.String("step", "handleConn"),
-			elog.String("step", "deleteLinkCacheInfo"),
+			elog.String("step", "cacheSessionInfo"),
 			elog.String("key", key),
-			elog.String("记录websocket连接唯一标识信息", "失败"), elog.FieldErr(err))
+			elog.FieldErr(err))
 		return err
 	}
 	return nil
 }
 
-func (s *Component) deleteLinkCacheInfo(lk gateway.Link, session gateway.Session) {
-	s.links.Delete(lk.ID())
-	s.uidToLinkID.Delete(session.UserID)
-
-	uid := fmt.Sprintf("%d", session.UserID)
-	n, err := s.localCache.Delete(context.Background(), uid)
-	if n != 1 || err != nil {
-		s.logger.Error(s.Name(),
+func (s *Component) deleteSessionInfo(session gateway.Session) error {
+	key := consts.SessionCacheKey(session)
+	_, err := s.localCache.Delete(context.Background(), key)
+	if err != nil {
+		s.logger.Error("删除Session失败",
 			elog.String("step", "handleConn"),
-			elog.String("step", "deleteLinkCacheInfo"),
-			elog.String("key", uid),
-			elog.String("删除Session", "失败"), elog.FieldErr(err))
-	}
-
-	key := consts.UserWebSocketConnIDCacheKey(uid)
-	n, err = s.localCache.Delete(context.Background(), key)
-	if n != 1 || err != nil {
-		s.logger.Error(s.Name(),
-			elog.String("step", "handleConn"),
-			elog.String("step", "deleteLinkCacheInfo"),
+			elog.String("step", "deleteSessionInfo"),
 			elog.String("key", key),
-			elog.String("删除websocket连接唯一标识信息", "失败"), elog.FieldErr(err))
+			elog.FieldErr(err))
+		return err
 	}
+	return nil
 }
 
 func (s *Component) Stop() error {
@@ -341,7 +293,7 @@ func (s *Component) Health() bool {
 func (s *Component) Invoker(_ ...func() error) {
 }
 
-func (s *Component) pushHandler(partition int, messageChan <-chan *mq.Message) {
+func (s *Component) pushHandler(partition int, mqChan <-chan *mq.Message) {
 	s.logger.Info(s.Name(),
 		elog.String("step", fmt.Sprintf("%s-%d", "pushHandler", partition)),
 		elog.String("step", "已启动"))
@@ -350,37 +302,36 @@ func (s *Component) pushHandler(partition int, messageChan <-chan *mq.Message) {
 		select {
 		case <-s.ctx.Done():
 			return
-		case msg, ok := <-messageChan:
+		case message, ok := <-mqChan:
 			if !ok {
 				return
 			}
-			message := &apiv1.PushMessage{}
-			err := json.Unmarshal(msg.Value, message)
+
+			msg := &apiv1.PushMessage{}
+			err := json.Unmarshal(message.Value, msg)
 			if err != nil {
-				s.logger.Error(s.Name(),
+				s.logger.Error("反序列化MQ消息体失败",
 					elog.String("step", "pushHandler"),
-					elog.String("step", "从MQ的消息体中反序列化得到msg服务的消息体失败"),
-					elog.String("MQ消息体", string(msg.Value)),
+					elog.String("MQ消息体", string(message.Value)),
+					elog.FieldErr(err),
+				)
+				continue
+			}
+
+			lk, err := s.findLink(msg)
+			if err != nil {
+				s.logger.Error("根据消息体查找Link失败",
+					elog.String("step", "pushHandler"),
+					elog.String("msg", msg.String()),
 					elog.FieldErr(err))
 				continue
 			}
 
-			lk, err := s.findLink(message.GetReceiverId())
+			err = s.linkEventHandler.OnBackendPushMessage(lk, msg)
 			if err != nil {
-				s.logger.Error(s.Name(),
+				s.logger.Error("下推消息给前端用户失败",
 					elog.String("step", "pushHandler"),
-					elog.String("step", "根据PushId查找Link对象"),
-					elog.Int64("PushId", message.GetReceiverId()),
-					elog.FieldErr(err))
-				continue
-			}
-
-			err = s.linkEventHandler.OnBackendPushMessage(lk, message)
-			if err != nil {
-				s.logger.Error(s.Name(),
-					elog.String("step", "pushHandler"),
-					elog.String("step", "下推消息给用户"),
-					elog.String("消息体", message.String()),
+					elog.String("消息体", msg.String()),
 					elog.FieldErr(err))
 				continue
 			}
@@ -389,40 +340,11 @@ func (s *Component) pushHandler(partition int, messageChan <-chan *mq.Message) {
 	}
 }
 
-func (s *Component) findLink(uid int64) (gateway.Link, error) {
-	linkID, ok := s.uidToLinkID.Load(uid)
-	if !ok {
-		err := ErrUnknownReceiver
-		s.logger.Error(s.Name(),
-			elog.String("step", "pushHandler/push/findLink"),
-			elog.String("step", "根据uid查找linkID"),
-			elog.Int64("uid", uid),
-			elog.FieldErr(err))
-		return nil, err
-	}
+func (s *Component) findLink(msg *apiv1.PushMessage) (gateway.Link, error) {
+	linkID := s.getLinkID(msg.GetBizId(), msg.GetReceiverId())
 	lk, ok := s.links.Load(linkID)
 	if !ok {
-		err := ErrUnknownReceiver
-		s.logger.Error(s.Name(),
-			elog.String("step", "findLink"),
-			elog.String("step", "根据linkID查找Link对象"),
-			elog.Int64("uid", uid),
-			elog.String("linkID", linkID),
-			elog.FieldErr(err),
-		)
-		return nil, err
+		return nil, fmt.Errorf("%w: bizID=%d, userID=%d", ErrUnknownReceiver, msg.GetBizId(), msg.GetReceiverId())
 	}
 	return lk, nil
 }
-
-// func InitClients() {
-// 	type Service struct {
-// 		BizID int64
-// 		// 服务发现用的服务名
-// 		Name string
-// 	}
-// 	// gateway.backend.services
-// 	type Config struct {
-// 		BizServices []Service
-// 	}
-// }

@@ -1,16 +1,15 @@
 package consts
 
-import "fmt"
+import (
+	"fmt"
 
-const (
-	userWebSocketConnIDCacheKey = "user:%s:ws"
-	linkInfoCacheKey            = "link:%s"
+	gateway "gitee.com/flycash/ws-gateway"
 )
 
-func UserWebSocketConnIDCacheKey(uid string) string {
-	return fmt.Sprintf(userWebSocketConnIDCacheKey, uid)
-}
+const (
+	sessionCacheKey = "gateway:session:bizID:%d:userID:%d"
+)
 
-func LinkInfoCacheKey(linkID string) string {
-	return fmt.Sprintf(linkInfoCacheKey, linkID)
+func SessionCacheKey(sess gateway.Session) string {
+	return fmt.Sprintf(sessionCacheKey, sess.BizID, sess.UserID)
 }

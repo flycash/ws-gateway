@@ -3,10 +3,12 @@
 package link_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net"
 	"testing"
+	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/link"
@@ -14,15 +16,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLink_New_ID_UID(t *testing.T) {
+func TestLink_New_ID_BizID_UserID(t *testing.T) {
 	t.Parallel()
 
 	server, _ := newServerAndClientConn()
 	id := "1"
-	uid := int64(2)
-	lk := newLinkWith(id, uid, server)
+	bizID := int64(3)
+	userID := int64(2)
+	lk := newLinkWith(t.Context(), id, bizID, userID, server)
 	assert.Equal(t, id, lk.ID())
-	assert.Equal(t, uid, lk.UID())
+	assert.Equal(t, bizID, lk.BizID())
+	assert.Equal(t, userID, lk.UserID())
 }
 
 func TestLink_Close(t *testing.T) {
@@ -32,7 +36,7 @@ func TestLink_Close(t *testing.T) {
 		t.Parallel()
 
 		serverConn, _ := newServerAndClientConn()
-		lk := newLink("2", serverConn)
+		lk := newLink(t.Context(), "2", serverConn)
 
 		select {
 		case <-lk.HasClosed():
@@ -55,7 +59,7 @@ func TestLink_Receive(t *testing.T) {
 		t.Parallel()
 
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink("1", serverConn)
+		lk := newLink(t.Context(), "1", serverConn)
 
 		expected := []byte("Hello, It's Client")
 		clientErrorCh := make(chan error)
@@ -76,7 +80,7 @@ func TestLink_Receive(t *testing.T) {
 		t.Parallel()
 
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink("2", serverConn)
+		lk := newLink(t.Context(), "2", serverConn)
 
 		expected := []byte("Hello, It's Client")
 		assert.NoError(t, wsutil.WriteClientBinary(clientConn, expected))
@@ -93,7 +97,7 @@ func TestLink_Receive(t *testing.T) {
 		t.Parallel()
 
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink("2", serverConn)
+		lk := newLink(t.Context(), "2", serverConn)
 
 		expected := []byte("Hello, It's Client")
 		clientErrorCh := make(chan error)
@@ -132,7 +136,7 @@ func TestLink_Send(t *testing.T) {
 		t.Parallel()
 
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink("1", serverConn)
+		lk := newLink(t.Context(), "1", serverConn)
 
 		clientErrorCh := make(chan error)
 		go func() {
@@ -157,7 +161,7 @@ func TestLink_Send(t *testing.T) {
 		t.Parallel()
 
 		serverConn, _ := newServerAndClientConn()
-		lk := newLink("1", serverConn)
+		lk := newLink(t.Context(), "1", serverConn)
 
 		assert.NoError(t, lk.Close())
 
@@ -168,7 +172,7 @@ func TestLink_Send(t *testing.T) {
 		t.Parallel()
 
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink("1", serverConn)
+		lk := newLink(t.Context(), "1", serverConn)
 
 		clientErrorCh := make(chan error)
 		go func() {
@@ -185,12 +189,16 @@ func TestLink_Send(t *testing.T) {
 	})
 }
 
-func newLink(id string, server net.Conn) gateway.Link {
-	return newLinkWith(id, 123, server)
+func newLink(ctx context.Context, id string, server net.Conn) gateway.Link {
+	return newLinkWith(ctx, id, 1, 123, server)
 }
 
-func newLinkWith(id string, uid int64, server net.Conn) gateway.Link {
-	return link.New(id, uid, server)
+func newLinkWith(ctx context.Context, id string, bizID, userID int64, server net.Conn) gateway.Link {
+	return link.New(ctx, id, bizID, userID, server,
+		link.WithTimeouts(time.Second, time.Second),
+		link.WithBuffer(256, 256),
+		link.WithRetry(time.Second, 3*time.Second, 3),
+	)
 }
 
 func newServerAndClientConn() (server, client net.Conn) {

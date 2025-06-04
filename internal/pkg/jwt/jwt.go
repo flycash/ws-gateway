@@ -5,7 +5,8 @@ import (
 )
 
 type UserClaims struct {
-	ID int64
+	ID    int64
+	BizID int64
 	jwtv5.RegisteredClaims
 }
 
