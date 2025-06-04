@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gitee.com/flycash/ws-gateway/internal/pkg/jwt"
 	"net"
 	"net/url"
 
+	"gitee.com/flycash/ws-gateway/internal/pkg/jwt"
+
 	gateway "gitee.com/flycash/ws-gateway"
-	channelv1 "gitee.com/flycash/ws-gateway/api/proto/gen/channel/v1"
-	"gitee.com/flycash/ws-gateway/websocket/consts"
+	"gitee.com/flycash/ws-gateway/internal/consts"
 	"github.com/ecodeclub/ecache"
 	"github.com/gobwas/ws"
 	jwtv5 "github.com/golang-jwt/jwt/v5"
@@ -26,17 +26,15 @@ var (
 
 type upgrader struct {
 	//  localCache 与Component共享同一个实例,用于获取session中的数据
-	localCache           ecache.Cache
-	channelServiceClient channelv1.ChannelServiceClient
-	logger               *elog.Component
+	localCache ecache.Cache
+	logger     *elog.Component
 }
 
 // New 创建一个升级器
-func New(cache ecache.Cache, channelServiceClient channelv1.ChannelServiceClient) gateway.Upgrader {
+func New(cache ecache.Cache) gateway.Upgrader {
 	return &upgrader{
-		localCache:           cache,
-		channelServiceClient: channelServiceClient,
-		logger:               elog.EgoLogger.With(elog.FieldComponent("WebsocketUpgrader")),
+		localCache: cache,
+		logger:     elog.EgoLogger.With(elog.FieldComponent("Upgrader")),
 	}
 }
 
@@ -51,14 +49,20 @@ func (u *upgrader) Upgrade(conn net.Conn) (gateway.Session, error) {
 		OnRequest: func(uri []byte) error {
 			sess, err := u.checkParams(string(uri))
 			if err != nil {
-				u.logger.Error("upgrader", elog.String("step", "检查参数合法性"), elog.FieldErr(err))
+				u.logger.Error("upgrader",
+					elog.String("step", "检查参数合法性"),
+					elog.FieldErr(err),
+				)
 				return fmt.Errorf("%w", err)
 			}
 
 			// todo: 当允许多端登录的时候,要拿用户端信息过来验证每个端是否已有连接建立
 			err = u.isAllowedToUpgrade(sess)
 			if err != nil {
-				u.logger.Error("upgrader", elog.String("step", "是否允许升级连接"), elog.FieldErr(err))
+				u.logger.Error("upgrader",
+					elog.String("step", "是否允许升级连接"),
+					elog.FieldErr(err),
+				)
 				return fmt.Errorf("%w", err)
 			}
 
@@ -88,7 +92,7 @@ func (u *upgrader) checkParams(uri string) (gateway.Session, error) {
 		return gateway.Session{}, err
 	}
 
-	return gateway.Session{UID: user.ID}, nil
+	return gateway.Session{UserID: user.ID}, nil
 }
 
 func (u *upgrader) parseToken(token string) (*jwt.UserClaims, error) {
@@ -103,7 +107,7 @@ func (u *upgrader) parseToken(token string) (*jwt.UserClaims, error) {
 }
 
 func (u *upgrader) isAllowedToUpgrade(session gateway.Session) error {
-	uid := fmt.Sprintf("%d", session.UID)
+	uid := fmt.Sprintf("%d", session.UserID)
 	if v := u.localCache.Get(context.Background(), consts.UserWebSocketConnIDCacheKey(uid)); v.Err == nil {
 		return ErrExistedLink
 	}

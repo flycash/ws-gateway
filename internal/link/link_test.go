@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	gateway "gitee.com/flycash/ws-gateway"
-	"gitee.com/flycash/ws-gateway/websocket/link"
+	"gitee.com/flycash/ws-gateway/internal/link"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/stretchr/testify/assert"
 )

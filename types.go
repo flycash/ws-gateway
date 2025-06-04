@@ -3,7 +3,7 @@ package gateway
 import (
 	"net"
 
-	msgv1 "gitee.com/flycash/ws-gateway/api/proto/gen/msg/v1"
+	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"github.com/gotomicro/ego/server"
 )
 
@@ -30,7 +30,7 @@ type LinkEventHandler interface {
 	OnFrontendSendMessage(link Link, payload []byte) error
 
 	// OnBackendPushMessage 处理后端下推/发送的消息,包含后端"主动"发送的消息(下行/下推消息)以及后端对前端主动发送的消息(上行消息)的响应
-	OnBackendPushMessage(link Link, message *msgv1.Message) error
+	OnBackendPushMessage(link Link, message *apiv1.PushMessage) error
 
 	// OnDisconnect 处理连接断开事件
 	OnDisconnect(link Link) error
@@ -38,7 +38,8 @@ type LinkEventHandler interface {
 
 // Session 表示Websocket连接的会话信息
 type Session struct {
-	UID int64
+	BizID  int64
+	UserID int64
 }
 
 type Upgrader interface {

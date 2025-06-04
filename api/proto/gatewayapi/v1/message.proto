@@ -27,15 +27,15 @@ message Message {
     // 添加其他命令类型
   }
   CommandType cmd = 1; // 消息类型
+  int64 biz_id = 2; // 执行业务分发
   // A -> gateway，是 A 生成；
   // biz + key 唯一
-  string key = 2; // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
-  google.protobuf.Any body = 3; // 业务相关的具体消息体
-  int64 biz_id = 4; // 执行业务分发
+  string key = 3; // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
+  google.protobuf.Any body = 4; // 业务相关的具体消息体
 }
 
-// simple-im 启动一个 grpc 服务端
-// 而后 simple-im
+// BackendService 是最终处理请求的业务后端要实现的服务，gateway在收到请求后
+// 根据上面的 Message 中的biz_id找到对应的GRPC Client并OnReceive发送请求
 service BackendService {
   rpc OnReceive(OnReceiveRequest) returns (OnReceiveResponse);
 }
@@ -50,15 +50,18 @@ message OnReceiveResponse {
   int64 biz_id = 2;
 }
 
-// Kafka 也复用这个消息定义
+// PushMessage 是业务后端主动向gateway发送消息时所用的消息格式
+// 具体的通信方式有以下两种：
+// 1. 业务方发送PushMessage消息到Kafka中的指定topic，gateway监听并消费
+// 2. gateway 实现下方 PushService，业务后端通过GRPC客户端发送请求
 message PushMessage {
-  int64 biz_id = 1; // biz_id 记录一下哪个业务方过来的，没实际意义
-  int64 receiver_id = 2; // 目前来看，只有用户 ID，要根据这个来找到 websocket 来把消息发送出去
-  google.protobuf.Any body = 3; // 业务相关的具体消息体
-  string key = 4;
+  string key = 1; // 唯一标识用于去重
+  int64 biz_id = 2; // biz_id 记录一下哪个业务方过来的，没实际意义
+  int64 receiver_id = 3; // 目前来看，只有用户 ID，要根据这个来找到 websocket 来把消息发送出去
+  google.protobuf.Any body = 4; // 业务相关的具体消息体
 }
 
-// 如果不用 Kafka，就应该提供这条路
+// PushService 如果业务后端与gateway之间不用Kafka通信方式，那么gateway就应该实现该服务
 service PushService {
   rpc Push(PushRequest) returns (PushResponse);
 }
@@ -67,6 +70,4 @@ message PushRequest {
   PushMessage msg = 1;
 }
 
-message PushResponse {
-
-}
+message PushResponse {}

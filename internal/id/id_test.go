@@ -5,7 +5,7 @@ package id_test
 import (
 	"testing"
 
-	"gitee.com/flycash/ws-gateway/websocket/id"
+	"gitee.com/flycash/ws-gateway/internal/id"
 	"github.com/stretchr/testify/assert"
 )
 

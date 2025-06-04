@@ -5,7 +5,7 @@ package codec_test
 import (
 	"testing"
 
-	"gitee.com/flycash/ws-gateway/websocket/codec"
+	"gitee.com/flycash/ws-gateway/internal/codec"
 	gatewayapiv1 "github.com/ecodeclub/ecodeim-gateway-api/gen/go/gatewayapi/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

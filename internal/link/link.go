@@ -32,7 +32,7 @@ type link struct {
 
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
-	once          sync.Once
+	closeOnce     sync.Once
 	logger        *elog.Component
 }
 
@@ -48,11 +48,66 @@ func New(id string, uid int64, conn net.Conn) gateway.Link {
 		receiveCh:     make(chan []byte),
 		ctx:           ctx,
 		ctxCancelFunc: cancelFunc,
-		logger:        elog.EgoLogger.With(elog.FieldComponent("WebsocketServer")),
+		logger:        elog.EgoLogger.With(elog.FieldComponent("Link")),
 	}
 	go l.send()
 	go l.receive()
 	return l
+}
+
+func (l *link) send() {
+	for {
+		select {
+		case <-l.ctx.Done():
+			return
+		case payload, ok := <-l.sendCh:
+			if !ok {
+				return
+			}
+			err := wsutil.WriteServerBinary(l.conn, payload)
+			if err != nil {
+				l.logger.Error("向客户端发消息失败",
+					elog.String("payload", string(payload)),
+					elog.FieldErr(err),
+				)
+				if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) {
+					_ = l.Close()
+					return
+				}
+				// todo: 超时重试逻辑
+				continue
+			}
+		}
+	}
+}
+
+func (l *link) receive() {
+	defer func() {
+		close(l.receiveCh)
+	}()
+	for {
+		// 不要修改 这里前端难以控制 后续统一为二进制
+		// payload, _, err := wsutil.ReadClientData(l.conn)
+		payload, err := wsutil.ReadClientBinary(l.conn)
+		if err != nil {
+			l.logger.Error("从客户端读取消息失败",
+				elog.Any("linkID", l.id),
+				elog.Any("userID", l.uid),
+				elog.FieldErr(err),
+			)
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) {
+				// 客户端连接断开
+				_ = l.Close()
+				return
+			}
+			continue
+		}
+		select {
+		case <-l.ctx.Done():
+			return
+		case l.receiveCh <- payload:
+		}
+	}
 }
 
 func (l *link) ID() string {
@@ -78,7 +133,7 @@ func (l *link) Receive() <-chan []byte {
 }
 
 func (l *link) Close() error {
-	l.once.Do(func() {
+	l.closeOnce.Do(func() {
 		pbufio.PutReader(l.rd)
 		pbufio.PutWriter(l.wt)
 		l.ctxCancelFunc()
@@ -88,51 +143,4 @@ func (l *link) Close() error {
 
 func (l *link) HasClosed() <-chan struct{} {
 	return l.ctx.Done()
-}
-
-func (l *link) send() {
-	for {
-		select {
-		case <-l.ctx.Done():
-			return
-		case payload, ok := <-l.sendCh:
-			if !ok {
-				return
-			}
-			err := wsutil.WriteServerBinary(l.conn, payload)
-			if err != nil {
-				l.logger.Error("send message to client", elog.String("text", string(payload)), elog.FieldErr(err))
-				if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) {
-					_ = l.Close()
-					return
-				}
-				// todo: 超时重试逻辑
-				continue
-			}
-		}
-	}
-}
-
-func (l *link) receive() {
-	defer func() {
-		close(l.receiveCh)
-	}()
-	for {
-		// 不要修改 这里前端难以控制 后续统一为二进制
-		payload, _, err := wsutil.ReadClientData(l.conn)
-		if err != nil {
-			l.logger.Error("receive message from client", elog.String("linkID", l.id), elog.FieldErr(err))
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe) {
-				// 客户端连接断开
-				_ = l.Close()
-				return
-			}
-			continue
-		}
-		select {
-		case <-l.ctx.Done():
-			return
-		case l.receiveCh <- payload:
-		}
-	}
 }

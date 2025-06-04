@@ -23,8 +23,3 @@ plugins:
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
-
-  - local: protoc-gen-go-grpc-local-client
-    # protoc-gen-go-grpc-local-client
-    out: api/proto/gen
-    opt: paths=source_relative

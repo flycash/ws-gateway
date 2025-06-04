@@ -8,10 +8,9 @@ import (
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
-	gatewayapiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	msgv1 "gitee.com/flycash/ws-gateway/api/proto/gen/msg/v1"
-	"gitee.com/flycash/ws-gateway/websocket/codec"
-	"gitee.com/flycash/ws-gateway/websocket/id"
+	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/codec"
+	"gitee.com/flycash/ws-gateway/internal/id"
 	"github.com/gotomicro/ego/core/elog"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -31,10 +30,10 @@ type linkEventHandler struct {
 	idGenerator                     id.Generator
 	messageServiceClient            msgv1.MessageServiceClient
 	codecHelper                     codec.Codec
-	onFrontendSendMessageHandleFunc map[gatewayapiv1.Message_CommandType]func(lk gateway.Link, apiMessage *gatewayapiv1.Message) error
-	onBackendPushMessageHandleFunc  map[msgv1.Message_Type]func(lk gateway.Link, message *msgv1.Message) error
+	onFrontendSendMessageHandleFunc map[apiv1.Message_CommandType]func(lk gateway.Link, apiMessage *apiv1.Message) error
+	onBackendPushMessageHandleFunc  map[apiv1.Message_Type]func(lk gateway.Link, message *apiv1.Message) error
 	logger                          *elog.Component
-	bizClients                      map[int64]gatewayapiv1.MessageServiceClient
+	bizClients                      map[int64]apiv1.MessageServiceClient
 }
 
 // NewHandler 创建一个Link生命周期事件管理器
@@ -43,13 +42,13 @@ func NewHandler(idGenerator id.Generator, messageServiceClient msgv1.MessageServ
 		idGenerator:                     idGenerator,
 		messageServiceClient:            messageServiceClient,
 		codecHelper:                     codecHelper,
-		onFrontendSendMessageHandleFunc: make(map[gatewayapiv1.Message_CommandType]func(lk gateway.Link, apiMessage *gatewayapiv1.Message) error),
+		onFrontendSendMessageHandleFunc: make(map[apiv1.Message_CommandType]func(lk gateway.Link, apiMessage *apiv1.Message) error),
 		onBackendPushMessageHandleFunc:  make(map[msgv1.Message_Type]func(lk gateway.Link, message *msgv1.Message) error),
 		logger:                          elog.EgoLogger.With(elog.FieldComponent("LinkEventHandler")),
 	}
-	h.onFrontendSendMessageHandleFunc[gatewayapiv1.Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST] = h.handleOnMessageChannelMessageRequestCmd
-	h.onFrontendSendMessageHandleFunc[gatewayapiv1.Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE] = h.handleOnMessagePushChannelMessageResponseCmd
-	h.onFrontendSendMessageHandleFunc[gatewayapiv1.Message_COMMAND_TYPE_HEARTBEAT] = h.handleOnMessageHeartbeatCmd
+	h.onFrontendSendMessageHandleFunc[apiv1.Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST] = h.handleOnMessageChannelMessageRequestCmd
+	h.onFrontendSendMessageHandleFunc[apiv1.Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE] = h.handleOnMessagePushChannelMessageResponseCmd
+	h.onFrontendSendMessageHandleFunc[apiv1.Message_COMMAND_TYPE_HEARTBEAT] = h.handleOnMessageHeartbeatCmd
 
 	h.onBackendPushMessageHandleFunc[msgv1.Message_TYPE_CHANNEL_MESSAGE] = h.handleOnPushChannelMessage
 	return h
@@ -65,10 +64,13 @@ func (l *linkEventHandler) OnConnect(lk gateway.Link) error {
 func (l *linkEventHandler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 	l.logger.Debug("OnFrontendSendMessage link = %s", elog.String("linkID", lk.ID()))
 
-	apiMessage := &gatewayapiv1.Message{}
+	apiMessage := &apiv1.Message{}
 	err := l.codecHelper.Unmarshal(payload, apiMessage)
 	if err != nil {
-		l.logger.Error("OnFrontendSendMessage", elog.String("step", "反序列化JSON消息失败"), elog.FieldErr(err))
+		l.logger.Error("OnFrontendSendMessage",
+			elog.String("step", "反序列化JSON消息失败"),
+			elog.FieldErr(err),
+		)
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageFormat)
 	}
 
@@ -90,12 +92,12 @@ func (l *linkEventHandler) OnDisconnect(lk gateway.Link) error {
 	return nil
 }
 
-func (l *linkEventHandler) handleOnMessageHeartbeatCmd(lk gateway.Link, apiMessage *gatewayapiv1.Message) error {
+func (l *linkEventHandler) handleOnMessageHeartbeatCmd(lk gateway.Link, apiMessage *apiv1.Message) error {
 	// 心跳包原样返回
 	return l.push(lk, apiMessage)
 }
 
-func (l *linkEventHandler) push(lk gateway.Link, message *gatewayapiv1.Message) error {
+func (l *linkEventHandler) push(lk gateway.Link, message *apiv1.Message) error {
 	payload, err := l.codecHelper.Marshal(message)
 	if err != nil {
 		l.logger.Error("push",
@@ -116,8 +118,8 @@ func (l *linkEventHandler) push(lk gateway.Link, message *gatewayapiv1.Message) 
 	return nil
 }
 
-func (l *linkEventHandler) handleOnMessageChannelMessageRequestCmd(lk gateway.Link, apiMessage *gatewayapiv1.Message) error {
-	req := &gatewayapiv1.ChannelMessageRequest{}
+func (l *linkEventHandler) handleOnMessageChannelMessageRequestCmd(lk gateway.Link, apiMessage *apiv1.Message) error {
+	req := &apiv1.OnReceiveRequest{}
 	err := apiMessage.Body.UnmarshalTo(req)
 	if err != nil {
 		l.logger.Error("OnFrontendSendMessage",
@@ -153,16 +155,17 @@ func (l *linkEventHandler) handleOnMessageChannelMessageRequestCmd(lk gateway.Li
 	return nil
 }
 
-//func (l *linkEventHandler) forwardToBiz(lk gateway.Link,
+// func (l *linkEventHandler) forwardToBiz(lk gateway.Link,
 //	bizID, msgID, sendTime int64,
 //	req *gatewayapiv1.ChannelMessageRequest) error {
 //	client := l.bizClients[bizID]
 //	client.OnReceive(ctx...)
-//}
+// }
 
 func (l *linkEventHandler) forwardToMessageService(lk gateway.Link,
 	msgID, sendTime int64,
-	req *gatewayapiv1.ChannelMessageRequest) error {
+	req *apiv1.OnReceiveRequest,
+) error {
 	// 记录发送时间
 	channelMessage := &msgv1.ChannelMessage{
 		Id:          msgID,
@@ -187,14 +190,14 @@ func (l *linkEventHandler) sendChannelMessageResponseToClient(lk gateway.Link,
 	seq string,
 	msgID, sendTime int64,
 ) error {
-	response := &gatewayapiv1.ChannelMessageResponse{
+	response := &apiv1.ChannelMessageResponse{
 		Seq:      seq,
 		MsgId:    msgID,
 		SendTime: sendTime,
 	}
 	responseBody, _ := anypb.New(response)
-	responseMessage := &gatewayapiv1.Message{
-		Cmd:  gatewayapiv1.Message_COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE,
+	responseMessage := &apiv1.Message{
+		Cmd:  apiv1.Message_COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE,
 		Body: responseBody,
 	}
 	return l.push(lk, responseMessage)
@@ -226,27 +229,27 @@ func (l *linkEventHandler) handleOnPushChannelMessage(lk gateway.Link, message *
 		return fmt.Errorf("%w", ErrUnKnownBackendMessageBodyType)
 	}
 
-	body, _ := anypb.New(&gatewayapiv1.PushChannelMessageRequest{
+	body, _ := anypb.New(&apiv1.PushChannelMessageRequest{
 		MsgId: channelMessage.Id,
-		Msg: &gatewayapiv1.ChannelMessage{
+		Msg: &apiv1.ChannelMessage{
 			Cid:         channelMessage.Cid,
-			ContentType: gatewayapiv1.ChannelMessage_ContentType(channelMessage.ContentType),
+			ContentType: apiv1.ChannelMessage_ContentType(channelMessage.ContentType),
 			Content:     channelMessage.Content,
 		},
 		SendId:   channelMessage.SendId,
 		SendTime: channelMessage.SendTime,
 	})
 
-	gatewayAPIMessage := &gatewayapiv1.Message{
-		Cmd:  gatewayapiv1.Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST,
+	gatewayAPIMessage := &apiv1.Message{
+		Cmd:  apiv1.Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST,
 		Body: body,
 	}
 
 	return l.push(lk, gatewayAPIMessage)
 }
 
-func (l *linkEventHandler) handleOnMessagePushChannelMessageResponseCmd(_ gateway.Link, message *gatewayapiv1.Message) error {
-	resp := &gatewayapiv1.PushChannelMessageResponse{}
+func (l *linkEventHandler) handleOnMessagePushChannelMessageResponseCmd(_ gateway.Link, message *apiv1.Message) error {
+	resp := &apiv1.PushChannelMessageResponse{}
 	err := message.Body.UnmarshalTo(resp)
 	if err != nil {
 		l.logger.Error("OnFrontendSendMessage",
