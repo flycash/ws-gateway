@@ -8,17 +8,17 @@ option go_package = "v1/gatewayapi;gatewayapiv1";
 
 // 通用协议格式
 // 上行消息说明:
-//    上行请求消息是指前端主动发送给后端的消息,通常使用“业务命名_REQUEST后缀”命名
-//    上行响应消息是指后端对收到的上行请求消息的响应消息,通常使用"业务名+_RESPONSE后缀"命名,其中“业务名”应与对应的上行请求消息的“业务名”相同.
+//    上行请求消息是指前端主动发送给后端的消息
+//    上行确认消息是指网关对收到的“上行请求消息”的确认消息
 // 下行消息说明:
-//    下行(推送)请求消息是指后端主动发送给前端的消息,通常使用"PUSH_业务名_REQUEST"命名
-//    下行(推送)响应消息是指前端对收到的下行(推送)请求消息的响应消息,通常使用“PUSH_业务名_RESPONSE”命名,其中“业务名”应与对应的下行(推送)请求消息的“业务名”相同.
+//    下行(推送)请求消息是指业务后端主动发送给网关的消息
+//    下行(推送)确认消息是指前端对收到的"下行(推送)请求消息"的确认消息
 // 以 A -> B 为例
 message Message {
   enum CommandType {
     COMMAND_TYPE_INVALID_UNSPECIFIED = 0;
     COMMAND_TYPE_HEARTBEAT = 1; // 心跳消息,body为空即可,前端主动发送、后端原样返回
-    // A -> gateway 的消息 (Client -> Gateway -> Backend)
+    // A -> gateway 的消息 (Client <-> Gateway(grpc client) -> Backend)
     COMMAND_TYPE_UPSTREAM_MESSAGE = 2; // 上行消息请求
     COMMAND_TYPE_UPSTREAM_ACK = 3; // 上行消息响应
     // gateway -> B 的消息 (Backend -> Gateway -> Client)
@@ -38,6 +38,8 @@ message Message {
 // 根据上面的 Message 中的biz_id找到对应的GRPC Client并OnReceive发送请求
 service BackendService {
   rpc OnReceive(OnReceiveRequest) returns (OnReceiveResponse);
+  // 当业务方需要的时候，可以将下行消息的结果通知业务方
+  //  rpc OnPushed(OnPushedRequest) returns (OnPushedResponse);
 }
 
 message OnReceiveRequest {
@@ -56,8 +58,8 @@ message OnReceiveResponse {
 // 2. gateway 实现下方 PushService，业务后端通过GRPC客户端发送请求
 message PushMessage {
   string key = 1; // 唯一标识用于去重
-  int64 biz_id = 2; // biz_id 记录一下哪个业务方过来的，没实际意义
-  int64 receiver_id = 3; // 目前来看，只有用户 ID，要根据这个来找到 websocket 来把消息发送出去
+  int64 biz_id = 2; // biz_id 记录一下哪个业务方过来的
+  int64 receiver_id = 3; // 目前来看，只有用户 ID，要根据这个和 biz_id 来找到 websocket 连接并把消息发送出去
   google.protobuf.Any body = 4; // 业务相关的具体消息体
 }
 

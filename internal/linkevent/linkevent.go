@@ -5,60 +5,60 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/internal/codec"
-	"gitee.com/flycash/ws-gateway/internal/id"
-	"gitee.com/flycash/ws-gateway/internal/pkg/grpc"
+	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gotomicro/ego/core/elog"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
-	_                                    gateway.LinkEventHandler = &linkEventHandler{}
-	ErrUnKnownFrontendMessageFormat                               = errors.New("非法的网关API消息格式")
-	ErrUnKnownFrontendMessageCommandType                          = errors.New("非法的网关API消息Cmd类型")
-	ErrUnKnownFrontendMessageBodyType                             = errors.New("非法的网关API消息Body类型")
+	ErrUnKnownFrontendMessageFormat      = errors.New("非法的网关消息格式")
+	ErrUnKnownFrontendMessageCommandType = errors.New("非法的网关消息Cmd类型")
 
 	ErrMaxRetriesExceeded = errors.New("最大重试次数已耗尽")
 	ErrUnknownBizID       = errors.New("未知的BizID")
 
-	ErrUnKnownBackendMessageFormat   = errors.New("非法的msg服务消息格式")
-	ErrUnKnownBackendMessageType     = errors.New("非法的msg服务消息Type类型")
-	ErrUnKnownBackendMessagePushID   = errors.New("非法的msg服务消息PushId")
-	ErrUnKnownBackendMessageBodyType = errors.New("非法的msg服务消息Body类型")
+	ErrUnKnownBackendMessageFormat = errors.New("非法的下推消息格式")
 )
 
-type linkEventHandler struct {
-	idGenerator                     id.Generator
+type BackendClientLoader func() *syncx.Map[int64, apiv1.BackendServiceClient]
+
+type Handler struct {
 	codecHelper                     codec.Codec
 	onFrontendSendMessageHandleFunc map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error
-	bizToServiceName                *syncx.Map[int64, string]
-	bizBackendClients               *grpc.Clients[apiv1.BackendServiceClient]
+
+	backendClientLoader BackendClientLoader
+	bizToClient         *syncx.Map[int64, apiv1.BackendServiceClient]
+
+	initRetryInterval time.Duration
+	maxRetryInterval  time.Duration
+	maxRetries        int32
 
 	logger *elog.Component
 }
 
 // NewHandler 创建一个Link生命周期事件管理器
 func NewHandler(
-	idGenerator id.Generator,
 	codecHelper codec.Codec,
-	bizToServiceName *syncx.Map[int64, string],
-	bizBackendClients *grpc.Clients[apiv1.BackendServiceClient],
-) gateway.LinkEventHandler {
-	h := &linkEventHandler{
-		idGenerator:                     idGenerator,
+	backendClientLoader BackendClientLoader,
+	initRetryInterval time.Duration,
+	maxRetryInterval time.Duration,
+	maxRetries int32,
+) *Handler {
+	h := &Handler{
 		codecHelper:                     codecHelper,
 		onFrontendSendMessageHandleFunc: make(map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error),
-		// onBackendPushHandleFunc:  make(map[msgv1.Message_Type]func(lk gateway.Link, message *msgv1.Message) error),
-		bizToServiceName: bizToServiceName,
-		// bizBackendClients: grpc.NewClients(func(conn *egrpc.Component) apiv1.BackendServiceClient {
-		// 	return apiv1.NewBackendServiceClient(conn)
-		// }),
-		bizBackendClients: bizBackendClients,
-		logger:            elog.EgoLogger.With(elog.FieldComponent("LinkEventHandler")),
+		backendClientLoader:             backendClientLoader,
+		bizToClient:                     &syncx.Map[int64, apiv1.BackendServiceClient]{},
+		initRetryInterval:               initRetryInterval,
+		maxRetryInterval:                maxRetryInterval,
+		maxRetries:                      maxRetries,
+		logger:                          elog.EgoLogger.With(elog.FieldComponent("LinkEventHandler")),
 	}
 
 	h.onFrontendSendMessageHandleFunc[apiv1.Message_COMMAND_TYPE_HEARTBEAT] = h.handleOnHeartbeatCmd
@@ -68,22 +68,21 @@ func NewHandler(
 	return h
 }
 
-func (l *linkEventHandler) OnConnect(lk gateway.Link) error {
-	// 验证Auth包
+func (l *Handler) OnConnect(lk gateway.Link) error {
+	// 验证Auth包、协商序列化算法、加密算法、压缩算法
 	l.logger.Debug("Hello link = %s", elog.String("lid", lk.ID()))
 	return nil
 }
 
 // OnFrontendSendMessage 统一处理前端发来的各种请求
-func (l *linkEventHandler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
+func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 	msg := &apiv1.Message{}
 	err := l.codecHelper.Unmarshal(payload, msg)
-	if err != nil {
+	if err != nil || msg.GetBizId() == 0 || msg.GetKey() == "" {
 		l.logger.Error("反序列化消息失败",
 			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("linkID", lk.ID()),
-			elog.Int64("bizID", lk.BizID()),
-			elog.Int64("userID", lk.UserID()),
+			elog.Any("session", lk.Session()),
 			elog.FieldErr(err),
 		)
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageFormat)
@@ -99,8 +98,7 @@ func (l *linkEventHandler) OnFrontendSendMessage(lk gateway.Link, payload []byte
 		l.logger.Error("前端发送未知消息类型",
 			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("linkID", lk.ID()),
-			elog.Int64("bizID", lk.BizID()),
-			elog.Int64("userID", lk.UserID()),
+			elog.Any("session", lk.Session()),
 		)
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageCommandType)
 	}
@@ -108,12 +106,12 @@ func (l *linkEventHandler) OnFrontendSendMessage(lk gateway.Link, payload []byte
 }
 
 // handleOnHeartbeatCmd 处理前端发来的“心跳”请求
-func (l *linkEventHandler) handleOnHeartbeatCmd(lk gateway.Link, msg *apiv1.Message) error {
+func (l *Handler) handleOnHeartbeatCmd(lk gateway.Link, msg *apiv1.Message) error {
 	// 心跳包原样返回
 	return l.push(lk, msg)
 }
 
-func (l *linkEventHandler) push(lk gateway.Link, msg *apiv1.Message) error {
+func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 	payload, err := l.codecHelper.Marshal(msg)
 	if err != nil {
 		l.logger.Error("序列化网关消息失败",
@@ -129,8 +127,7 @@ func (l *linkEventHandler) push(lk gateway.Link, msg *apiv1.Message) error {
 			elog.String("step", "push"),
 			elog.String("消息体", msg.String()),
 			elog.String("linkID", lk.ID()),
-			elog.Int64("bizID", lk.BizID()),
-			elog.Int64("userID", lk.UserID()),
+			elog.Any("session", lk.Session()),
 			elog.FieldErr(err))
 		return err
 	}
@@ -138,7 +135,7 @@ func (l *linkEventHandler) push(lk gateway.Link, msg *apiv1.Message) error {
 }
 
 // handleOnUpstreamMessageCmd 处理前端发来的“上行业务消息”请求
-func (l *linkEventHandler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message) error {
+func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message) error {
 	resp, err := l.forwardToBusinessBackend(msg)
 	if err != nil {
 		// 向业务后端转发失败，（包含已经重试）如何处理？ 这里返回err相当于丢掉了，等待前端超时重试
@@ -152,46 +149,43 @@ func (l *linkEventHandler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv
 	return l.sendUpstreamMessageAck(lk, resp)
 }
 
-func (l *linkEventHandler) forwardToBusinessBackend(msg *apiv1.Message) (*apiv1.OnReceiveResponse, error) {
-	// retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(time.Second, time.Second, 3)
-	// for {
-	// 	// todo: 通过bizID找到服务名再找到后端服务的client
-	// 	serviceName, found := l.bizToServiceName.Load(msg.BizId)
-	// 	if !found {
-	// 		return nil, fmt.Errorf("%w: %d", ErrUnknownBizID, msg.BizId)
-	// 	}
-	// 	client := l.bizBackendClients.Get(serviceName)
-	// 	resp, err := client.OnReceive(context.Background(), &apiv1.OnReceiveRequest{
-	// 		Key:  msg.GetKey(),
-	// 		Body: msg.GetBody(),
-	// 	})
-	// 	if err == nil {
-	// 		return resp, nil
-	// 	}
-	// 	duration, ok := retryStrategy.Next()
-	// 	if !ok {
-	// 		return nil, fmt.Errorf("%w", ErrMaxRetriesExceeded)
-	// 	}
-	// 	time.Sleep(duration)
-	// }
-	// todo: 要在这里重试吗？还是server component中？
-	serviceName, found := l.bizToServiceName.Load(msg.BizId)
-	if !found {
-		return nil, fmt.Errorf("%w: %d", ErrUnknownBizID, msg.BizId)
+func (l *Handler) forwardToBusinessBackend(msg *apiv1.Message) (*apiv1.OnReceiveResponse, error) {
+	retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(l.initRetryInterval, l.maxRetryInterval, l.maxRetries)
+	var loaded bool
+	for {
+		client, found := l.bizToClient.Load(msg.BizId)
+		if !found {
+			if !loaded {
+				// l.bizToClient 中未找到，并且未重新加载过，重新加载业务后端GRPC客户端
+				l.bizToClient = l.backendClientLoader()
+				loaded = true
+				continue
+			}
+			return nil, fmt.Errorf("%w: %d", ErrUnknownBizID, msg.BizId)
+		}
+		resp, err := client.OnReceive(context.Background(), &apiv1.OnReceiveRequest{
+			Key:  msg.GetKey(),
+			Body: msg.GetBody(),
+		})
+		if err == nil {
+			return resp, nil
+		}
+		duration, ok := retryStrategy.Next()
+		if !ok {
+			return nil, fmt.Errorf("%w: %w", err, ErrMaxRetriesExceeded)
+		}
+		time.Sleep(duration)
 	}
-	client := l.bizBackendClients.Get(serviceName)
-	return client.OnReceive(context.Background(), &apiv1.OnReceiveRequest{
-		Key:  msg.GetKey(),
-		Body: msg.GetBody(),
-	})
 }
 
-func (l *linkEventHandler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveResponse) error {
-	// todo: 对上行业务消息的响应是这样构造吗？
+func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveResponse) error {
+	// 将业务后端返回的“上行消息”的响应直接封装为body
 	respBody, _ := anypb.New(resp)
 	err := l.push(lk, &apiv1.Message{
-		Cmd:  apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
-		Body: respBody,
+		Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
+		BizId: resp.GetBizId(),
+		Key:   fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
+		Body:  respBody,
 	})
 	if err != nil {
 		l.logger.Error("向前端下推对上行消息的确认失败",
@@ -205,13 +199,18 @@ func (l *linkEventHandler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.O
 }
 
 // handleDownstreamAckCmd 处理前端发来的“对下行消息的确认”请求
-func (l *linkEventHandler) handleDownstreamAckCmd(_ gateway.Link, _ *apiv1.Message) error {
-	// todo：下行推送的消息前端已经收到，做一些后续处理，比如停止一直重发的go协程？
+func (l *Handler) handleDownstreamAckCmd(_ gateway.Link, _ *apiv1.Message) error {
+	// 这里可以考虑通知业务后端下行消息的发送结果 如 使用 BackendService.OnPushed 方法
+	// 也可以考虑使用消息队列通知业务后端，规避GRPC客户端的各种重试、超时问题，并保证高吞吐量
 	return nil
 }
 
 // OnBackendPushMessage 统一处理各个业务后端发来的下推请求
-func (l *linkEventHandler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) error {
+func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) error {
+	if msg.GetBizId() == 0 || msg.GetKey() == "" {
+		return fmt.Errorf("%w", ErrUnKnownBackendMessageFormat)
+	}
+
 	err := l.push(lk, &apiv1.Message{
 		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
 		BizId: msg.GetBizId(),
@@ -228,7 +227,7 @@ func (l *linkEventHandler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.Push
 	return nil
 }
 
-func (l *linkEventHandler) OnDisconnect(lk gateway.Link) error {
+func (l *Handler) OnDisconnect(lk gateway.Link) error {
 	// 退出清理操作
 	log.Printf("Goodbye link = %s!\n", lk.ID())
 	return nil

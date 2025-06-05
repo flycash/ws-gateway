@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	PackageName = "server.websocket"
+	PackageName = "server.ws-gateway"
 )
 
 // Container 使用Builder模式构建一个Component实例
@@ -20,7 +20,9 @@ type Container struct {
 	upgrader         gateway.Upgrader
 	linkEventHandler gateway.LinkEventHandler
 	cache            ecache.Cache
-	messageQueue     mq.MQ
+	mq               mq.MQ
+	mqPartitions     int
+	mqTopic          string
 	logger           *elog.Component
 }
 
@@ -62,9 +64,9 @@ func Load(key string) *Container {
 }
 
 // Build 返回可用Component实例
-func (c *Container) Build(options ...Option) *Component {
+func (c *Container) Build(options ...Option) *WebSocketServer {
 	for _, option := range options {
 		option(c)
 	}
-	return newComponent(c)
+	return newWebSocketServer(c)
 }

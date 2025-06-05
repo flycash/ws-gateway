@@ -8,28 +8,38 @@ import (
 	"sync"
 	"time"
 
-	gateway "gitee.com/flycash/ws-gateway"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/gotomicro/ego/core/elog"
 )
 
-var (
-	_             gateway.Link = (*link)(nil)
-	ErrLinkClosed              = errors.New("websocket: 连接已关闭")
+// 默认配置常量
+const (
+	DefaultReadTimeout       = 30 * time.Second
+	DefaultWriteTimeout      = 10 * time.Second
+	DefaultIdleTimeout       = 5 * time.Minute
+	DefaultInitRetryInterval = 1 * time.Second
+	DefaultMaxRetryInterval  = 5 * time.Second
+	DefaultMaxRetries        = 3
+	DefaultWriteBufferSize   = 256
+	DefaultReadBufferSize    = 256
+	DefaultCloseTimeout      = 1 * time.Second
 )
 
-type link struct {
+var ErrLinkClosed = errors.New("websocket: 连接已关闭")
+
+type Link struct {
 	// 基本信息
-	id     string
-	bizID  int64
-	userID int64
+	id   string
+	sess session.Session
 
 	// 连接和配置
 	conn              net.Conn
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
+	idleTimeout       time.Duration
 	initRetryInterval time.Duration
 	maxRetryInterval  time.Duration
 	maxRetries        int32
@@ -50,17 +60,18 @@ type link struct {
 	logger *elog.Component
 }
 
-type Option func(*link)
+type Option func(*Link)
 
-func WithTimeouts(read, write time.Duration) Option {
-	return func(l *link) {
+func WithTimeouts(read, write, idle time.Duration) Option {
+	return func(l *Link) {
 		l.readTimeout = read
 		l.writeTimeout = write
+		l.idleTimeout = idle
 	}
 }
 
 func WithRetry(initInterval, maxInterval time.Duration, maxRetries int32) Option {
-	return func(l *link) {
+	return func(l *Link) {
 		l.initRetryInterval = initInterval
 		l.maxRetryInterval = maxInterval
 		l.maxRetries = maxRetries
@@ -68,30 +79,26 @@ func WithRetry(initInterval, maxInterval time.Duration, maxRetries int32) Option
 }
 
 func WithBuffer(sendBuf, recvBuf int) Option {
-	return func(l *link) {
+	return func(l *Link) {
 		l.sendCh = make(chan []byte, sendBuf)
 		l.receiveCh = make(chan []byte, recvBuf)
 	}
 }
 
-func New(parent context.Context, id string, bizID, userID int64, conn net.Conn, opts ...Option) gateway.Link {
-	if parent == nil {
-		parent = context.Background()
-	}
-
+func New(parent context.Context, id string, sess session.Session, conn net.Conn, opts ...Option) *Link {
 	ctx, cancel := context.WithCancel(parent)
-	l := &link{
+	l := &Link{
 		id:                id,
-		bizID:             bizID,
-		userID:            userID,
+		sess:              sess,
 		conn:              conn,
-		readTimeout:       30 * time.Second, // 默认值
-		writeTimeout:      10 * time.Second,
-		initRetryInterval: time.Second,
-		maxRetryInterval:  5 * time.Second,
-		maxRetries:        3,
-		sendCh:            make(chan []byte, 256), // 默认缓冲
-		receiveCh:         make(chan []byte, 256),
+		readTimeout:       DefaultReadTimeout,
+		writeTimeout:      DefaultWriteTimeout,
+		idleTimeout:       DefaultIdleTimeout,
+		initRetryInterval: DefaultInitRetryInterval,
+		maxRetryInterval:  DefaultMaxRetryInterval,
+		maxRetries:        DefaultMaxRetries,
+		sendCh:            make(chan []byte, DefaultWriteBufferSize),
+		receiveCh:         make(chan []byte, DefaultReadBufferSize),
 		ctx:               ctx,
 		cancel:            cancel,
 		logger:            elog.EgoLogger.With(elog.FieldComponent("Link")),
@@ -107,7 +114,7 @@ func New(parent context.Context, id string, bizID, userID int64, conn net.Conn, 
 	return l
 }
 
-func (l *link) sendLoop() {
+func (l *Link) sendLoop() {
 	defer func() { _ = l.Close() }()
 
 	for {
@@ -126,7 +133,7 @@ func (l *link) sendLoop() {
 	}
 }
 
-func (l *link) sendWithRetry(payload []byte) bool {
+func (l *Link) sendWithRetry(payload []byte) bool {
 	retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(
 		l.initRetryInterval, l.maxRetryInterval, l.maxRetries)
 
@@ -148,8 +155,7 @@ func (l *link) sendWithRetry(payload []byte) bool {
 
 		l.logger.Error("向客户端发消息失败",
 			elog.String("linkID", l.id),
-			elog.Int64("bizID", l.bizID),
-			elog.Int64("userID", l.userID),
+			elog.Any("session", l.sess),
 			elog.Int("payloadLen", len(payload)),
 			elog.FieldErr(err),
 		)
@@ -161,8 +167,7 @@ func (l *link) sendWithRetry(payload []byte) bool {
 			if !couldRetry {
 				l.logger.Error("重试次数耗尽，放弃发送",
 					elog.String("linkID", l.id),
-					elog.Int64("bizID", l.bizID),
-					elog.Int64("userID", l.userID),
+					elog.Any("session", l.sess),
 				)
 				return false
 			}
@@ -180,8 +185,11 @@ func (l *link) sendWithRetry(payload []byte) bool {
 	}
 }
 
-func (l *link) receiveLoop() {
+func (l *Link) receiveLoop() {
+	timer := time.NewTimer(l.idleTimeout)
+
 	defer func() {
+		timer.Stop()
 		close(l.receiveCh) // 由写端关闭
 		_ = l.Close()
 	}()
@@ -189,6 +197,12 @@ func (l *link) receiveLoop() {
 	for {
 		// 检查连接状态
 		select {
+		case <-timer.C:
+			l.logger.Info("连接空闲超时，关闭连接",
+				elog.String("linkID", l.id),
+				elog.Any("session", l.sess),
+				elog.Duration("idleTimeout", l.idleTimeout))
+			return
 		case <-l.ctx.Done():
 			return
 		default:
@@ -208,16 +222,23 @@ func (l *link) receiveLoop() {
 
 			l.logger.Error("从客户端读取消息失败",
 				elog.String("linkID", l.id),
-				elog.Int64("bizID", l.bizID),
-				elog.Int64("userID", l.userID),
+				elog.Any("session", l.sess),
 				elog.FieldErr(err),
 			)
 			// 不可重试，退出
 			return
 		}
 
+		timer.Reset(l.idleTimeout)
+
 		// 成功读取，阻塞发送到接收通道
 		select {
+		case <-timer.C:
+			l.logger.Info("连接空闲超时，关闭连接",
+				elog.String("linkID", l.id),
+				elog.Any("session", l.sess),
+				elog.Duration("idleTimeout", l.idleTimeout))
+			return
 		case <-l.ctx.Done():
 			return
 		case l.receiveCh <- payload:
@@ -226,13 +247,12 @@ func (l *link) receiveLoop() {
 	}
 }
 
-func (l *link) ID() string                 { return l.id }
-func (l *link) BizID() int64               { return l.bizID }
-func (l *link) UserID() int64              { return l.userID }
-func (l *link) Receive() <-chan []byte     { return l.receiveCh }
-func (l *link) HasClosed() <-chan struct{} { return l.ctx.Done() }
+func (l *Link) ID() string                 { return l.id }
+func (l *Link) Session() session.Session   { return l.sess }
+func (l *Link) Receive() <-chan []byte     { return l.receiveCh }
+func (l *Link) HasClosed() <-chan struct{} { return l.ctx.Done() }
 
-func (l *link) Send(payload []byte) error {
+func (l *Link) Send(payload []byte) error {
 	select {
 	case <-l.ctx.Done():
 		// close(l.sendCh) 多个协程并发调用的时候会panic
@@ -245,10 +265,10 @@ func (l *link) Send(payload []byte) error {
 	}
 }
 
-func (l *link) Close() error {
+func (l *Link) Close() error {
 	l.closeOnce.Do(func() {
 		// 1. 尝试发送 WebSocket 关闭帧（忽略错误），不用 l.writeTimeout 它可能太长了
-		_ = l.conn.SetWriteDeadline(time.Now().Add(time.Second))
+		_ = l.conn.SetWriteDeadline(time.Now().Add(DefaultCloseTimeout))
 		_ = wsutil.WriteServerMessage(l.conn, ws.OpClose, nil)
 
 		// 2. 取消 context，通知所有 goroutine

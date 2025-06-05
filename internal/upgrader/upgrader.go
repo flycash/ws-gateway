@@ -7,10 +7,10 @@ import (
 	"net"
 	"net/url"
 
-	"gitee.com/flycash/ws-gateway/internal/pkg/jwt"
+	"gitee.com/flycash/ws-gateway/pkg/jwt"
 
-	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/consts"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ecache"
 	"github.com/gobwas/ws"
 	jwtv5 "github.com/golang-jwt/jwt/v5"
@@ -18,36 +18,35 @@ import (
 )
 
 var (
-	_                    gateway.Upgrader = &upgrader{}
-	ErrInvalidURI                         = errors.New("无效的URI")
-	ErrInvalidCIDOrToken                  = errors.New("无效的群聊ID或Token")
-	ErrExistedLink                        = errors.New("连接已存在")
+	ErrInvalidURI        = errors.New("无效的URI")
+	ErrInvalidCIDOrToken = errors.New("无效的群聊ID或Token")
+	ErrExistedLink       = errors.New("连接已存在")
 )
 
-type upgrader struct {
+type Upgrader struct {
 	//  localCache 与Component共享同一个实例,用于获取session中的数据
 	localCache ecache.Cache
 	logger     *elog.Component
 }
 
 // New 创建一个升级器
-func New(cache ecache.Cache) gateway.Upgrader {
-	return &upgrader{
+func New(cache ecache.Cache) *Upgrader {
+	return &Upgrader{
 		localCache: cache,
 		logger:     elog.EgoLogger.With(elog.FieldComponent("Upgrader")),
 	}
 }
 
-func (u *upgrader) Name() string {
-	return "gateway.upgrader"
+func (u *Upgrader) Name() string {
+	return "gateway.Upgrader"
 }
 
-func (u *upgrader) Upgrade(conn net.Conn) (gateway.Session, error) {
-	var session gateway.Session
+func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, error) {
+	var sess session.Session
 
 	upgrader := ws.Upgrader{
 		OnRequest: func(uri []byte) error {
-			sess, err := u.getSession(string(uri))
+			s, err := u.getSession(string(uri))
 			if err != nil {
 				u.logger.Error("获取session失败",
 					elog.FieldErr(err),
@@ -55,7 +54,7 @@ func (u *upgrader) Upgrade(conn net.Conn) (gateway.Session, error) {
 				return fmt.Errorf("%w", err)
 			}
 
-			v := u.localCache.Get(context.Background(), consts.SessionCacheKey(session))
+			v := u.localCache.Get(context.Background(), consts.SessionCacheKey(s))
 			if !v.KeyNotFound() {
 				err = ErrExistedLink
 				u.logger.Error("Link已存在",
@@ -64,31 +63,31 @@ func (u *upgrader) Upgrade(conn net.Conn) (gateway.Session, error) {
 				return fmt.Errorf("%w", err)
 			}
 
-			session = sess
+			sess = s
 			return nil
 		},
 	}
 
 	_, err := upgrader.Upgrade(conn)
-	return session, err
+	return sess, err
 }
 
-func (u *upgrader) getSession(uri string) (gateway.Session, error) {
+func (u *Upgrader) getSession(uri string) (session.Session, error) {
 	uu, err := url.Parse(uri)
 	if err != nil {
-		return gateway.Session{}, ErrInvalidURI
+		return session.Session{}, ErrInvalidURI
 	}
 
 	params := uu.Query()
 	token := params.Get("token")
 	userClaims, err := u.parseToken(token)
 	if err != nil {
-		return gateway.Session{}, err
+		return session.Session{}, err
 	}
-	return gateway.Session{BizID: userClaims.BizID, UserID: userClaims.ID}, nil
+	return session.Session{BizID: userClaims.BizID, UserID: userClaims.ID}, nil
 }
 
-func (u *upgrader) parseToken(token string) (*jwt.UserClaims, error) {
+func (u *Upgrader) parseToken(token string) (*jwt.UserClaims, error) {
 	user := &jwt.UserClaims{}
 	jwtToken, err := jwtv5.ParseWithClaims(token, user, func(_ *jwtv5.Token) (interface{}, error) {
 		return jwt.JWTKey, nil

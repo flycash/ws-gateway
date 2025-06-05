@@ -28,7 +28,7 @@ type Message_CommandType int32
 const (
 	Message_COMMAND_TYPE_INVALID_UNSPECIFIED Message_CommandType = 0
 	Message_COMMAND_TYPE_HEARTBEAT           Message_CommandType = 1 // 心跳消息,body为空即可,前端主动发送、后端原样返回
-	// A -> gateway 的消息 (Client -> Gateway -> Backend)
+	// A -> gateway 的消息 (Client <-> Gateway(grpc client) -> Backend)
 	Message_COMMAND_TYPE_UPSTREAM_MESSAGE Message_CommandType = 2 // 上行消息请求
 	Message_COMMAND_TYPE_UPSTREAM_ACK     Message_CommandType = 3 // 上行消息响应
 	// gateway -> B 的消息 (Backend -> Gateway -> Client)
@@ -86,13 +86,13 @@ func (Message_CommandType) EnumDescriptor() ([]byte, []int) {
 // 通用协议格式
 // 上行消息说明:
 //
-//	上行请求消息是指前端主动发送给后端的消息,通常使用“业务命名_REQUEST后缀”命名
-//	上行响应消息是指后端对收到的上行请求消息的响应消息,通常使用"业务名+_RESPONSE后缀"命名,其中“业务名”应与对应的上行请求消息的“业务名”相同.
+//	上行请求消息是指前端主动发送给后端的消息
+//	上行确认消息是指网关对收到的“上行请求消息”的确认消息
 //
 // 下行消息说明:
 //
-//	下行(推送)请求消息是指后端主动发送给前端的消息,通常使用"PUSH_业务名_REQUEST"命名
-//	下行(推送)响应消息是指前端对收到的下行(推送)请求消息的响应消息,通常使用“PUSH_业务名_RESPONSE”命名,其中“业务名”应与对应的下行(推送)请求消息的“业务名”相同.
+//	下行(推送)请求消息是指业务后端主动发送给网关的消息
+//	下行(推送)确认消息是指前端对收到的"下行(推送)请求消息"的确认消息
 //
 // 以 A -> B 为例
 type Message struct {
@@ -276,8 +276,8 @@ func (x *OnReceiveResponse) GetBizId() int64 {
 type PushMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`                                  // 唯一标识用于去重
-	BizId         int64                  `protobuf:"varint,2,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`                // biz_id 记录一下哪个业务方过来的，没实际意义
-	ReceiverId    int64                  `protobuf:"varint,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"` // 目前来看，只有用户 ID，要根据这个来找到 websocket 来把消息发送出去
+	BizId         int64                  `protobuf:"varint,2,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`                // biz_id 记录一下哪个业务方过来的
+	ReceiverId    int64                  `protobuf:"varint,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"` // 目前来看，只有用户 ID，要根据这个和 biz_id 来找到 websocket 连接并把消息发送出去
 	Body          *anypb.Any             `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`                                // 业务相关的具体消息体
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

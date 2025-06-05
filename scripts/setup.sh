@@ -31,6 +31,3 @@ go install github.com/google/wire/cmd/wire@latest
 
 echo "安装 buf, protoc-gen-buf-breaking, protoc-gen-buf-lint......"
 go install github.com/bufbuild/buf/cmd/buf@v1.50.1
-
-echo "安装 go-grpc-local-client"
-go install github.com/ecodeclub/grpc-local-client/cmd/protoc-gen-go-grpc-local-client@v0.0.2
