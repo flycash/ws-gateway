@@ -427,9 +427,9 @@ func (m *PushMessage) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for BizId
-
 	// no validation rules for Key
+
+	// no validation rules for BizId
 
 	// no validation rules for ReceiverId
 

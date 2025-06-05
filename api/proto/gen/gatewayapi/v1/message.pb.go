@@ -28,12 +28,12 @@ type Message_CommandType int32
 const (
 	Message_COMMAND_TYPE_INVALID_UNSPECIFIED Message_CommandType = 0
 	Message_COMMAND_TYPE_HEARTBEAT           Message_CommandType = 1 // 心跳消息,body为空即可,前端主动发送、后端原样返回
-	// A -> gateway 的消息
-	Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST  Message_CommandType = 2 // 上行聊天消息请求
-	Message_COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE Message_CommandType = 3 // 上行聊天消息响应
-	// gateway -> B 的消息
-	Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST  Message_CommandType = 4 // 下行聊天推送请求
-	Message_COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE Message_CommandType = 5 // 下行聊天推送响应
+	// A -> gateway 的消息 (Client -> Gateway -> Backend)
+	Message_COMMAND_TYPE_UPSTREAM_MESSAGE Message_CommandType = 2 // 上行消息请求
+	Message_COMMAND_TYPE_UPSTREAM_ACK     Message_CommandType = 3 // 上行消息响应
+	// gateway -> B 的消息 (Backend -> Gateway -> Client)
+	Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE Message_CommandType = 4 // 下行推送请求
+	Message_COMMAND_TYPE_DOWNSTREAM_ACK     Message_CommandType = 5 // 下行推送响应
 )
 
 // Enum value maps for Message_CommandType.
@@ -41,18 +41,18 @@ var (
 	Message_CommandType_name = map[int32]string{
 		0: "COMMAND_TYPE_INVALID_UNSPECIFIED",
 		1: "COMMAND_TYPE_HEARTBEAT",
-		2: "COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST",
-		3: "COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE",
-		4: "COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST",
-		5: "COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE",
+		2: "COMMAND_TYPE_UPSTREAM_MESSAGE",
+		3: "COMMAND_TYPE_UPSTREAM_ACK",
+		4: "COMMAND_TYPE_DOWNSTREAM_MESSAGE",
+		5: "COMMAND_TYPE_DOWNSTREAM_ACK",
 	}
 	Message_CommandType_value = map[string]int32{
-		"COMMAND_TYPE_INVALID_UNSPECIFIED":           0,
-		"COMMAND_TYPE_HEARTBEAT":                     1,
-		"COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST":       2,
-		"COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE":      3,
-		"COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST":  4,
-		"COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE": 5,
+		"COMMAND_TYPE_INVALID_UNSPECIFIED": 0,
+		"COMMAND_TYPE_HEARTBEAT":           1,
+		"COMMAND_TYPE_UPSTREAM_MESSAGE":    2,
+		"COMMAND_TYPE_UPSTREAM_ACK":        3,
+		"COMMAND_TYPE_DOWNSTREAM_MESSAGE":  4,
+		"COMMAND_TYPE_DOWNSTREAM_ACK":      5,
 	}
 )
 
@@ -275,8 +275,8 @@ func (x *OnReceiveResponse) GetBizId() int64 {
 // 2. gateway 实现下方 PushService，业务后端通过GRPC客户端发送请求
 type PushMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	BizId         int64                  `protobuf:"varint,1,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`                // biz_id 记录一下哪个业务方过来的，没实际意义
-	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`                                  // 唯一标识用于去重
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`                                  // 唯一标识用于去重
+	BizId         int64                  `protobuf:"varint,2,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`                // biz_id 记录一下哪个业务方过来的，没实际意义
 	ReceiverId    int64                  `protobuf:"varint,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"` // 目前来看，只有用户 ID，要根据这个来找到 websocket 来把消息发送出去
 	Body          *anypb.Any             `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`                                // 业务相关的具体消息体
 	unknownFields protoimpl.UnknownFields
@@ -313,18 +313,18 @@ func (*PushMessage) Descriptor() ([]byte, []int) {
 	return file_gatewayapi_v1_message_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *PushMessage) GetBizId() int64 {
-	if x != nil {
-		return x.BizId
-	}
-	return 0
-}
-
 func (x *PushMessage) GetKey() string {
 	if x != nil {
 		return x.Key
 	}
 	return ""
+}
+
+func (x *PushMessage) GetBizId() int64 {
+	if x != nil {
+		return x.BizId
+	}
+	return 0
 }
 
 func (x *PushMessage) GetReceiverId() int64 {
@@ -425,28 +425,28 @@ var File_gatewayapi_v1_message_proto protoreflect.FileDescriptor
 
 const file_gatewayapi_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\x1a\x19google/protobuf/any.proto\"\x98\x03\n" +
+	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\x1a\x19google/protobuf/any.proto\"\xec\x02\n" +
 	"\aMessage\x124\n" +
 	"\x03cmd\x18\x01 \x01(\x0e2\".gatewayapi.v1.Message.CommandTypeR\x03cmd\x12\x15\n" +
 	"\x06biz_id\x18\x02 \x01(\x03R\x05bizId\x12\x10\n" +
 	"\x03key\x18\x03 \x01(\tR\x03key\x12(\n" +
-	"\x04body\x18\x04 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\x83\x02\n" +
+	"\x04body\x18\x04 \x01(\v2\x14.google.protobuf.AnyR\x04body\"\xd7\x01\n" +
 	"\vCommandType\x12$\n" +
 	" COMMAND_TYPE_INVALID_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16COMMAND_TYPE_HEARTBEAT\x10\x01\x12(\n" +
-	"$COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST\x10\x02\x12)\n" +
-	"%COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE\x10\x03\x12-\n" +
-	")COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST\x10\x04\x12.\n" +
-	"*COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE\x10\x05\"N\n" +
+	"\x16COMMAND_TYPE_HEARTBEAT\x10\x01\x12!\n" +
+	"\x1dCOMMAND_TYPE_UPSTREAM_MESSAGE\x10\x02\x12\x1d\n" +
+	"\x19COMMAND_TYPE_UPSTREAM_ACK\x10\x03\x12#\n" +
+	"\x1fCOMMAND_TYPE_DOWNSTREAM_MESSAGE\x10\x04\x12\x1f\n" +
+	"\x1bCOMMAND_TYPE_DOWNSTREAM_ACK\x10\x05\"N\n" +
 	"\x10OnReceiveRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12(\n" +
 	"\x04body\x18\x02 \x01(\v2\x14.google.protobuf.AnyR\x04body\"A\n" +
 	"\x11OnReceiveResponse\x12\x15\n" +
 	"\x06msg_id\x18\x01 \x01(\x03R\x05msgId\x12\x15\n" +
 	"\x06biz_id\x18\x02 \x01(\x03R\x05bizId\"\x81\x01\n" +
-	"\vPushMessage\x12\x15\n" +
-	"\x06biz_id\x18\x01 \x01(\x03R\x05bizId\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\tR\x03key\x12\x1f\n" +
+	"\vPushMessage\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x15\n" +
+	"\x06biz_id\x18\x02 \x01(\x03R\x05bizId\x12\x1f\n" +
 	"\vreceiver_id\x18\x03 \x01(\x03R\n" +
 	"receiverId\x12(\n" +
 	"\x04body\x18\x04 \x01(\v2\x14.google.protobuf.AnyR\x04body\";\n" +

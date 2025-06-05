@@ -5,12 +5,13 @@ package codec_test
 import (
 	"testing"
 
+	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/internal/codec"
-	gatewayapiv1 "github.com/ecodeclub/ecodeim-gateway-api/gen/go/gatewayapi/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestJSONCodecTestSuite(t *testing.T) {
@@ -39,75 +40,63 @@ type CodecSuite struct {
 func (c *CodecSuite) TestMarshalAndUnmarshal() {
 	tt := c.T()
 
-	expectedSendMessageRequest := newExpectedSendMessageRequest()
-	body, err := anypb.New(expectedSendMessageRequest)
+	expectedBody := wrapperspb.String("hello, world")
+	body, err := anypb.New(wrapperspb.String("hello, world"))
 	assert.NoError(tt, err)
 
-	sendMsg := newMessage(gatewayapiv1.Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST, body)
+	sendMsg := &apiv1.Message{
+		Key:   "biz-id-1-key",
+		BizId: 1,
+		Cmd:   apiv1.Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST,
+		Body:  body,
+	}
 
-	outgoingBytes, err := c.c.Marshal(sendMsg)
+	bytes, err := c.c.Marshal(sendMsg)
 	assert.NoError(tt, err)
 
-	tt.Logf("%s\n", string(outgoingBytes))
-
-	receivedMsg := &gatewayapiv1.Message{}
-
-	err = c.c.Unmarshal(outgoingBytes, receivedMsg)
+	receivedMsg := &apiv1.Message{}
+	err = c.c.Unmarshal(bytes, receivedMsg)
 	assert.NoError(tt, err)
 
 	assert.Equal(tt, sendMsg.String(), receivedMsg.String())
 	assert.True(tt, proto.Equal(sendMsg, receivedMsg))
 
-	actualSendMessageRequest := &gatewayapiv1.ChannelMessageRequest{}
-	err = receivedMsg.Body.UnmarshalTo(actualSendMessageRequest)
+	actualBody := &wrapperspb.StringValue{}
+	err = receivedMsg.Body.UnmarshalTo(actualBody)
 	assert.NoError(tt, err)
-
-	assert.True(tt, proto.Equal(expectedSendMessageRequest, actualSendMessageRequest))
+	assert.True(tt, proto.Equal(expectedBody, actualBody))
 }
 
 func (c *CodecSuite) TestHeartbeatMessage() {
-	tt := c.T()
-	tt.Helper()
+	t := c.T()
+	sendMsg := &apiv1.Message{
+		Key:   "biz-id-2-key",
+		BizId: 2,
+		Cmd:   apiv1.Message_COMMAND_TYPE_HEARTBEAT,
+		Body:  nil,
+	}
 
-	sendMsg := newMessage(gatewayapiv1.Message_COMMAND_TYPE_HEARTBEAT, nil)
+	bytes, err := c.c.Marshal(sendMsg)
+	assert.NoError(t, err)
 
-	outgoingBytes, err := c.c.Marshal(sendMsg)
-	assert.NoError(tt, err)
+	receivedMsg := &apiv1.Message{}
+	err = c.c.Unmarshal(bytes, receivedMsg)
+	assert.NoError(t, err)
 
-	receivedMsg := &gatewayapiv1.Message{}
-
-	err = c.c.Unmarshal(outgoingBytes, receivedMsg)
-	assert.NoError(tt, err)
-
-	assert.Equal(tt, sendMsg.String(), receivedMsg.String())
-	assert.True(tt, proto.Equal(sendMsg, receivedMsg))
+	assert.Equal(t, sendMsg.String(), receivedMsg.String())
+	assert.True(t, proto.Equal(sendMsg, receivedMsg))
 }
 
 func (c *CodecSuite) TestMarshalError() {
+	t := c.T()
 	msg := "invalid"
 	payload, err := c.c.Marshal(msg)
-	c.Error(err)
-	c.Nil(payload)
+	assert.Error(t, err)
+	assert.Nil(t, payload)
 }
 
 func (c *CodecSuite) TestUnmarshalError() {
+	t := c.T()
 	msg := "invalid"
-	c.Error(c.c.Unmarshal([]byte(msg), nil))
-}
-
-func newExpectedSendMessageRequest() *gatewayapiv1.ChannelMessageRequest {
-	return &gatewayapiv1.ChannelMessageRequest{
-		Msg: &gatewayapiv1.ChannelMessage{
-			Cid:         2,
-			ContentType: gatewayapiv1.ChannelMessage_CONTENT_TYPE_TEXT,
-			Content:     "hello",
-		},
-	}
-}
-
-func newMessage(cmd gatewayapiv1.Message_CommandType, body *anypb.Any) *gatewayapiv1.Message {
-	return &gatewayapiv1.Message{
-		Cmd:  cmd,
-		Body: body,
-	}
+	assert.Error(t, c.c.Unmarshal([]byte(msg), nil))
 }

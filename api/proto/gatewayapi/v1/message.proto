@@ -18,12 +18,12 @@ message Message {
   enum CommandType {
     COMMAND_TYPE_INVALID_UNSPECIFIED = 0;
     COMMAND_TYPE_HEARTBEAT = 1; // 心跳消息,body为空即可,前端主动发送、后端原样返回
-    // A -> gateway 的消息
-    COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST = 2; // 上行聊天消息请求
-    COMMAND_TYPE_CHANNEL_MESSAGE_RESPONSE = 3; // 上行聊天消息响应
-    // gateway -> B 的消息
-    COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_REQUEST = 4; // 下行聊天推送请求
-    COMMAND_TYPE_PUSH_CHANNEL_MESSAGE_RESPONSE = 5; // 下行聊天推送响应
+    // A -> gateway 的消息 (Client -> Gateway -> Backend)
+    COMMAND_TYPE_UPSTREAM_MESSAGE = 2; // 上行消息请求
+    COMMAND_TYPE_UPSTREAM_ACK = 3; // 上行消息响应
+    // gateway -> B 的消息 (Backend -> Gateway -> Client)
+    COMMAND_TYPE_DOWNSTREAM_MESSAGE = 4; // 下行推送请求
+    COMMAND_TYPE_DOWNSTREAM_ACK = 5; // 下行推送响应
     // 添加其他命令类型
   }
   CommandType cmd = 1; // 消息类型
