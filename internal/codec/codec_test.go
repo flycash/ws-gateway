@@ -47,7 +47,7 @@ func (c *CodecSuite) TestMarshalAndUnmarshal() {
 	sendMsg := &apiv1.Message{
 		Key:   "biz-id-1-key",
 		BizId: 1,
-		Cmd:   apiv1.Message_COMMAND_TYPE_CHANNEL_MESSAGE_REQUEST,
+		Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
 		Body:  body,
 	}
 
