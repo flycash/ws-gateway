@@ -10,6 +10,7 @@ import (
 	"gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/codec"
 	"gitee.com/flycash/ws-gateway/ioc"
+	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/ego-component/eetcd"
@@ -21,8 +22,9 @@ import (
 func InitApp() App {
 	mq := ioc.InitMQ()
 	cache := ioc.InitLocalCache()
+	userToken := ioc.InitUserToken()
 	component := ioc.InitEtcdClient()
-	v := convertToWebsocketComponents(mq, cache, component)
+	v := convertToWebsocketComponents(mq, cache, userToken, component)
 	app := App{
 		OrderServer: v,
 	}
@@ -38,6 +40,7 @@ type App struct {
 func convertToWebsocketComponents(
 	messageQueue mq.MQ,
 	localCache ecache.Cache,
+	userToken *jwt.UserToken,
 	etcdClient *eetcd.Component,
 ) []gateway.Server {
 
@@ -56,7 +59,7 @@ func convertToWebsocketComponents(
 
 	s := make([]gateway.Server, 0, len(config))
 
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, localCache, codecMapping[serializer], etcdClient))
+	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, localCache, userToken, codecMapping[serializer], etcdClient))
 
 	return s
 }

@@ -5,6 +5,7 @@ package ioc
 import (
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/codec"
+	"gitee.com/flycash/ws-gateway/pkg/jwt"
 
 	"gitee.com/flycash/ws-gateway/ioc"
 	"github.com/ecodeclub/ecache"
@@ -20,8 +21,8 @@ type App struct {
 
 func InitApp() App {
 	wire.Build(
-
 		ioc.InitLocalCache,
+		ioc.InitUserToken,
 		ioc.InitEtcdClient,
 		ioc.InitMQ,
 		convertToWebsocketComponents,
@@ -33,6 +34,7 @@ func InitApp() App {
 func convertToWebsocketComponents(
 	messageQueue mq.MQ,
 	localCache ecache.Cache,
+	userToken *jwt.UserToken,
 	etcdClient *eetcd.Component,
 ) []gateway.Server {
 
@@ -52,7 +54,7 @@ func convertToWebsocketComponents(
 	s := make([]gateway.Server, 0, len(config))
 	// for i := range config {
 	// configKey := fmt.Sprintf("server.websocket.%d", i)
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, localCache, codecMapping[serializer], etcdClient))
+	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, localCache, userToken, codecMapping[serializer], etcdClient))
 	// }
 	return s
 }
