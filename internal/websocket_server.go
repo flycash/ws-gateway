@@ -11,21 +11,21 @@ import (
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/internal/consts"
 	"gitee.com/flycash/ws-gateway/internal/link"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/constant"
-	"github.com/gotomicro/ego/core/econf"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/gotomicro/ego/server"
 )
 
 var (
-	_                  gateway.Server = &Component{}
+	_                  gateway.Server = &WebSocketServer{}
 	ErrUnknownReceiver                = errors.New("未知接收者")
 )
 
-type Component struct {
+type WebSocketServer struct {
 	name   string
 	config *Config
 
@@ -36,15 +36,17 @@ type Component struct {
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
 
-	messageQueue mq.MQ
+	mq           mq.MQ
+	mqPartitions int
+	mqTopic      string
 
 	links  *syncx.Map[string, gateway.Link]
 	logger *elog.Component
 }
 
-func newComponent(c *Container) *Component {
+func newWebSocketServer(c *Container) *WebSocketServer {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	return &Component{
+	return &WebSocketServer{
 		name:             c.name,
 		config:           c.config,
 		upgrader:         c.upgrader,
@@ -52,27 +54,29 @@ func newComponent(c *Container) *Component {
 		localCache:       c.cache,
 		ctx:              ctx,
 		ctxCancelFunc:    cancelFunc,
-		messageQueue:     c.messageQueue,
+		mq:               c.mq,
+		mqPartitions:     c.mqPartitions,
+		mqTopic:          c.mqTopic,
 		links:            &syncx.Map[string, gateway.Link]{},
 		logger:           c.logger,
 	}
 }
 
-func (s *Component) Name() string {
-	return fmt.Sprintf("%s.server", s.name)
+func (s *WebSocketServer) Name() string {
+	return s.name
 }
 
-func (s *Component) PackageName() string {
+func (s *WebSocketServer) PackageName() string {
 	return "ws-gateway"
 }
 
-func (s *Component) Init() error {
+func (s *WebSocketServer) Init() error {
 	// server的init操作有一些listen，必须先执行，否则有些通信，会有问题
 	// todo: 微服务模式下需要ping各个依赖
 	return nil
 }
 
-func (s *Component) Start() error {
+func (s *WebSocketServer) Start() error {
 	err := s.initConsumers()
 	if err != nil {
 		return err
@@ -88,11 +92,10 @@ func (s *Component) Start() error {
 	return l.Close()
 }
 
-func (s *Component) initConsumers() error {
-	partitions := econf.GetInt("mq.kafka.push_message_topic_partitions")
-	for i := 0; i < partitions; i++ {
+func (s *WebSocketServer) initConsumers() error {
+	for i := 0; i < s.mqPartitions; i++ {
 		partition := i
-		consumer, err := s.messageQueue.Consumer(econf.GetString("mq.kafka.push_message_topic"), s.Name())
+		consumer, err := s.mq.Consumer(s.mqTopic, s.Name())
 		if err != nil {
 			s.logger.Error("获取MQ消费者失败",
 				elog.String("step", "Start"),
@@ -115,7 +118,7 @@ func (s *Component) initConsumers() error {
 	return nil
 }
 
-func (s *Component) acceptConn(l net.Listener) {
+func (s *WebSocketServer) acceptConn(l net.Listener) {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -135,7 +138,7 @@ func (s *Component) acceptConn(l net.Listener) {
 	}
 }
 
-func (s *Component) handleConn(conn net.Conn) {
+func (s *WebSocketServer) handleConn(conn net.Conn) {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
@@ -159,7 +162,7 @@ func (s *Component) handleConn(conn net.Conn) {
 	}
 
 	linkID := s.getLinkID(sess.BizID, sess.UserID)
-	lk := link.New(s.ctx, linkID, sess.BizID, sess.UserID, conn)
+	lk := link.New(s.ctx, linkID, sess, conn)
 	s.links.Store(linkID, lk)
 
 	defer func() {
@@ -223,13 +226,13 @@ func (s *Component) handleConn(conn net.Conn) {
 	}
 }
 
-func (s *Component) getLinkID(bizID, userID int64) string {
+func (s *WebSocketServer) getLinkID(bizID, userID int64) string {
 	return fmt.Sprintf("%d-%d", bizID, userID)
 }
 
-func (s *Component) cacheSessionInfo(session gateway.Session) error {
-	key := consts.SessionCacheKey(session)
-	err := s.localCache.Set(context.Background(), key, session, 0)
+func (s *WebSocketServer) cacheSessionInfo(sess session.Session) error {
+	key := consts.SessionCacheKey(sess)
+	err := s.localCache.Set(context.Background(), key, sess, 0)
 	if err != nil {
 		s.logger.Error("记录Session失败",
 			elog.String("step", "handleConn"),
@@ -241,8 +244,8 @@ func (s *Component) cacheSessionInfo(session gateway.Session) error {
 	return nil
 }
 
-func (s *Component) deleteSessionInfo(session gateway.Session) error {
-	key := consts.SessionCacheKey(session)
+func (s *WebSocketServer) deleteSessionInfo(sess session.Session) error {
+	key := consts.SessionCacheKey(sess)
 	_, err := s.localCache.Delete(context.Background(), key)
 	if err != nil {
 		s.logger.Error("删除Session失败",
@@ -255,27 +258,27 @@ func (s *Component) deleteSessionInfo(session gateway.Session) error {
 	return nil
 }
 
-func (s *Component) Stop() error {
+func (s *WebSocketServer) Stop() error {
 	// todo: 强制关闭
 	s.ctxCancelFunc()
 	// 关闭消息队列客户端
 	return nil
 }
 
-func (s *Component) Prepare() error {
+func (s *WebSocketServer) Prepare() error {
 	// Prepare 用于一些准备数据
 	// 因为在OrderServer中，也会有invoker操作，需要放这个里面执行，需要区分他和真正server的init操作
 	return nil
 }
 
-func (s *Component) GracefulStop(_ context.Context) error {
+func (s *WebSocketServer) GracefulStop(_ context.Context) error {
 	// todo: 优雅关闭
 	s.ctxCancelFunc()
 	// 关闭消息队列客户端
 	return nil
 }
 
-func (s *Component) Info() *server.ServiceInfo {
+func (s *WebSocketServer) Info() *server.ServiceInfo {
 	info := server.ApplyOptions(
 		server.WithName(s.Name()),
 		server.WithScheme("ws"),
@@ -286,14 +289,14 @@ func (s *Component) Info() *server.ServiceInfo {
 	return &info
 }
 
-func (s *Component) Health() bool {
+func (s *WebSocketServer) Health() bool {
 	return s.ctx.Err() == nil
 }
 
-func (s *Component) Invoker(_ ...func() error) {
+func (s *WebSocketServer) Invoker(_ ...func() error) {
 }
 
-func (s *Component) pushHandler(partition int, mqChan <-chan *mq.Message) {
+func (s *WebSocketServer) pushHandler(partition int, mqChan <-chan *mq.Message) {
 	s.logger.Info(s.Name(),
 		elog.String("step", fmt.Sprintf("%s-%d", "pushHandler", partition)),
 		elog.String("step", "已启动"))
@@ -340,7 +343,8 @@ func (s *Component) pushHandler(partition int, mqChan <-chan *mq.Message) {
 	}
 }
 
-func (s *Component) findLink(msg *apiv1.PushMessage) (gateway.Link, error) {
+func (s *WebSocketServer) findLink(msg *apiv1.PushMessage) (gateway.Link, error) {
+	// 当前认为wsid+bizID+userID可以唯一确定一个link，复杂场景可能需要考虑多设备登录问题。
 	linkID := s.getLinkID(msg.GetBizId(), msg.GetReceiverId())
 	lk, ok := s.links.Load(linkID)
 	if !ok {

@@ -12,21 +12,23 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/link"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLink_New_ID_BizID_UserID(t *testing.T) {
+func TestLink_New_ID_Session(t *testing.T) {
 	t.Parallel()
 
 	server, _ := newServerAndClientConn()
 	id := "1"
-	bizID := int64(3)
-	userID := int64(2)
-	lk := newLinkWith(t.Context(), id, bizID, userID, server)
+	sess := session.Session{
+		BizID:  int64(3),
+		UserID: int64(2),
+	}
+	lk := newLinkWith(t.Context(), id, sess, server)
 	assert.Equal(t, id, lk.ID())
-	assert.Equal(t, bizID, lk.BizID())
-	assert.Equal(t, userID, lk.UserID())
+	assert.Equal(t, sess, lk.Session())
 }
 
 func TestLink_Close(t *testing.T) {
@@ -190,12 +192,15 @@ func TestLink_Send(t *testing.T) {
 }
 
 func newLink(ctx context.Context, id string, server net.Conn) gateway.Link {
-	return newLinkWith(ctx, id, 1, 123, server)
+	return newLinkWith(ctx, id, session.Session{
+		BizID:  1,
+		UserID: 123,
+	}, server)
 }
 
-func newLinkWith(ctx context.Context, id string, bizID, userID int64, server net.Conn) gateway.Link {
-	return link.New(ctx, id, bizID, userID, server,
-		link.WithTimeouts(time.Second, time.Second),
+func newLinkWith(ctx context.Context, id string, sess session.Session, server net.Conn) gateway.Link {
+	return link.New(ctx, id, sess, server,
+		link.WithTimeouts(time.Second, time.Second, time.Minute),
 		link.WithBuffer(256, 256),
 		link.WithRetry(time.Second, 3*time.Second, 3),
 	)

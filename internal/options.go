@@ -56,8 +56,10 @@ func WithCache(cache ecache.Cache) Option {
 	}
 }
 
-func WithMQ(q mq.MQ) Option {
+func WithMQ(q mq.MQ, partitions int, topic string) Option {
 	return func(c *Container) {
-		c.messageQueue = q
+		c.mq = q
+		c.mqPartitions = partitions
+		c.mqTopic = topic
 	}
 }

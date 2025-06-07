@@ -4,6 +4,7 @@ import (
 	"net"
 
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/gotomicro/ego/server"
 )
 
@@ -14,8 +15,7 @@ type Server interface {
 // Link 表示一个用户连接
 type Link interface {
 	ID() string
-	BizID() int64
-	UserID() int64
+	Session() session.Session
 	Send(payload []byte) error
 	Receive() <-chan []byte
 	HasClosed() <-chan struct{}
@@ -37,13 +37,7 @@ type LinkEventHandler interface {
 	OnDisconnect(link Link) error
 }
 
-// Session 表示Websocket连接的会话信息
-type Session struct {
-	BizID  int64
-	UserID int64
-}
-
 type Upgrader interface {
 	Name() string
-	Upgrade(conn net.Conn) (Session, error)
+	Upgrade(conn net.Conn) (session.Session, error)
 }

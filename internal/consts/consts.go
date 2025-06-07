@@ -3,13 +3,13 @@ package consts
 import (
 	"fmt"
 
-	gateway "gitee.com/flycash/ws-gateway"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 )
 
 const (
 	sessionCacheKey = "gateway:session:bizID:%d:userID:%d"
 )
 
-func SessionCacheKey(sess gateway.Session) string {
+func SessionCacheKey(sess session.Session) string {
 	return fmt.Sprintf(sessionCacheKey, sess.BizID, sess.UserID)
 }

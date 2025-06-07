@@ -62,13 +62,13 @@ grpc:
 gen:
 	@go generate ./...
 
-.PHONY: run_platform_only
-run_platform_only:
-	@cd cmd/platform && export EGO_DEBUG=true && go run main.go --config=../../config/config.yaml
+.PHONY: run_gateway_only
+run_gateway_only:
+	@cd cmd && export EGO_DEBUG=true && go run main.go --config=../config/config.yaml
 
-.PHONY: run_platform
-run_platform:
+.PHONY: run_gateway
+run_gateway:
 	@$(MAKE) e2e_down
 	@$(MAKE) e2e_up
 	@sleep 15
-	@cd cmd/platform && export EGO_DEBUG=true && go run main.go --config=../../config/config.yaml
+	@cd cmd && export EGO_DEBUG=true && go run main.go --config=../config/config.yaml
