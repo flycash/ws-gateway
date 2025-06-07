@@ -1,10 +1,4 @@
-syntax = "proto3";
 
-package gatewayapi.v1;
-
-import "google/protobuf/any.proto";
-
-option go_package = "v1/gatewayapi;gatewayapiv1";
 
 // 通用协议格式
 // 上行消息说明:
@@ -73,19 +67,3 @@ message PushRequest {
 }
 
 message PushResponse {}
-
-message MessageEntity {
-  string type = 1;
-  int64 id = 2;
-}
-
-message ImMessage {
-  int64 id = 1;
-  string key = 2;
-  int32 content_type = 3;
-  bytes content = 4; // 二进制内容，或者如果是文本可以直接用 string
-  int64 cid = 5;
-  MessageEntity sender = 6;
-  MessageEntity receiver = 7;
-  int64 send_time = 8;
-}

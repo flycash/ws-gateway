@@ -420,158 +420,6 @@ func (*PushResponse) Descriptor() ([]byte, []int) {
 	return file_gatewayapi_v1_message_proto_rawDescGZIP(), []int{5}
 }
 
-type MessageEntity struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Id            int64                  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MessageEntity) Reset() {
-	*x = MessageEntity{}
-	mi := &file_gatewayapi_v1_message_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MessageEntity) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MessageEntity) ProtoMessage() {}
-
-func (x *MessageEntity) ProtoReflect() protoreflect.Message {
-	mi := &file_gatewayapi_v1_message_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MessageEntity.ProtoReflect.Descriptor instead.
-func (*MessageEntity) Descriptor() ([]byte, []int) {
-	return file_gatewayapi_v1_message_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *MessageEntity) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *MessageEntity) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-type ImMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	ContentType   int32                  `protobuf:"varint,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
-	Content       []byte                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"` // 二进制内容，或者如果是文本可以直接用 string
-	Cid           int64                  `protobuf:"varint,5,opt,name=cid,proto3" json:"cid,omitempty"`
-	Sender        *MessageEntity         `protobuf:"bytes,6,opt,name=sender,proto3" json:"sender,omitempty"`
-	Receiver      *MessageEntity         `protobuf:"bytes,7,opt,name=receiver,proto3" json:"receiver,omitempty"`
-	SendTime      int64                  `protobuf:"varint,8,opt,name=send_time,json=sendTime,proto3" json:"send_time,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ImMessage) Reset() {
-	*x = ImMessage{}
-	mi := &file_gatewayapi_v1_message_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ImMessage) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ImMessage) ProtoMessage() {}
-
-func (x *ImMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_gatewayapi_v1_message_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ImMessage.ProtoReflect.Descriptor instead.
-func (*ImMessage) Descriptor() ([]byte, []int) {
-	return file_gatewayapi_v1_message_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *ImMessage) GetId() int64 {
-	if x != nil {
-		return x.Id
-	}
-	return 0
-}
-
-func (x *ImMessage) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
-}
-
-func (x *ImMessage) GetContentType() int32 {
-	if x != nil {
-		return x.ContentType
-	}
-	return 0
-}
-
-func (x *ImMessage) GetContent() []byte {
-	if x != nil {
-		return x.Content
-	}
-	return nil
-}
-
-func (x *ImMessage) GetCid() int64 {
-	if x != nil {
-		return x.Cid
-	}
-	return 0
-}
-
-func (x *ImMessage) GetSender() *MessageEntity {
-	if x != nil {
-		return x.Sender
-	}
-	return nil
-}
-
-func (x *ImMessage) GetReceiver() *MessageEntity {
-	if x != nil {
-		return x.Receiver
-	}
-	return nil
-}
-
-func (x *ImMessage) GetSendTime() int64 {
-	if x != nil {
-		return x.SendTime
-	}
-	return 0
-}
-
 var File_gatewayapi_v1_message_proto protoreflect.FileDescriptor
 
 const file_gatewayapi_v1_message_proto_rawDesc = "" +
@@ -603,19 +451,7 @@ const file_gatewayapi_v1_message_proto_rawDesc = "" +
 	"\x04body\x18\x04 \x01(\v2\x14.google.protobuf.AnyR\x04body\";\n" +
 	"\vPushRequest\x12,\n" +
 	"\x03msg\x18\x01 \x01(\v2\x1a.gatewayapi.v1.PushMessageR\x03msg\"\x0e\n" +
-	"\fPushResponse\"3\n" +
-	"\rMessageEntity\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\x03R\x02id\"\x89\x02\n" +
-	"\tImMessage\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x10\n" +
-	"\x03key\x18\x02 \x01(\tR\x03key\x12!\n" +
-	"\fcontent_type\x18\x03 \x01(\x05R\vcontentType\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\fR\acontent\x12\x10\n" +
-	"\x03cid\x18\x05 \x01(\x03R\x03cid\x124\n" +
-	"\x06sender\x18\x06 \x01(\v2\x1c.gatewayapi.v1.MessageEntityR\x06sender\x128\n" +
-	"\breceiver\x18\a \x01(\v2\x1c.gatewayapi.v1.MessageEntityR\breceiver\x12\x1b\n" +
-	"\tsend_time\x18\b \x01(\x03R\bsendTime2`\n" +
+	"\fPushResponse2`\n" +
 	"\x0eBackendService\x12N\n" +
 	"\tOnReceive\x12\x1f.gatewayapi.v1.OnReceiveRequest\x1a .gatewayapi.v1.OnReceiveResponse2N\n" +
 	"\vPushService\x12?\n" +
@@ -635,7 +471,7 @@ func file_gatewayapi_v1_message_proto_rawDescGZIP() []byte {
 }
 
 var file_gatewayapi_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_gatewayapi_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_gatewayapi_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_gatewayapi_v1_message_proto_goTypes = []any{
 	(Message_CommandType)(0),  // 0: gatewayapi.v1.Message.CommandType
 	(*Message)(nil),           // 1: gatewayapi.v1.Message
@@ -644,27 +480,23 @@ var file_gatewayapi_v1_message_proto_goTypes = []any{
 	(*PushMessage)(nil),       // 4: gatewayapi.v1.PushMessage
 	(*PushRequest)(nil),       // 5: gatewayapi.v1.PushRequest
 	(*PushResponse)(nil),      // 6: gatewayapi.v1.PushResponse
-	(*MessageEntity)(nil),     // 7: gatewayapi.v1.MessageEntity
-	(*ImMessage)(nil),         // 8: gatewayapi.v1.ImMessage
-	(*anypb.Any)(nil),         // 9: google.protobuf.Any
+	(*anypb.Any)(nil),         // 7: google.protobuf.Any
 }
 var file_gatewayapi_v1_message_proto_depIdxs = []int32{
 	0, // 0: gatewayapi.v1.Message.cmd:type_name -> gatewayapi.v1.Message.CommandType
-	9, // 1: gatewayapi.v1.Message.body:type_name -> google.protobuf.Any
-	9, // 2: gatewayapi.v1.OnReceiveRequest.body:type_name -> google.protobuf.Any
-	9, // 3: gatewayapi.v1.PushMessage.body:type_name -> google.protobuf.Any
+	7, // 1: gatewayapi.v1.Message.body:type_name -> google.protobuf.Any
+	7, // 2: gatewayapi.v1.OnReceiveRequest.body:type_name -> google.protobuf.Any
+	7, // 3: gatewayapi.v1.PushMessage.body:type_name -> google.protobuf.Any
 	4, // 4: gatewayapi.v1.PushRequest.msg:type_name -> gatewayapi.v1.PushMessage
-	7, // 5: gatewayapi.v1.ImMessage.sender:type_name -> gatewayapi.v1.MessageEntity
-	7, // 6: gatewayapi.v1.ImMessage.receiver:type_name -> gatewayapi.v1.MessageEntity
-	2, // 7: gatewayapi.v1.BackendService.OnReceive:input_type -> gatewayapi.v1.OnReceiveRequest
-	5, // 8: gatewayapi.v1.PushService.Push:input_type -> gatewayapi.v1.PushRequest
-	3, // 9: gatewayapi.v1.BackendService.OnReceive:output_type -> gatewayapi.v1.OnReceiveResponse
-	6, // 10: gatewayapi.v1.PushService.Push:output_type -> gatewayapi.v1.PushResponse
-	9, // [9:11] is the sub-list for method output_type
-	7, // [7:9] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	2, // 5: gatewayapi.v1.BackendService.OnReceive:input_type -> gatewayapi.v1.OnReceiveRequest
+	5, // 6: gatewayapi.v1.PushService.Push:input_type -> gatewayapi.v1.PushRequest
+	3, // 7: gatewayapi.v1.BackendService.OnReceive:output_type -> gatewayapi.v1.OnReceiveResponse
+	6, // 8: gatewayapi.v1.PushService.Push:output_type -> gatewayapi.v1.PushResponse
+	7, // [7:9] is the sub-list for method output_type
+	5, // [5:7] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_gatewayapi_v1_message_proto_init() }
@@ -678,7 +510,7 @@ func file_gatewayapi_v1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gatewayapi_v1_message_proto_rawDesc), len(file_gatewayapi_v1_message_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
