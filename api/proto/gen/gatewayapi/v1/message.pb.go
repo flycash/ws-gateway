@@ -7,12 +7,13 @@
 package gatewayapiv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	anypb "google.golang.org/protobuf/types/known/anypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -470,18 +471,21 @@ func file_gatewayapi_v1_message_proto_rawDescGZIP() []byte {
 	return file_gatewayapi_v1_message_proto_rawDescData
 }
 
-var file_gatewayapi_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_gatewayapi_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_gatewayapi_v1_message_proto_goTypes = []any{
-	(Message_CommandType)(0),  // 0: gatewayapi.v1.Message.CommandType
-	(*Message)(nil),           // 1: gatewayapi.v1.Message
-	(*OnReceiveRequest)(nil),  // 2: gatewayapi.v1.OnReceiveRequest
-	(*OnReceiveResponse)(nil), // 3: gatewayapi.v1.OnReceiveResponse
-	(*PushMessage)(nil),       // 4: gatewayapi.v1.PushMessage
-	(*PushRequest)(nil),       // 5: gatewayapi.v1.PushRequest
-	(*PushResponse)(nil),      // 6: gatewayapi.v1.PushResponse
-	(*anypb.Any)(nil),         // 7: google.protobuf.Any
-}
+var (
+	file_gatewayapi_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+	file_gatewayapi_v1_message_proto_msgTypes  = make([]protoimpl.MessageInfo, 6)
+	file_gatewayapi_v1_message_proto_goTypes   = []any{
+		(Message_CommandType)(0),  // 0: gatewayapi.v1.Message.CommandType
+		(*Message)(nil),           // 1: gatewayapi.v1.Message
+		(*OnReceiveRequest)(nil),  // 2: gatewayapi.v1.OnReceiveRequest
+		(*OnReceiveResponse)(nil), // 3: gatewayapi.v1.OnReceiveResponse
+		(*PushMessage)(nil),       // 4: gatewayapi.v1.PushMessage
+		(*PushRequest)(nil),       // 5: gatewayapi.v1.PushRequest
+		(*PushResponse)(nil),      // 6: gatewayapi.v1.PushResponse
+		(*anypb.Any)(nil),         // 7: google.protobuf.Any
+	}
+)
+
 var file_gatewayapi_v1_message_proto_depIdxs = []int32{
 	0, // 0: gatewayapi.v1.Message.cmd:type_name -> gatewayapi.v1.Message.CommandType
 	7, // 1: gatewayapi.v1.Message.body:type_name -> google.protobuf.Any
