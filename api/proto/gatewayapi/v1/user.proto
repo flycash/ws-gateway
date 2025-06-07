@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package gatewayapi.v1;
+
+option go_package = "v1/gatewayapi;gatewayapiv1";
+
+service UserService {
+  rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
+}
+
+message UserInfoRequest {
+  int64 uid = 1;
+}
+message UserInfoResponse {
+  int64 id = 1;
+  string nickname = 2;
+  string avatar = 3;
+  string token = 4;
+}

@@ -765,3 +765,276 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PushResponseValidationError{}
+
+// Validate checks the field values on MessageEntity with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MessageEntity) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MessageEntity with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MessageEntityMultiError, or
+// nil if none found.
+func (m *MessageEntity) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MessageEntity) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Type
+
+	// no validation rules for Id
+
+	if len(errors) > 0 {
+		return MessageEntityMultiError(errors)
+	}
+
+	return nil
+}
+
+// MessageEntityMultiError is an error wrapping multiple validation errors
+// returned by MessageEntity.ValidateAll() if the designated constraints
+// aren't met.
+type MessageEntityMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MessageEntityMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MessageEntityMultiError) AllErrors() []error { return m }
+
+// MessageEntityValidationError is the validation error returned by
+// MessageEntity.Validate if the designated constraints aren't met.
+type MessageEntityValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MessageEntityValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MessageEntityValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MessageEntityValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MessageEntityValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MessageEntityValidationError) ErrorName() string { return "MessageEntityValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MessageEntityValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMessageEntity.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MessageEntityValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MessageEntityValidationError{}
+
+// Validate checks the field values on ImMessage with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ImMessage) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ImMessage with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ImMessageMultiError, or nil
+// if none found.
+func (m *ImMessage) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ImMessage) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Key
+
+	// no validation rules for ContentType
+
+	// no validation rules for Content
+
+	// no validation rules for Cid
+
+	if all {
+		switch v := interface{}(m.GetSender()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ImMessageValidationError{
+					field:  "Sender",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ImMessageValidationError{
+					field:  "Sender",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSender()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ImMessageValidationError{
+				field:  "Sender",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetReceiver()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ImMessageValidationError{
+					field:  "Receiver",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ImMessageValidationError{
+					field:  "Receiver",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetReceiver()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ImMessageValidationError{
+				field:  "Receiver",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for SendTime
+
+	if len(errors) > 0 {
+		return ImMessageMultiError(errors)
+	}
+
+	return nil
+}
+
+// ImMessageMultiError is an error wrapping multiple validation errors returned
+// by ImMessage.ValidateAll() if the designated constraints aren't met.
+type ImMessageMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ImMessageMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ImMessageMultiError) AllErrors() []error { return m }
+
+// ImMessageValidationError is the validation error returned by
+// ImMessage.Validate if the designated constraints aren't met.
+type ImMessageValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ImMessageValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ImMessageValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ImMessageValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ImMessageValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ImMessageValidationError) ErrorName() string { return "ImMessageValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ImMessageValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sImMessage.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ImMessageValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ImMessageValidationError{}

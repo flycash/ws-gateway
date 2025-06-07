@@ -7,12 +7,11 @@
 package helloworldv1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -137,14 +136,11 @@ func file_helloworld_v1_helloworld_proto_rawDescGZIP() []byte {
 	return file_helloworld_v1_helloworld_proto_rawDescData
 }
 
-var (
-	file_helloworld_v1_helloworld_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-	file_helloworld_v1_helloworld_proto_goTypes  = []any{
-		(*SayHelloRequest)(nil),  // 0: helloworld.v1.SayHelloRequest
-		(*SayHelloResponse)(nil), // 1: helloworld.v1.SayHelloResponse
-	}
-)
-
+var file_helloworld_v1_helloworld_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_helloworld_v1_helloworld_proto_goTypes = []any{
+	(*SayHelloRequest)(nil),  // 0: helloworld.v1.SayHelloRequest
+	(*SayHelloResponse)(nil), // 1: helloworld.v1.SayHelloResponse
+}
 var file_helloworld_v1_helloworld_proto_depIdxs = []int32{
 	0, // 0: helloworld.v1.GreeterService.SayHello:input_type -> helloworld.v1.SayHelloRequest
 	1, // 1: helloworld.v1.GreeterService.SayHello:output_type -> helloworld.v1.SayHelloResponse
