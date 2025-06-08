@@ -1,6 +1,8 @@
 package ioc
 
 import (
+	"log"
+
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal"
 	"gitee.com/flycash/ws-gateway/internal/linkevent"
@@ -28,6 +30,8 @@ func InitWebSocketServer(
 	initRetryInterval := econf.GetDuration("retryStrategy.initRetryInterval")
 	maxRetryInterval := econf.GetDuration("retryStrategy.maxRetryInterval")
 	maxRetries := econf.GetInt("retryStrategy.maxRetries")
+
+	log.Printf("codec = %#v\n", codecHelper)
 
 	return internal.Load(configKey).Build(
 		internal.WithMQ(q, partitions, topic),

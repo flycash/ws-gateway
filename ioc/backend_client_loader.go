@@ -88,5 +88,11 @@ func InitBackendClientLoader(etcdClient *eetcd.Component) func() *syncx.Map[int6
 			}
 		}
 	}()
+	get, err := etcdClient.Get(context.Background(), cfg.EtcdKey)
+	if err == nil {
+		for i := range get.Kvs {
+			_ = backendClientLoader.UpdateBackendServiceInfo(get.Kvs[i].Value)
+		}
+	}
 	return backendClientLoader.Load
 }

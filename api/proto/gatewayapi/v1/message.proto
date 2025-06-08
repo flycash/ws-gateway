@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package gatewayapi.v1;
 
-import "google/protobuf/any.proto";
-
 option go_package = "v1/gatewayapi;gatewayapiv1";
 
 // 通用协议格式
@@ -24,6 +22,8 @@ message Message {
     // gateway -> B 的消息 (Backend -> Gateway -> Client)
     COMMAND_TYPE_DOWNSTREAM_MESSAGE = 4; // 下行推送请求
     COMMAND_TYPE_DOWNSTREAM_ACK = 5; // 下行推送响应
+    // 网关下发给前端的重定向指令，通常用于网关优雅关闭，前端不需要响应
+    COMMAND_TYPE_REDIRECT = 6;
     // 添加其他命令类型
   }
   CommandType cmd = 1; // 消息类型
@@ -31,7 +31,7 @@ message Message {
   // A -> gateway，是 A 生成；
   // biz + key 唯一
   string key = 3; // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
-  google.protobuf.Any body = 4; // 业务相关的具体消息体
+  bytes body = 4; // 业务相关的具体消息体
 }
 
 // BackendService 是最终处理请求的业务后端要实现的服务，gateway在收到请求后
@@ -44,7 +44,7 @@ service BackendService {
 
 message OnReceiveRequest {
   string key = 1;
-  google.protobuf.Any body = 2;
+  bytes body = 2;
 }
 
 message OnReceiveResponse {
@@ -60,7 +60,7 @@ message PushMessage {
   string key = 1; // 唯一标识用于去重
   int64 biz_id = 2; // biz_id 记录一下哪个业务方过来的
   int64 receiver_id = 3; // 目前来看，只有用户 ID，要根据这个和 biz_id 来找到 websocket 连接并把消息发送出去
-  google.protobuf.Any body = 4; // 业务相关的具体消息体
+  bytes body = 4; // 业务相关的具体消息体
 }
 
 // PushService 如果业务后端与gateway之间不用Kafka通信方式，那么gateway就应该实现该服务

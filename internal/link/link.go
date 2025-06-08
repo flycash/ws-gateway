@@ -210,9 +210,11 @@ func (l *Link) receiveLoop() {
 
 		// 设置读超时并读取消息
 		_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
-		// 前端可能难以控制需要使用下面的代码
-		// payload, _, err := wsutil.ReadClientData(l.conn)
-		payload, err := wsutil.ReadClientBinary(l.conn)
+		// 前端使用JSON或者Proto序列化时，ReadClientData都可以读取
+		payload, _, err := wsutil.ReadClientData(l.conn)
+		// 前端使用JSON序列化时，ReadClientBinary无法正常读取
+		// 前端使用Proto序列化时，ReadClientBinary可以正常读取
+		// payload, err := wsutil.ReadClientBinary(l.conn)
 		if err != nil {
 			//  检查是否为可重试的网络超时错误
 			var ne net.Error

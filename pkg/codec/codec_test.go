@@ -9,8 +9,8 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -41,7 +41,7 @@ func (c *CodecSuite) TestMarshalAndUnmarshal() {
 	tt := c.T()
 
 	expectedBody := wrapperspb.String("hello, world")
-	body, err := anypb.New(wrapperspb.String("hello, world"))
+	body, err := protojson.Marshal(wrapperspb.String("hello, world"))
 	assert.NoError(tt, err)
 
 	sendMsg := &apiv1.Message{
@@ -62,7 +62,7 @@ func (c *CodecSuite) TestMarshalAndUnmarshal() {
 	assert.True(tt, proto.Equal(sendMsg, receivedMsg))
 
 	actualBody := &wrapperspb.StringValue{}
-	err = receivedMsg.Body.UnmarshalTo(actualBody)
+	err = protojson.Unmarshal(receivedMsg.GetBody(), actualBody)
 	assert.NoError(tt, err)
 	assert.True(tt, proto.Equal(expectedBody, actualBody))
 }

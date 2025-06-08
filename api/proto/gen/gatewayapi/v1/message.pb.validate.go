@@ -62,34 +62,7 @@ func (m *Message) validate(all bool) error {
 
 	// no validation rules for Key
 
-	if all {
-		switch v := interface{}(m.GetBody()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MessageValidationError{
-					field:  "Body",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MessageValidationError{
-					field:  "Body",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetBody()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MessageValidationError{
-				field:  "Body",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for Body
 
 	if len(errors) > 0 {
 		return MessageMultiError(errors)
@@ -192,34 +165,7 @@ func (m *OnReceiveRequest) validate(all bool) error {
 
 	// no validation rules for Key
 
-	if all {
-		switch v := interface{}(m.GetBody()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, OnReceiveRequestValidationError{
-					field:  "Body",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, OnReceiveRequestValidationError{
-					field:  "Body",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetBody()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return OnReceiveRequestValidationError{
-				field:  "Body",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for Body
 
 	if len(errors) > 0 {
 		return OnReceiveRequestMultiError(errors)
@@ -433,34 +379,7 @@ func (m *PushMessage) validate(all bool) error {
 
 	// no validation rules for ReceiverId
 
-	if all {
-		switch v := interface{}(m.GetBody()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, PushMessageValidationError{
-					field:  "Body",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, PushMessageValidationError{
-					field:  "Body",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetBody()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return PushMessageValidationError{
-				field:  "Body",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for Body
 
 	if len(errors) > 0 {
 		return PushMessageMultiError(errors)

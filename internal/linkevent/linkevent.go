@@ -13,7 +13,6 @@ import (
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gotomicro/ego/core/elog"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -74,7 +73,7 @@ func NewHandler(
 
 func (l *Handler) OnConnect(lk gateway.Link) error {
 	// 验证Auth包、协商序列化算法、加密算法、压缩算法
-	l.logger.Info("Hello link = %s", elog.String("lid", lk.ID()))
+	l.logger.Info("Hello link = " + lk.ID())
 	return nil
 }
 
@@ -113,6 +112,11 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 // handleOnHeartbeatCmd 处理前端发来的“心跳”请求
 func (l *Handler) handleOnHeartbeatCmd(lk gateway.Link, msg *apiv1.Message) error {
 	// 心跳包原样返回
+	l.logger.Info("收到心跳包，原样返回",
+		elog.String("step", "handleOnHeartbeatCmd"),
+		elog.String("linkID", lk.ID()),
+		elog.Any("session", lk.Session()),
+		elog.String("消息体", msg.String()))
 	return l.push(lk, msg)
 }
 
@@ -202,7 +206,7 @@ func (l *Handler) getBackendServiceClient(bizID int64) (apiv1.BackendServiceClie
 
 func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveResponse) error {
 	// 将业务后端返回的“上行消息”的响应直接封装为body
-	respBody, _ := anypb.New(resp)
+	respBody, _ := l.codecHelper.Marshal(resp)
 	err := l.push(lk, &apiv1.Message{
 		Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
 		BizId: resp.GetBizId(),

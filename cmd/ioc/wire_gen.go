@@ -52,7 +52,7 @@ func convertToWebsocketComponents(
 	delete(config, "serializer")
 
 	codecMapping := map[string]codec.Codec{
-		"json":  codec.NewIgnoreAnyProtoFieldJSONCodec(),
+		"json":  codec.NewJSONCodec(),
 		"proto": codec.NewProtoCodec(),
 	}
 

@@ -275,6 +275,9 @@ func (s *WebSocketServer) GracefulStop(_ context.Context) error {
 	// todo: 优雅关闭
 	s.ctxCancelFunc()
 	// 关闭消息队列客户端
+	// 1. 停止接受新的websocket
+	// 2. 遍历所有link，下发，redirect指令，重试3次，打印log
+
 	return nil
 }
 

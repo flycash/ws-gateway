@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -97,7 +97,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		assert.NoError(t, lk.Close())
 		<-lk.HasClosed()
 
-		body, err := anypb.New(&wrapperspb.StringValue{Value: "Hello 船新IM"})
+		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "Hello 船新IM"})
 		assert.NoError(t, err)
 
 		apiMessage := &apiv1.Message{
@@ -149,7 +149,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 			Cmd:   apiv1.Message_COMMAND_TYPE_INVALID_UNSPECIFIED,
 			BizId: bizID,
 			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  &anypb.Any{},
+			Body:  []byte{},
 		}
 
 		clientErrorCh := make(chan error)
@@ -229,7 +229,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		serverConn, clientConn := newServerAndClientConn()
 		lk := newLink(t.Context(), "8", session.Session{BizID: bizID, UserID: 823}, serverConn)
 
-		body, err := anypb.New(&wrapperspb.StringValue{Value: "Hello 船新IM"})
+		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "Hello 船新IM"})
 		assert.NoError(t, err)
 		expectedAPIMessage := &apiv1.Message{
 			Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
@@ -278,7 +278,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		serverConn, clientConn := newServerAndClientConn()
 		lk := newLink(t.Context(), "8", session.Session{BizID: bizID, UserID: 623}, serverConn)
 
-		body, err := anypb.New(&wrapperspb.StringValue{Value: "Hello 船新IM"})
+		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "Hello 船新IM"})
 		assert.NoError(t, err)
 		expectedAPIMessage := &apiv1.Message{
 			Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
@@ -330,7 +330,7 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		assert.NoError(t, lk.Close())
 		<-lk.HasClosed()
 
-		body, err := anypb.New(&wrapperspb.StringValue{Value: "下推消息"})
+		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "下推消息"})
 		assert.NoError(t, err)
 
 		expectedMessage := &apiv1.PushMessage{
@@ -363,7 +363,7 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		lk := newLink(t.Context(), "11", session.Session{BizID: bizID, UserID: 1123}, serverConn)
 
 		msgID := int64(1)
-		body, _ := anypb.New(&wrapperspb.Int64Value{Value: msgID})
+		body, _ := protojson.Marshal(&wrapperspb.Int64Value{Value: msgID})
 		expectedResponseAPIMessage := &apiv1.Message{
 			Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_ACK,
 			BizId: bizID,
