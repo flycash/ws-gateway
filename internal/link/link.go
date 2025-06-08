@@ -220,6 +220,16 @@ func (l *Link) receiveLoop() {
 				continue
 			}
 
+			var wsErr wsutil.ClosedError
+			if errors.As(err, &wsErr) && wsErr.Code == ws.StatusNoStatusRcvd ||
+				wsErr.Code == ws.StatusGoingAway {
+				l.logger.Info("客户端关闭连接",
+					elog.String("linkID", l.id),
+					elog.Any("session", l.sess),
+				)
+				return
+			}
+
 			l.logger.Error("从客户端读取消息失败",
 				elog.String("linkID", l.id),
 				elog.Any("session", l.sess),

@@ -26,7 +26,7 @@ server:
   websocket:
     host: "0.0.0.0"
     port: 9002
-    serializer: "json"
+    serializer: "proto"
 
 backend:
   services:
@@ -40,3 +40,6 @@ retryStrategy:
   initRetryInterval: 1000000000
   maxRetryInterval: 3000000000
   maxRetries: 3
+
+linkEvent:
+  onReceiveTimeout: 3000000000

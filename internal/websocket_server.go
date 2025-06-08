@@ -141,8 +141,8 @@ func (s *WebSocketServer) acceptConn(l net.Listener) {
 func (s *WebSocketServer) handleConn(conn net.Conn) {
 	defer func() {
 		err := conn.Close()
-		if err != nil {
-			s.logger.Error("关闭Conn失败",
+		if err != nil && !errors.Is(err, net.ErrClosed) {
+			s.logger.Warn("关闭Conn失败",
 				elog.String("step", "handleConn"),
 				elog.FieldErr(err),
 			)
@@ -309,6 +309,9 @@ func (s *WebSocketServer) pushHandler(partition int, mqChan <-chan *mq.Message) 
 			if !ok {
 				return
 			}
+			s.logger.Info(s.Name(),
+				elog.String("step", fmt.Sprintf("%s-%d", "pushHandler", partition)),
+				elog.String("收到消息kafka消息", string(message.Value)))
 
 			msg := &apiv1.PushMessage{}
 			err := json.Unmarshal(message.Value, msg)

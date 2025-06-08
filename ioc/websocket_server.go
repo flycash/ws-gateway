@@ -3,9 +3,9 @@ package ioc
 import (
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal"
-	"gitee.com/flycash/ws-gateway/internal/codec"
 	"gitee.com/flycash/ws-gateway/internal/linkevent"
 	"gitee.com/flycash/ws-gateway/internal/upgrader"
+	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
@@ -24,6 +24,7 @@ func InitWebSocketServer(
 	partitions := econf.GetInt("pushMessageEvent.partitions")
 	topic := econf.GetString("pushMessageEvent.topic")
 
+	onReceiveTimeout := econf.GetDuration("linkEvent.onReceiveTimeout")
 	initRetryInterval := econf.GetDuration("retryStrategy.initRetryInterval")
 	maxRetryInterval := econf.GetDuration("retryStrategy.maxRetryInterval")
 	maxRetries := econf.GetInt("retryStrategy.maxRetries")
@@ -35,6 +36,7 @@ func InitWebSocketServer(
 		internal.WithLinkEventHandler(linkevent.NewHandler(
 			codecHelper,
 			InitBackendClientLoader(etcdClient),
+			onReceiveTimeout,
 			initRetryInterval, maxRetryInterval, int32(maxRetries))),
 	)
 }

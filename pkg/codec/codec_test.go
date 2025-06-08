@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	"gitee.com/flycash/ws-gateway/internal/codec"
+	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/proto"

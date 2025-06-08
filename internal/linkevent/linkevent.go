@@ -9,7 +9,7 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	"gitee.com/flycash/ws-gateway/internal/codec"
+	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gotomicro/ego/core/elog"
@@ -35,6 +35,8 @@ type Handler struct {
 	backendClientLoader BackendClientLoader
 	bizToClient         *syncx.Map[int64, apiv1.BackendServiceClient]
 
+	onReceiveTimeout time.Duration
+
 	initRetryInterval time.Duration
 	maxRetryInterval  time.Duration
 	maxRetries        int32
@@ -46,7 +48,8 @@ type Handler struct {
 func NewHandler(
 	codecHelper codec.Codec,
 	backendClientLoader BackendClientLoader,
-	initRetryInterval time.Duration,
+	onReceiveTimeout,
+	initRetryInterval,
 	maxRetryInterval time.Duration,
 	maxRetries int32,
 ) *Handler {
@@ -55,6 +58,7 @@ func NewHandler(
 		onFrontendSendMessageHandleFunc: make(map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error),
 		backendClientLoader:             backendClientLoader,
 		bizToClient:                     &syncx.Map[int64, apiv1.BackendServiceClient]{},
+		onReceiveTimeout:                onReceiveTimeout,
 		initRetryInterval:               initRetryInterval,
 		maxRetryInterval:                maxRetryInterval,
 		maxRetries:                      maxRetries,
@@ -70,7 +74,7 @@ func NewHandler(
 
 func (l *Handler) OnConnect(lk gateway.Link) error {
 	// 验证Auth包、协商序列化算法、加密算法、压缩算法
-	l.logger.Debug("Hello link = %s", elog.String("lid", lk.ID()))
+	l.logger.Info("Hello link = %s", elog.String("lid", lk.ID()))
 	return nil
 }
 
@@ -78,8 +82,9 @@ func (l *Handler) OnConnect(lk gateway.Link) error {
 func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 	msg := &apiv1.Message{}
 	err := l.codecHelper.Unmarshal(payload, msg)
-	if err != nil || msg.GetBizId() == 0 || msg.GetKey() == "" {
+	if err != nil || (msg.GetBizId() == 0 && msg.GetKey() == "") {
 		l.logger.Error("反序列化消息失败",
+			elog.Any("codecHelper", fmt.Sprintf("%#v", l.codecHelper)),
 			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("linkID", lk.ID()),
 			elog.Any("session", lk.Session()),
@@ -150,10 +155,38 @@ func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message
 }
 
 func (l *Handler) forwardToBusinessBackend(msg *apiv1.Message) (*apiv1.OnReceiveResponse, error) {
+	client, err := l.getBackendServiceClient(msg.GetBizId())
+	if err != nil {
+		return nil, err
+	}
 	retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(l.initRetryInterval, l.maxRetryInterval, l.maxRetries)
+	for {
+		ctx, cancelFunc := context.WithTimeout(context.Background(), l.onReceiveTimeout)
+		resp, err1 := client.OnReceive(ctx, &apiv1.OnReceiveRequest{
+			Key:  msg.GetKey(),
+			Body: msg.GetBody(),
+		})
+		cancelFunc()
+		if err1 == nil {
+			return resp, nil
+		}
+
+		l.logger.Warn("用业务GRPC客户端转发消息失败",
+			elog.String("step", "forwardToBusinessBackend"),
+			elog.FieldErr(err1),
+		)
+		duration, ok := retryStrategy.Next()
+		if !ok {
+			return nil, fmt.Errorf("%w: %w", err1, ErrMaxRetriesExceeded)
+		}
+		time.Sleep(duration)
+	}
+}
+
+func (l *Handler) getBackendServiceClient(bizID int64) (apiv1.BackendServiceClient, error) {
 	var loaded bool
 	for {
-		client, found := l.bizToClient.Load(msg.BizId)
+		client, found := l.bizToClient.Load(bizID)
 		if !found {
 			if !loaded {
 				// l.bizToClient 中未找到，并且未重新加载过，重新加载业务后端GRPC客户端
@@ -161,20 +194,9 @@ func (l *Handler) forwardToBusinessBackend(msg *apiv1.Message) (*apiv1.OnReceive
 				loaded = true
 				continue
 			}
-			return nil, fmt.Errorf("%w: %d", ErrUnknownBizID, msg.BizId)
+			return nil, fmt.Errorf("%w: %d", ErrUnknownBizID, bizID)
 		}
-		resp, err := client.OnReceive(context.Background(), &apiv1.OnReceiveRequest{
-			Key:  msg.GetKey(),
-			Body: msg.GetBody(),
-		})
-		if err == nil {
-			return resp, nil
-		}
-		duration, ok := retryStrategy.Next()
-		if !ok {
-			return nil, fmt.Errorf("%w: %w", err, ErrMaxRetriesExceeded)
-		}
-		time.Sleep(duration)
+		return client, nil
 	}
 }
 

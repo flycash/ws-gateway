@@ -13,10 +13,10 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	"gitee.com/flycash/ws-gateway/internal/codec"
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/internal/linkevent"
 	"gitee.com/flycash/ws-gateway/internal/linkevent/mocks"
+	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gobwas/ws/wsutil"
@@ -424,7 +424,7 @@ func newLinkEventHandler(t *testing.T, c codec.Codec, bizID int64, client apiv1.
 		clients := &syncx.Map[int64, apiv1.BackendServiceClient]{}
 		clients.Store(bizID, client)
 		return clients
-	}, time.Second, 3*time.Second, 3)
+	}, time.Second*3, time.Second, 3*time.Second, 3)
 }
 
 func newProtoCodec() codec.Codec {

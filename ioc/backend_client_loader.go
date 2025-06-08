@@ -3,12 +3,14 @@ package ioc
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"sync/atomic"
 
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/pkg/grpc"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/ego-component/eetcd"
+	"github.com/ego-component/eetcd/registry"
 	"github.com/gotomicro/ego/client/egrpc"
 	"github.com/gotomicro/ego/core/econf"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -40,7 +42,7 @@ func (b *BackendClientsLoader) Load() *syncx.Map[int64, apiv1.BackendServiceClie
 	grpcClients := grpc.NewClients(func(conn *egrpc.Component) apiv1.BackendServiceClient {
 		return apiv1.NewBackendServiceClient(conn)
 	})
-
+	registry.Load("").Build(registry.WithClientEtcd(b.etcdClient))
 	clients := &syncx.Map[int64, apiv1.BackendServiceClient]{}
 	for i := range svcInfos {
 		// 从注册中心获取业务后端的具体地址并创建相应的grpc客户端
@@ -55,6 +57,7 @@ func (b *BackendClientsLoader) UpdateBackendServiceInfo(value []byte) error {
 	var svcs []BackendServiceInfo
 	err := json.Unmarshal(value, &svcs)
 	if err == nil {
+		log.Printf("UpdateBackendServiceInfo, svcs: %#v\n", svcs)
 		// 更新业务后端服务信息
 		b.svcInfoPtr.Store(&svcs)
 	}

@@ -4,7 +4,7 @@ package ioc
 
 import (
 	gateway "gitee.com/flycash/ws-gateway"
-	"gitee.com/flycash/ws-gateway/internal/codec"
+	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 
 	"gitee.com/flycash/ws-gateway/ioc"
@@ -37,7 +37,6 @@ func convertToWebsocketComponents(
 	userToken *jwt.UserToken,
 	etcdClient *eetcd.Component,
 ) []gateway.Server {
-
 	configKey := "server.websocket"
 	config := econf.GetStringMap(configKey)
 	serializer, ok := config["serializer"].(string)
@@ -47,8 +46,8 @@ func convertToWebsocketComponents(
 	delete(config, "serializer")
 
 	codecMapping := map[string]codec.Codec{
-		"json":     codec.NewJSONCodec(),
-		"protobuf": codec.NewProtoCodec(),
+		"json":  codec.NewIgnoreAnyProtoFieldJSONCodec(),
+		"proto": codec.NewProtoCodec(),
 	}
 
 	s := make([]gateway.Server, 0, len(config))
