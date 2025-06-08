@@ -32,6 +32,13 @@ message Message {
   // biz + key 唯一
   string key = 3; // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
   bytes body = 4; // 业务相关的具体消息体
+
+  //  enum SerializeType {
+  //    SERIALIZE_TYPE_INVALID_UNSPECIFIED = 0;
+  //    SERIALIZE_TYPE_JSON = 1;
+  //    SERIALIZE_TYPE_PROTOBUF = 2;
+  //  }
+  //  SerializeType serialize_type = 5; // 序列化类型
 }
 
 // BackendService 是最终处理请求的业务后端要实现的服务，gateway在收到请求后
