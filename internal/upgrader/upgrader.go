@@ -108,7 +108,7 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			u.logger.Info("压缩协商成功",
 				elog.Any("negotiated_params", params))
 		} else {
-			u.logger.Info("压缩协商失败，降级到无压缩模式")
+			u.logger.Warn("压缩协商失败，降级到无压缩模式")
 		}
 	}
 

@@ -29,10 +29,13 @@ server:
     # 序列化协议：支持 json, proto
     serializer: "json"
     compression:
-      # 是否开启压缩
-      enabled: false
+      # 是否启用 permessage-deflate 压缩扩展
+      enabled: true
+      # 服务端压缩时使用的滑动窗口大小 取值范围: 8-15= 2^8 - 2^15 = 256B - 32KB
       serverMaxWindow: 15
+      # 客户端压缩时使用的滑动窗口大小 取值范围: 8-15= 2^8 - 2^15 = 256B - 32KB
       clientMaxWindow: 15
+      # 上下文接管: 在多条消息间保持压缩字典，利用消息间的重复内容 false 表示启用上下文接管
       serverNoContext: false
       clientNoContext: false
       level: 6

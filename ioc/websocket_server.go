@@ -25,7 +25,7 @@ func InitWebSocketServer(
 	etcdClient *eetcd.Component,
 ) gateway.Server {
 	var compressionConfig compression.Config
-	err := econf.UnmarshalKey("cache.local", &compressionConfig)
+	err := econf.UnmarshalKey("server.websocket.compression", &compressionConfig)
 	if err != nil {
 		panic(err)
 	}
