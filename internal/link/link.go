@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"time"
 
+	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsflate"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/gotomicro/ego/core/elog"
 )
@@ -56,11 +59,27 @@ type Link struct {
 	closeOnce sync.Once
 	closeErr  error
 
+	// 压缩相关
+	compressionEnabled bool
+	compressionState   *compression.State
+	messageState       *wsflate.MessageState
+
 	// 日志
 	logger *elog.Component
 }
 
 type Option func(*Link)
+
+// WithCompression 新增压缩选项
+func WithCompression(state *compression.State) Option {
+	return func(l *Link) {
+		if state != nil && state.Enabled {
+			l.compressionEnabled = true
+			l.compressionState = state
+			l.messageState = &wsflate.MessageState{}
+		}
+	}
+}
 
 func WithTimeouts(read, write, idle time.Duration) Option {
 	return func(l *Link) {
@@ -109,6 +128,13 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 		opt(l)
 	}
 
+	// 记录压缩状态
+	if l.compressionEnabled {
+		l.logger.Info("Link启用压缩模式",
+			elog.String("linkID", id),
+			elog.Any("compressionParams", l.compressionState.Parameters))
+	}
+
 	go l.sendLoop()
 	go l.receiveLoop()
 	return l
@@ -116,6 +142,30 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 
 func (l *Link) sendLoop() {
 	defer func() { _ = l.Close() }()
+	var sendFunc func(payload []byte) error
+	if l.compressionEnabled {
+		// 创建支持扩展的Writer
+		writer := wsutil.NewWriter(l.conn, ws.StateServerSide, ws.OpBinary)
+		writer.SetExtensions(l.messageState)
+		sendFunc = func(payload []byte) error {
+			// 写入消息内容（wsflate会自动处理压缩）
+			_, err := writer.Write(payload)
+			if err != nil {
+				return fmt.Errorf("写入压缩消息失败: %w", err)
+			}
+			// 刷新缓冲区
+			err = writer.Flush()
+			if err != nil {
+				return fmt.Errorf("刷新压缩消息失败: %w", err)
+			}
+
+			return nil
+		}
+	} else {
+		sendFunc = func(payload []byte) error {
+			return wsutil.WriteServerBinary(l.conn, payload)
+		}
+	}
 
 	for {
 		select {
@@ -125,7 +175,7 @@ func (l *Link) sendLoop() {
 			if !ok {
 				return
 			}
-			if !l.sendWithRetry(payload) {
+			if !l.sendWithRetry(payload, sendFunc) {
 				// 发送失败，关闭连接
 				return
 			}
@@ -133,7 +183,7 @@ func (l *Link) sendLoop() {
 	}
 }
 
-func (l *Link) sendWithRetry(payload []byte) bool {
+func (l *Link) sendWithRetry(payload []byte, send func(payload []byte) error) bool {
 	retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(
 		l.initRetryInterval, l.maxRetryInterval, l.maxRetries)
 
@@ -147,7 +197,7 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 
 		// 设置写超时并发送
 		_ = l.conn.SetWriteDeadline(time.Now().Add(l.writeTimeout))
-		err := wsutil.WriteServerBinary(l.conn, payload)
+		err := send(payload)
 		if err == nil {
 			// 发送成功
 			return true
@@ -187,13 +237,52 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 
 func (l *Link) receiveLoop() {
 	timer := time.NewTimer(l.idleTimeout)
-
+	var receive func() ([]byte, error)
 	defer func() {
 		timer.Stop()
 		close(l.receiveCh) // 由写端关闭
 		_ = l.Close()
 	}()
 
+	if l.compressionEnabled {
+		// 直接使用wsflate处理压缩消息
+		// 创建支持扩展的Reader
+		reader := &wsutil.Reader{
+			Source:     l.conn,
+			State:      ws.StateServerSide,
+			Extensions: []wsutil.RecvExtension{l.messageState},
+		}
+		receive = func() ([]byte, error) {
+			for {
+				header, err := reader.NextFrame()
+				if err != nil {
+					return nil, err
+				}
+				if header.OpCode.IsControl() {
+					// 处理控制帧，继续读取下一帧
+					continue
+				}
+				break
+			}
+			// 读取消息内容（wsflate会自动处理解压缩）
+			return io.ReadAll(reader)
+		}
+
+	} else {
+		receive = func() ([]byte, error) {
+			// 前端使用JSON或者Proto序列化时，ReadClientData都可以读取
+			payload, _, err := wsutil.ReadClientData(l.conn)
+			// 前端使用JSON序列化时，ReadClientBinary无法正常读取
+			// 前端使用Proto序列化时，ReadClientBinary可以正常读取
+			// payload, err := wsutil.ReadClientBinary(l.conn)
+			return payload, err
+		}
+	}
+
+	l.receiveLoopWithFunc(timer, receive)
+}
+
+func (l *Link) receiveLoopWithFunc(timer *time.Timer, receive func() ([]byte, error)) {
 	for {
 		// 检查连接状态
 		select {
@@ -210,11 +299,7 @@ func (l *Link) receiveLoop() {
 
 		// 设置读超时并读取消息
 		_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
-		// 前端使用JSON或者Proto序列化时，ReadClientData都可以读取
-		payload, _, err := wsutil.ReadClientData(l.conn)
-		// 前端使用JSON序列化时，ReadClientBinary无法正常读取
-		// 前端使用Proto序列化时，ReadClientBinary可以正常读取
-		// payload, err := wsutil.ReadClientBinary(l.conn)
+		payload, err := receive()
 		if err != nil {
 			//  检查是否为可重试的网络超时错误
 			var ne net.Error

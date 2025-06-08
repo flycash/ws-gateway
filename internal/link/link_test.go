@@ -7,12 +7,15 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/link"
+	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
+	"github.com/gobwas/ws/wsflate"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -189,6 +192,100 @@ func TestLink_Send(t *testing.T) {
 		assert.ErrorIs(t, lk.Send([]byte("Hello")), link.ErrLinkClosed)
 		assert.ErrorIs(t, <-clientErrorCh, io.EOF)
 	})
+}
+
+func TestLink_WithCompression(t *testing.T) {
+	t.Parallel()
+
+	t.Run("应该支持压缩配置", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+
+		compressionState := &compression.State{
+			Enabled: true,
+			Parameters: wsflate.Parameters{
+				ServerMaxWindowBits: 15,
+				ClientMaxWindowBits: 15,
+			},
+		}
+
+		lk := link.New(context.Background(), "test-compression",
+			session.Session{BizID: 1, UserID: 1},
+			serverConn,
+			link.WithCompression(compressionState),
+			link.WithTimeouts(time.Second, time.Second, time.Minute),
+		)
+
+		assert.Equal(t, "test-compression", lk.ID())
+		assert.NoError(t, lk.Close())
+	})
+
+	t.Run("应该处理nil压缩状态", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+
+		lk := link.New(context.Background(), "test-nil-compression",
+			session.Session{BizID: 1, UserID: 1},
+			serverConn,
+			link.WithCompression(nil),
+		)
+
+		assert.Equal(t, "test-nil-compression", lk.ID())
+		assert.NoError(t, lk.Close())
+	})
+}
+
+func TestLink_CompressionFallback(t *testing.T) {
+	t.Parallel()
+
+	t.Run("应该优雅处理压缩禁用情况", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, clientConn := newServerAndClientConn()
+
+		// 不启用压缩
+		lk := newLink(t.Context(), "test-no-compression", serverConn)
+
+		clientErrorCh := make(chan error)
+		go func() {
+			expected, err := wsutil.ReadServerBinary(clientConn)
+			clientErrorCh <- err
+			clientErrorCh <- wsutil.WriteClientBinary(clientConn, expected)
+		}()
+
+		expected := []byte("Hello without compression")
+		assert.NoError(t, lk.Send(expected))
+		assert.NoError(t, <-clientErrorCh)
+
+		assert.NoError(t, <-clientErrorCh)
+		actual, ok := <-lk.Receive()
+		assert.True(t, ok)
+		assert.Equal(t, expected, actual)
+
+		assert.NoError(t, lk.Close())
+	})
+}
+
+// 性能测试
+func BenchmarkLink_SendWithoutCompression(b *testing.B) {
+	serverConn, clientConn := newServerAndClientConn()
+	defer serverConn.Close()
+	defer clientConn.Close()
+
+	lk := newLink(context.Background(), "bench-no-compression", serverConn)
+	defer lk.Close()
+
+	testMessage := []byte(strings.Repeat("benchmark test message ", 100))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := lk.Send(testMessage)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
 }
 
 func newLink(ctx context.Context, id string, server net.Conn) gateway.Link {

@@ -8,6 +8,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/linkevent"
 	"gitee.com/flycash/ws-gateway/internal/upgrader"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
+	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
@@ -23,6 +24,12 @@ func InitWebSocketServer(
 	codecHelper codec.Codec,
 	etcdClient *eetcd.Component,
 ) gateway.Server {
+	var compressionConfig compression.Config
+	err := econf.UnmarshalKey("cache.local", &compressionConfig)
+	if err != nil {
+		panic(err)
+	}
+
 	partitions := econf.GetInt("pushMessageEvent.partitions")
 	topic := econf.GetString("pushMessageEvent.topic")
 
@@ -36,7 +43,7 @@ func InitWebSocketServer(
 	return internal.Load(configKey).Build(
 		internal.WithMQ(q, partitions, topic),
 		internal.WithCache(localCache),
-		internal.WithUpgrader(upgrader.New(localCache, userToken)),
+		internal.WithUpgrader(upgrader.New(localCache, userToken, compressionConfig)),
 		internal.WithLinkEventHandler(linkevent.NewHandler(
 			codecHelper,
 			InitBackendClientLoader(etcdClient),

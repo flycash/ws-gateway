@@ -149,7 +149,7 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 		}
 	}()
 
-	sess, err := s.upgrader.Upgrade(conn)
+	sess, compressionState, err := s.upgrader.Upgrade(conn)
 	if err != nil {
 		s.logger.Error("升级Conn失败",
 			elog.String("step", "handleConn"),
@@ -162,7 +162,7 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 	}
 
 	linkID := s.getLinkID(sess.BizID, sess.UserID)
-	lk := link.New(s.ctx, linkID, sess, conn)
+	lk := link.New(s.ctx, linkID, sess, conn, link.WithCompression(compressionState))
 	s.links.Store(linkID, lk)
 
 	defer func() {

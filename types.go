@@ -4,6 +4,7 @@ import (
 	"net"
 
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/gotomicro/ego/server"
 )
@@ -39,5 +40,5 @@ type LinkEventHandler interface {
 
 type Upgrader interface {
 	Name() string
-	Upgrade(conn net.Conn) (session.Session, error)
+	Upgrade(conn net.Conn) (session.Session, *compression.State, error)
 }

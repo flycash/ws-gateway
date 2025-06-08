@@ -28,6 +28,14 @@ server:
     port: 9002
     # 序列化协议：支持 json, proto
     serializer: "json"
+    compression:
+      # 是否开启压缩
+      enabled: false
+      serverMaxWindow: 15
+      clientMaxWindow: 15
+      serverNoContext: false
+      clientNoContext: false
+      level: 6
     encrypt: "AEC"
 
 backend:
