@@ -9,6 +9,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/upgrader"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/compression"
+	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
@@ -30,6 +31,17 @@ func InitWebSocketServer(
 		panic(err)
 	}
 
+	var encryptConfig encrypt.Config
+	err = econf.UnmarshalKey("server.websocket.encrypt", &encryptConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	encryptor, err := encrypt.NewEncryptor(encryptConfig)
+	if err != nil {
+		panic(err)
+	}
+
 	partitions := econf.GetInt("pushMessageEvent.partitions")
 	topic := econf.GetString("pushMessageEvent.topic")
 
@@ -38,7 +50,7 @@ func InitWebSocketServer(
 	maxRetryInterval := econf.GetDuration("retryStrategy.maxRetryInterval")
 	maxRetries := econf.GetInt("retryStrategy.maxRetries")
 
-	log.Printf("codec = %#v\n", codecHelper)
+	log.Printf("codec = %#v, encryptor = %#v\n", codecHelper, encryptor)
 
 	return internal.Load(configKey).Build(
 		internal.WithMQ(q, partitions, topic),
@@ -46,6 +58,7 @@ func InitWebSocketServer(
 		internal.WithUpgrader(upgrader.New(localCache, userToken, compressionConfig)),
 		internal.WithLinkEventHandler(linkevent.NewHandler(
 			codecHelper,
+			encryptor,
 			InitBackendClientLoader(etcdClient),
 			onReceiveTimeout,
 			initRetryInterval, maxRetryInterval, int32(maxRetries))),

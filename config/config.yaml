@@ -39,7 +39,13 @@ server:
       serverNoContext: false
       clientNoContext: false
       level: 6
-    encrypt: "AEC"
+    # 消息体加密配置
+    encrypt:
+      # 是否启用
+      enabled: true
+      algorithm: "aes"  # 支持: aes, chacha20poly1305
+      key: "1234567890abcdef1234567890abcdef"  # ChaCha20/AES-256需要32字节密钥
+      iv: ""  # 初始化向量，留空时自动生成
 
 backend:
   services:

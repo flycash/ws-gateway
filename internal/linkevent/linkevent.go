@@ -10,6 +10,7 @@ import (
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
+	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gotomicro/ego/core/elog"
@@ -29,6 +30,7 @@ type BackendClientLoader func() *syncx.Map[int64, apiv1.BackendServiceClient]
 
 type Handler struct {
 	codecHelper                     codec.Codec
+	encryptor                       encrypt.Encryptor
 	onFrontendSendMessageHandleFunc map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error
 
 	backendClientLoader BackendClientLoader
@@ -46,6 +48,7 @@ type Handler struct {
 // NewHandler 创建一个Link生命周期事件管理器
 func NewHandler(
 	codecHelper codec.Codec,
+	encryptor encrypt.Encryptor,
 	backendClientLoader BackendClientLoader,
 	onReceiveTimeout,
 	initRetryInterval,
@@ -54,6 +57,7 @@ func NewHandler(
 ) *Handler {
 	h := &Handler{
 		codecHelper:                     codecHelper,
+		encryptor:                       encryptor,
 		onFrontendSendMessageHandleFunc: make(map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error),
 		backendClientLoader:             backendClientLoader,
 		bizToClient:                     &syncx.Map[int64, apiv1.BackendServiceClient]{},
@@ -92,6 +96,18 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageFormat)
 	}
 
+	// 解密消息体
+	decryptedBody, err := l.encryptor.Decrypt(msg.GetBody())
+	if err != nil {
+		l.logger.Error("解密消息体失败",
+			elog.String("step", "OnBackendPushMessage"),
+			elog.String("encryptor", l.encryptor.Name()),
+			elog.FieldErr(err),
+		)
+		return fmt.Errorf("解密消息体失败: %w", err)
+	}
+	msg.Body = decryptedBody
+
 	l.logger.Info("OnFrontendSendMessage",
 		elog.String("step", "前端发送的消息(上行消息+对下行消息的响应)"),
 		elog.String("消息体", msg.String()))
@@ -121,10 +137,23 @@ func (l *Handler) handleOnHeartbeatCmd(lk gateway.Link, msg *apiv1.Message) erro
 }
 
 func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
+	// 加密消息体后发送给前端
+	encryptedBody, err := l.encryptor.Encrypt(msg.GetBody())
+	if err != nil {
+		l.logger.Error("加密消息体失败",
+			elog.String("step", "push"),
+			elog.String("encryptor", l.encryptor.Name()),
+			elog.FieldErr(err),
+		)
+		return fmt.Errorf("加密消息体失败: %w", err)
+	}
+	msg.Body = encryptedBody
+
 	payload, err := l.codecHelper.Marshal(msg)
 	if err != nil {
 		l.logger.Error("序列化网关消息失败",
 			elog.String("step", "push"),
+			elog.String("codecHelper", l.codecHelper.Name()),
 			elog.String("消息体", msg.String()),
 			elog.FieldErr(err),
 		)
@@ -207,6 +236,7 @@ func (l *Handler) getBackendServiceClient(bizID int64) (apiv1.BackendServiceClie
 func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveResponse) error {
 	// 将业务后端返回的“上行消息”的响应直接封装为body
 	respBody, _ := l.codecHelper.Marshal(resp)
+
 	err := l.push(lk, &apiv1.Message{
 		Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
 		BizId: resp.GetBizId(),
@@ -228,6 +258,7 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 func (l *Handler) handleDownstreamAckCmd(_ gateway.Link, _ *apiv1.Message) error {
 	// 这里可以考虑通知业务后端下行消息的发送结果 如 使用 BackendService.OnPushed 方法
 	// 也可以考虑使用消息队列通知业务后端，规避GRPC客户端的各种重试、超时问题，并保证高吞吐量
+	// 开启body加密后，需要先解密再调用业务后端
 	return nil
 }
 

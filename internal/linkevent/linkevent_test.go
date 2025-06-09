@@ -17,6 +17,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/linkevent"
 	"gitee.com/flycash/ws-gateway/internal/linkevent/mocks"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
+	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gobwas/ws/wsutil"
@@ -420,7 +421,9 @@ func assertClientReceivedPushMessage(t *testing.T, clientErrorCh chan error, cli
 
 func newLinkEventHandler(t *testing.T, c codec.Codec, bizID int64, client apiv1.BackendServiceClient) *linkevent.Handler {
 	t.Helper()
-	return linkevent.NewHandler(c, func() *syncx.Map[int64, apiv1.BackendServiceClient] {
+	// 测试中使用none加密器（不加密）
+	encryptor := encrypt.NewNoneEncryptor()
+	return linkevent.NewHandler(c, encryptor, func() *syncx.Map[int64, apiv1.BackendServiceClient] {
 		clients := &syncx.Map[int64, apiv1.BackendServiceClient]{}
 		clients.Store(bizID, client)
 		return clients
