@@ -12,13 +12,6 @@ type Config struct {
 	Level           int  `yaml:"level"`
 }
 
-// State 压缩状态，包含协商后的扩展信息
-type State struct {
-	Enabled    bool
-	Extension  *wsflate.Extension
-	Parameters wsflate.Parameters
-}
-
 // ToParameters 将配置转换为wsflate参数
 func (c *Config) ToParameters() wsflate.Parameters {
 	return wsflate.Parameters{
@@ -27,4 +20,11 @@ func (c *Config) ToParameters() wsflate.Parameters {
 		ServerNoContextTakeover: c.ServerNoContext,
 		ClientNoContextTakeover: c.ClientNoContext,
 	}
+}
+
+// State 压缩状态，包含协商后的扩展信息
+type State struct {
+	Enabled    bool
+	Extension  *wsflate.Extension
+	Parameters wsflate.Parameters
 }

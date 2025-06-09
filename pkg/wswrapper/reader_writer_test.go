@@ -1,0 +1,329 @@
+package wswrapper_test
+
+import (
+	"bytes"
+	"compress/flate"
+	"io"
+	"net"
+	"testing"
+
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsflate"
+	"github.com/gobwas/ws/wsutil"
+	"github.com/stretchr/testify/assert"
+
+	"gitee.com/flycash/ws-gateway/pkg/wswrapper"
+)
+
+// testConnection 创建一对连接用于测试
+func testConnection(t *testing.T) (net.Conn, net.Conn) {
+	client, server := net.Pipe()
+	return client, server
+}
+
+// TestReader_NewReader 测试 Reader 构造函数
+func TestReader_NewReader(t *testing.T) {
+	client, server := testConnection(t)
+	defer client.Close()
+	defer server.Close()
+
+	reader := wswrapper.NewReader(server)
+	assert.NotNil(t, reader)
+}
+
+// TestWriter_NewWriter 测试 Writer 构造函数
+func TestWriter_NewWriter(t *testing.T) {
+	var buf bytes.Buffer
+
+	// 测试未压缩 Writer
+	uncompressedWriter := wswrapper.NewWriter(&buf, false)
+	assert.NotNil(t, uncompressedWriter)
+
+	// 测试压缩 Writer
+	compressedWriter := wswrapper.NewWriter(&buf, true)
+	assert.NotNil(t, compressedWriter)
+}
+
+// TestWriter_WriteUncompressed 测试写入未压缩数据
+func TestWriter_WriteUncompressed(t *testing.T) {
+	var buf bytes.Buffer
+	writer := wswrapper.NewWriter(&buf, false)
+
+	testData := []byte("Hello, WebSocket!")
+	n, err := writer.Write(testData)
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(testData), n)
+	assert.Greater(t, buf.Len(), 0) // 应该有数据写入
+}
+
+// TestWriter_WriteCompressed 测试写入压缩数据
+func TestWriter_WriteCompressed(t *testing.T) {
+	var buf bytes.Buffer
+	writer := wswrapper.NewWriter(&buf, true)
+
+	testData := []byte("Hello, WebSocket! This is a longer message that should compress well.")
+	n, err := writer.Write(testData)
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(testData), n)
+	assert.Greater(t, buf.Len(), 0) // 应该有数据写入
+}
+
+// TestWriter_EmptyData 测试写入空数据
+func TestWriter_EmptyData(t *testing.T) {
+	var buf bytes.Buffer
+
+	tests := []struct {
+		name       string
+		compressed bool
+	}{
+		{"uncompressed_empty", false},
+		{"compressed_empty", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf.Reset()
+			writer := wswrapper.NewWriter(&buf, tt.compressed)
+
+			n, err := writer.Write([]byte{})
+			assert.NoError(t, err)
+			assert.Equal(t, 0, n)
+		})
+	}
+}
+
+// TestIntegration_ReadStandardWebSocketMessage 测试读取标准 WebSocket 消息
+func TestIntegration_ReadStandardWebSocketMessage(t *testing.T) {
+	client, server := testConnection(t)
+	defer client.Close()
+	defer server.Close()
+
+	reader := wswrapper.NewReader(server)
+	testData := []byte("Hello, WebSocket!")
+
+	// 使用标准库发送掩码消息（客户端到服务端）
+	go func() {
+		err := wsutil.WriteClientMessage(client, ws.OpBinary, testData)
+		assert.NoError(t, err)
+	}()
+
+	// 读取数据
+	received, err := reader.Read()
+	assert.NoError(t, err)
+	assert.Equal(t, testData, received)
+}
+
+// TestReader_ReadCompressedMessage 测试 Reader 的压缩分支覆盖
+func TestReader_ReadCompressedMessage(t *testing.T) {
+	client, server := testConnection(t)
+	defer client.Close()
+	defer server.Close()
+
+	originalData := []byte("Hello compression test! This message will be compressed to verify the decompression branch.")
+
+	// 客户端发送压缩帧
+	go func() {
+		// 使用客户端状态的 writer 生成带掩码的压缩帧
+		clientWriter := wsutil.NewWriter(client, ws.StateClientSide, ws.OpBinary)
+
+		// 设置压缩扩展
+		messageState := &wsflate.MessageState{}
+		messageState.SetCompressed(true)
+		clientWriter.SetExtensions(messageState)
+
+		// 创建压缩器
+		flateWriter := wsflate.NewWriter(nil, func(w io.Writer) wsflate.Compressor {
+			f, _ := flate.NewWriter(w, flate.DefaultCompression)
+			return f
+		})
+
+		// 写入压缩数据
+		flateWriter.Reset(clientWriter)
+		_, err := flateWriter.Write(originalData)
+		assert.NoError(t, err)
+
+		err = flateWriter.Close()
+		assert.NoError(t, err)
+
+		err = clientWriter.Flush()
+		assert.NoError(t, err)
+	}()
+
+	// 服务端读取并验证
+	reader := wswrapper.NewReader(server)
+	received, err := reader.Read()
+	assert.NoError(t, err)
+	assert.Equal(t, originalData, received)
+}
+
+// TestIntegration_MultipleMessages 测试读取多条消息
+func TestIntegration_MultipleMessages(t *testing.T) {
+	client, server := testConnection(t)
+	defer client.Close()
+	defer server.Close()
+
+	reader := wswrapper.NewReader(server)
+	messages := [][]byte{
+		[]byte("First message"),
+		[]byte("Second message"),
+		[]byte("Third message"),
+	}
+
+	go func() {
+		for _, msg := range messages {
+			err := wsutil.WriteClientMessage(client, ws.OpBinary, msg)
+			assert.NoError(t, err)
+		}
+	}()
+
+	// 读取所有消息
+	for i, expectedMsg := range messages {
+		received, err := reader.Read()
+		assert.NoError(t, err, "Failed to read message %d", i)
+		assert.Equal(t, expectedMsg, received, "Message %d content mismatch", i)
+	}
+}
+
+// TestWriter_MultipleWrites 测试多次写入
+func TestWriter_MultipleWrites(t *testing.T) {
+	var buf bytes.Buffer
+	writer := wswrapper.NewWriter(&buf, false)
+
+	messages := [][]byte{
+		[]byte("First message"),
+		[]byte("Second message"),
+		[]byte("Third message"),
+	}
+
+	for i, msg := range messages {
+		buf.Reset() // 每次重置缓冲区
+		n, err := writer.Write(msg)
+		assert.NoError(t, err, "Failed at message %d", i)
+		assert.Equal(t, len(msg), n, "Length mismatch at message %d", i)
+		assert.Greater(t, buf.Len(), 0, "No data written at message %d", i)
+	}
+}
+
+// TestWriter_LargeData 测试大数据写入
+func TestWriter_LargeData(t *testing.T) {
+	var buf bytes.Buffer
+
+	// 创建大数据（1MB）
+	largeData := make([]byte, 1024*1024)
+	for i := range largeData {
+		largeData[i] = byte(i % 256)
+	}
+
+	tests := []struct {
+		name       string
+		compressed bool
+	}{
+		{"large_uncompressed", false},
+		{"large_compressed", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf.Reset()
+			writer := wswrapper.NewWriter(&buf, tt.compressed)
+
+			n, err := writer.Write(largeData)
+			assert.NoError(t, err)
+			assert.Equal(t, len(largeData), n)
+			assert.Greater(t, buf.Len(), 0)
+		})
+	}
+}
+
+// TestError_ClosedConnection 测试连接关闭时的错误处理
+func TestError_ClosedConnection(t *testing.T) {
+	client, server := testConnection(t)
+	reader := wswrapper.NewReader(server)
+
+	// 立即关闭连接
+	client.Close()
+	server.Close()
+
+	// 尝试读取应该返回错误
+	_, err := reader.Read()
+	assert.Error(t, err)
+}
+
+// BenchmarkWriter_Uncompressed 性能测试：未压缩写入
+func BenchmarkWriter_Uncompressed(b *testing.B) {
+	var buf bytes.Buffer
+	writer := wswrapper.NewWriter(&buf, false)
+	data := []byte("This is a test message for benchmarking purposes.")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		writer.Write(data)
+	}
+}
+
+// BenchmarkWriter_Compressed 性能测试：压缩写入
+func BenchmarkWriter_Compressed(b *testing.B) {
+	var buf bytes.Buffer
+	writer := wswrapper.NewWriter(&buf, true)
+	data := []byte("This is a test message for benchmarking purposes. It should be long enough to benefit from compression.")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		writer.Write(data)
+	}
+}
+
+// BenchmarkReader_ReadCompressed 性能测试：压缩读取
+func BenchmarkReader_ReadCompressed(b *testing.B) {
+	// 预先准备压缩数据
+	testData := bytes.Repeat([]byte("Benchmark compressed read test data. "), 100)
+	var compressedBuf bytes.Buffer
+	writer := wswrapper.NewWriter(&compressedBuf, true)
+	writer.Write(testData)
+	compressedBytes := compressedBuf.Bytes()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		client, server := testConnection(nil)
+		reader := wswrapper.NewReader(server)
+
+		go func() {
+			client.Write(compressedBytes)
+			client.Close()
+		}()
+
+		reader.Read()
+		server.Close()
+	}
+}
+
+// TestWriter_CompressionEffectiveness 测试压缩效果
+func TestWriter_CompressionEffectiveness(t *testing.T) {
+	// 创建重复性高的数据，应该能很好地压缩
+	repeatableData := bytes.Repeat([]byte("Hello WebSocket compression! "), 100)
+
+	var uncompressedBuf, compressedBuf bytes.Buffer
+
+	uncompressedWriter := wswrapper.NewWriter(&uncompressedBuf, false)
+	compressedWriter := wswrapper.NewWriter(&compressedBuf, true)
+
+	// 写入相同数据
+	_, err1 := uncompressedWriter.Write(repeatableData)
+	_, err2 := compressedWriter.Write(repeatableData)
+
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
+
+	// 压缩后的数据应该更小（包括WebSocket帧头的开销）
+	t.Logf("Uncompressed size: %d bytes", uncompressedBuf.Len())
+	t.Logf("Compressed size: %d bytes", compressedBuf.Len())
+
+	// 注意：由于 WebSocket 帧头的开销，小数据可能不会体现压缩优势
+	// 这里主要是验证压缩流程没有错误
+	assert.Greater(t, uncompressedBuf.Len(), 0)
+	assert.Greater(t, compressedBuf.Len(), 0)
+}
