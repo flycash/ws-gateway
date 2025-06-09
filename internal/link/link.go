@@ -51,7 +51,8 @@ type Link struct {
 	// 压缩相关
 	compressionEnabled bool
 	compressionState   *compression.State
-	messageState       *wsflate.MessageState
+	readerMessageState *wsflate.MessageState // reader专用
+	writerMessageState *wsflate.MessageState // writer专用
 
 	// 重试策略
 	initRetryInterval time.Duration
@@ -91,7 +92,8 @@ func WithCompression(state *compression.State) Option {
 		if state != nil && state.Enabled {
 			l.compressionEnabled = true
 			l.compressionState = state
-			l.messageState = &wsflate.MessageState{}
+			l.readerMessageState = &wsflate.MessageState{}
+			l.writerMessageState = &wsflate.MessageState{}
 		}
 	}
 }
@@ -138,12 +140,9 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 	}
 
 	// 根据是否启用压缩设置扩展
-	if l.compressionEnabled && l.messageState != nil {
-		l.reader.Extensions = []wsutil.RecvExtension{l.messageState}
-		l.writer.SetExtensions(l.messageState)
-		l.logger.Info("Link启用压缩模式",
-			elog.String("linkID", id),
-			elog.Any("compressionParams", l.compressionState.Parameters))
+	if l.compressionEnabled {
+		l.reader.Extensions = []wsutil.RecvExtension{l.readerMessageState}
+		l.writer.SetExtensions(l.writerMessageState)
 	}
 
 	go l.sendLoop()

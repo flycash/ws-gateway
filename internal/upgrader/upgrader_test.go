@@ -116,10 +116,15 @@ func createTestUpgrader(cache ecache.Cache, token *jwt.UserToken, compressionCon
 func mockWebSocketConnection(t *testing.T, requestURI string, supportCompression bool) (serverConn net.Conn, clientConn net.Conn) {
 	serverConn, clientConn = net.Pipe()
 
+	// 使用context控制goroutine生命周期
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // 确保函数返回时取消context
+
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				t.Logf("客户端协程panic: %v", r)
+				// 不使用t.Logf，避免竞态
+				fmt.Printf("客户端协程panic: %v\n", r)
 			}
 		}()
 
@@ -136,25 +141,33 @@ func mockWebSocketConnection(t *testing.T, requestURI string, supportCompression
 
 		req += crlfSeparator
 
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		_, err := clientConn.Write([]byte(req))
 		if err != nil {
-			t.Logf("客户端写入请求失败: %v", err)
+			// 不使用t.Logf，避免竞态
 			return
 		}
 
 		buffer := make([]byte, 1024)
 		n, err := clientConn.Read(buffer)
 		if err != nil {
-			t.Logf("客户端读取响应失败: %v", err)
+			// 不使用t.Logf，避免竞态
 			return
 		}
 
 		response := string(buffer[:n])
 		if !strings.Contains(response, "101 Switching Protocols") {
-			t.Logf("意外的响应: %s", response)
+			// 不使用t.Logf，避免竞态
 		}
 	}()
 
+	// 给goroutine一点时间启动
+	time.Sleep(10 * time.Millisecond)
 	return serverConn, clientConn
 }
 
@@ -481,11 +494,16 @@ func TestUpgrader_CompressionNegotiation_Disabled(t *testing.T) {
 func createRealWebSocketConnection(t *testing.T, requestURI string, supportCompression bool) (serverConn net.Conn, clientConn net.Conn) {
 	serverConn, clientConn = net.Pipe()
 
+	// 使用context控制goroutine生命周期
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // 确保函数返回时取消context
+
 	// 在客户端协程中发送完整的WebSocket升级请求
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				t.Logf("客户端协程panic: %v", r)
+				// 不使用t.Logf，避免竞态
+				fmt.Printf("客户端协程panic: %v\n", r)
 			}
 		}()
 
@@ -504,9 +522,15 @@ func createRealWebSocketConnection(t *testing.T, requestURI string, supportCompr
 
 		req += crlfSeparator
 
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		_, err := clientConn.Write([]byte(req))
 		if err != nil {
-			t.Logf("客户端写入请求失败: %v", err)
+			// 不使用t.Logf，避免竞态
 			return
 		}
 
@@ -514,19 +538,22 @@ func createRealWebSocketConnection(t *testing.T, requestURI string, supportCompr
 		buffer := make([]byte, 2048)
 		n, err := clientConn.Read(buffer)
 		if err != nil {
-			t.Logf("客户端读取响应失败: %v", err)
+			// 不使用t.Logf，避免竞态
 			return
 		}
 
 		response := string(buffer[:n])
-		t.Logf("服务端响应: %s", response)
+		// 在生产环境中应该使用日志库，这里只是测试
+		_ = response
 
 		// 验证响应包含压缩扩展协商结果
 		if supportCompression && !strings.Contains(response, "Sec-WebSocket-Extensions") {
-			t.Logf("警告：响应中没有找到压缩扩展头部")
+			// 不使用t.Logf，避免竞态
 		}
 	}()
 
+	// 给goroutine一点时间启动
+	time.Sleep(10 * time.Millisecond)
 	return serverConn, clientConn
 }
 
@@ -666,12 +693,31 @@ func TestUpgrader_Upgrade_InvalidHTTPRequest(t *testing.T) {
 	defer clientConn.Close()
 
 	// 发送无效的HTTP请求
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // 确保函数返回时取消context
+
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// 不使用t.Logf，避免竞态
+				fmt.Printf("客户端协程panic: %v\n", r)
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		_, err := clientConn.Write([]byte("INVALID HTTP REQUEST\r\n\r\n"))
 		if err != nil {
-			t.Logf("写入无效请求失败: %v", err)
+			// 不使用t.Logf，避免竞态
 		}
 	}()
+
+	// 给goroutine一点时间启动
+	time.Sleep(10 * time.Millisecond)
 
 	sess, compressionState, err := u.Upgrade(serverConn)
 
