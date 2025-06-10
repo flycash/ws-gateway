@@ -439,13 +439,13 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		}
 
 		// 发送ACK消息应该能成功处理
-		assert.NoError(t, handler.OnFrontendSendMessage(lk, s.marshalMessage(ackMessage)))
+		assert.NoError(t, handler.OnFrontendSendMessage(lk, s.marshalMessage(t, ackMessage)))
 	})
 }
 
-func (s *LinkEventHandlerSuite) marshalMessage(msg *apiv1.Message) []byte {
+func (s *LinkEventHandlerSuite) marshalMessage(t *testing.T, msg *apiv1.Message) []byte {
 	payload, err := s.c.Marshal(msg)
-	s.NoError(err)
+	assert.NoError(t, err)
 	return payload
 }
 

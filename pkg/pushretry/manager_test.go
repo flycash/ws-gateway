@@ -35,7 +35,7 @@ func (s *ManagerTestSuite) TestNewManager() {
 
 	manager := pushretry.NewManager(time.Minute, 3, pushFunc)
 	s.NotNil(manager)
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 }
 
 func (s *ManagerTestSuite) TestStart() {
@@ -67,7 +67,7 @@ func (s *ManagerTestSuite) TestStart() {
 
 	// 启动重传任务
 	manager.Start("test-key-1", lk, msg)
-	s.Equal(1, manager.GetStats())
+	s.Equal(int64(1), manager.GetStats())
 
 	// 等待重传触发
 	time.Sleep(100 * time.Millisecond)
@@ -102,11 +102,11 @@ func (s *ManagerTestSuite) TestStop() {
 
 	// 启动重传任务
 	manager.Start("test-key-2", lk, msg)
-	s.Equal(1, manager.GetStats())
+	s.Equal(int64(1), manager.GetStats())
 
 	// 立即停止
 	manager.Stop("test-key-2")
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 
 	// 等待一段时间，确认没有重传
 	time.Sleep(100 * time.Millisecond)
@@ -150,15 +150,15 @@ func (s *ManagerTestSuite) TestStopByLinkID() {
 
 	manager.Start("test-key-3-1", lk1, msg1)
 	manager.Start("test-key-3-2", lk2, msg2)
-	s.Equal(2, manager.GetStats())
+	s.Equal(int64(2), manager.GetStats())
 
 	// 停止lk1的所有任务
 	manager.StopByLinkID(lk1.ID())
-	s.Equal(1, manager.GetStats())
+	s.Equal(int64(1), manager.GetStats())
 
 	// 停止lk2的所有任务
 	manager.StopByLinkID(lk2.ID())
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 }
 
 func (s *ManagerTestSuite) TestMaxRetries() {
@@ -188,13 +188,13 @@ func (s *ManagerTestSuite) TestMaxRetries() {
 	}
 
 	manager.Start("test-key-4", lk, msg)
-	s.Equal(1, manager.GetStats())
+	s.Equal(int64(1), manager.GetStats())
 
 	// 等待足够长的时间让重传达到最大次数
 	time.Sleep(300 * time.Millisecond)
 
 	// 任务应该被自动清理
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 
 	// 验证重传次数不超过最大值
 	mu.Lock()
@@ -221,11 +221,11 @@ func (s *ManagerTestSuite) TestPushFuncError() {
 	}
 
 	manager.Start("test-key-5", lk, msg)
-	s.Equal(1, manager.GetStats())
+	s.Equal(int64(1), manager.GetStats())
 
 	// 等待推送失败导致任务被清理
 	time.Sleep(100 * time.Millisecond)
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 }
 
 func (s *ManagerTestSuite) TestClose() {
@@ -253,15 +253,15 @@ func (s *ManagerTestSuite) TestClose() {
 	// 启动多个重传任务
 	manager.Start("test-key-6-1", lk, msg)
 	manager.Start("test-key-6-2", lk, msg)
-	s.Equal(2, manager.GetStats())
+	s.Equal(int64(2), manager.GetStats())
 
 	// 关闭管理器
 	manager.Close()
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 
 	// 关闭后启动新任务应该被忽略
 	manager.Start("test-key-6-3", lk, msg)
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 }
 
 func (s *ManagerTestSuite) TestDuplicateKey() {
@@ -295,11 +295,11 @@ func (s *ManagerTestSuite) TestDuplicateKey() {
 
 	// 启动第一个任务
 	manager.Start("duplicate-key", lk, msg1)
-	s.Equal(1, manager.GetStats())
+	s.Equal(int64(1), manager.GetStats())
 
-	// 启动相同key的第二个任务，应该替换第一个
+	// 启动相同key的第二个任务会被忽略
 	manager.Start("duplicate-key", lk, msg2)
-	s.Equal(1, manager.GetStats())
+	s.Equal(int64(1), manager.GetStats())
 }
 
 func (s *ManagerTestSuite) TestConcurrentOperations() {
@@ -331,7 +331,7 @@ func (s *ManagerTestSuite) TestConcurrentOperations() {
 	}
 	wg.Wait()
 
-	s.Equal(10, manager.GetStats())
+	s.Equal(int64(10), manager.GetStats())
 
 	// 并发停止任务
 	for i := 0; i < 10; i++ {
@@ -344,7 +344,7 @@ func (s *ManagerTestSuite) TestConcurrentOperations() {
 	}
 	wg.Wait()
 
-	s.Equal(0, manager.GetStats())
+	s.Equal(int64(0), manager.GetStats())
 }
 
 func (s *ManagerTestSuite) createTestLink(linkID string) gateway.Link {

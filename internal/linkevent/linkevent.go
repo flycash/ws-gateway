@@ -344,7 +344,7 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 // handleDownstreamAckCmd 处理前端发来的"对下行消息的确认"请求
 func (l *Handler) handleDownstreamAckCmd(lk gateway.Link, msg *apiv1.Message) error {
 	// 停止重传任务
-	l.pushRetryManager.Stop(msg.GetKey())
+	l.pushRetryManager.Stop(l.retryKey(msg.GetBizId(), msg.GetKey()))
 
 	// 这里可以考虑通知业务后端下行消息的发送结果 如 使用 BackendService.OnPushed 方法
 	// 也可以考虑使用消息队列通知业务后端，规避GRPC客户端的各种重试、超时问题，并保证高吞吐量
@@ -356,6 +356,10 @@ func (l *Handler) handleDownstreamAckCmd(lk gateway.Link, msg *apiv1.Message) er
 		elog.String("msg", msg.String()),
 	)
 	return nil
+}
+
+func (l *Handler) retryKey(bizID int64, key string) string {
+	return fmt.Sprintf("%d-%s", bizID, key)
 }
 
 // OnBackendPushMessage 统一处理各个业务后端发来的下推请求
@@ -381,15 +385,15 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 	}
 
 	// 启动重传任务
-	l.pushRetryManager.Start(msg.GetKey(), lk, message)
+	l.pushRetryManager.Start(l.retryKey(msg.GetBizId(), msg.GetKey()), lk, message)
 
 	return nil
 }
 
 func (l *Handler) OnDisconnect(lk gateway.Link) error {
+	// 退出清理操作
 	// 清理该连接的重传任务
 	l.pushRetryManager.StopByLinkID(lk.ID())
-	// 退出清理操作
 	l.logger.Info("Goodbye link = " + lk.ID())
 	return nil
 }
