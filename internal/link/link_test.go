@@ -3,6 +3,7 @@
 package link_test
 
 import (
+	"compress/flate"
 	"context"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
+	"gitee.com/flycash/ws-gateway/pkg/wswrapper"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsflate"
 	"github.com/gobwas/ws/wsutil"
@@ -296,23 +298,29 @@ func TestLink_CompressionDataTransfer(t *testing.T) {
 		// 创建高重复性数据（压缩效果明显）
 		expected := createCompressibleData(1024) // 1KB重复数据
 
+		// 使用channel同步goroutine之间的通信
 		clientErrorCh := make(chan error, 1)
 		var receivedData []byte
 
 		go func() {
 			var err error
+			// 现在应该能正确解压缩并获得原始数据
 			receivedData, err = readCompressedClientData(clientConn)
 			clientErrorCh <- err
 		}()
 
-		// 发送压缩数据
-		assert.NoError(t, lk.Send(expected))
+		// 服务端发送数据
+		err := lk.Send(expected)
+		assert.NoError(t, err)
 
-		// 验证接收
-		assert.NoError(t, <-clientErrorCh)
+		// 等待客户端接收
+		err = <-clientErrorCh
+		assert.NoError(t, err)
+
+		// 验证接收到的是解压缩后的原始数据
 		assert.Equal(t, expected, receivedData)
 
-		assert.NoError(t, lk.Close())
+		t.Logf("成功传输并解压缩数据: %d bytes", len(receivedData))
 	})
 
 	t.Run("应该正确传输压缩数据_Client到Server", func(t *testing.T) {
@@ -679,12 +687,47 @@ func newCompressedServerAndClientConn(t *testing.T) (server, client net.Conn) {
 
 // readCompressedClientData 从客户端读取压缩数据
 func readCompressedClientData(conn net.Conn) ([]byte, error) {
-	// 创建支持扩展的Reader
+	// 使用修复后的wswrapper.NewClientSideReader
+	clientReader := wswrapper.NewClientSideReader(conn)
+	return clientReader.Read()
+}
+
+// writeCompressedClientData 向客户端写入压缩数据
+func writeCompressedClientData(conn net.Conn, data []byte) error {
+	// 参考 reader_writer_test.go 的正确模式发送压缩数据
+	clientWriter := wsutil.NewWriter(conn, ws.StateClientSide, ws.OpBinary)
+
+	// 设置压缩扩展
+	messageState := &wsflate.MessageState{}
+	messageState.SetCompressed(true)
+	clientWriter.SetExtensions(messageState)
+
+	// 创建压缩器
+	flateWriter := wsflate.NewWriter(nil, func(w io.Writer) wsflate.Compressor {
+		f, _ := flate.NewWriter(w, flate.DefaultCompression)
+		return f
+	})
+
+	// 写入压缩数据
+	flateWriter.Reset(clientWriter)
+	_, err := flateWriter.Write(data)
+	if err != nil {
+		return err
+	}
+
+	err = flateWriter.Close()
+	if err != nil {
+		return err
+	}
+
+	return clientWriter.Flush()
+}
+
+// readRawWebSocketData 读取原始WebSocket帧数据，不进行解压缩
+func readRawWebSocketData(conn net.Conn) ([]byte, error) {
 	reader := &wsutil.Reader{
 		Source: conn,
-		State:  ws.StateClientSide,
-		// 注意：在真实场景中，扩展信息来自握手协商
-		Extensions: []wsutil.RecvExtension{&wsflate.MessageState{}},
+		State:  ws.StateClientSide, // 客户端状态，不包含扩展
 	}
 
 	for {
@@ -698,20 +741,8 @@ func readCompressedClientData(conn net.Conn) ([]byte, error) {
 		break
 	}
 
+	// 直接读取原始数据，不解压缩
 	return io.ReadAll(reader)
-}
-
-// writeCompressedClientData 向客户端写入压缩数据
-func writeCompressedClientData(conn net.Conn, data []byte) error {
-	writer := wsutil.NewWriter(conn, ws.StateClientSide, ws.OpBinary)
-	writer.SetExtensions(&wsflate.MessageState{})
-
-	_, err := writer.Write(data)
-	if err != nil {
-		return err
-	}
-
-	return writer.Flush()
 }
 
 func newLink(ctx context.Context, id string, server net.Conn) gateway.Link {

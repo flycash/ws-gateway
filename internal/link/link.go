@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"sync"
 	"time"
 
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
+	"gitee.com/flycash/ws-gateway/pkg/wswrapper"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsflate"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/gotomicro/ego/core/elog"
 )
@@ -45,14 +44,11 @@ type Link struct {
 	idleTimeout  time.Duration
 
 	// ws读写器
-	reader *wsutil.Reader
-	writer *wsutil.Writer
+	reader *wswrapper.Reader
+	writer *wswrapper.Writer
 
 	// 压缩相关
-	compressionEnabled bool
-	compressionState   *compression.State
-	readerMessageState *wsflate.MessageState // reader专用
-	writerMessageState *wsflate.MessageState // writer专用
+	compressionState *compression.State
 
 	// 重试策略
 	initRetryInterval time.Duration
@@ -89,12 +85,7 @@ func WithTimeouts(read, write, idle time.Duration) Option {
 
 func WithCompression(state *compression.State) Option {
 	return func(l *Link) {
-		if state != nil && state.Enabled {
-			l.compressionEnabled = true
-			l.compressionState = state
-			l.readerMessageState = &wsflate.MessageState{}
-			l.writerMessageState = &wsflate.MessageState{}
-		}
+		l.compressionState = state
 	}
 }
 
@@ -122,8 +113,7 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 		readTimeout:       DefaultReadTimeout,
 		writeTimeout:      DefaultWriteTimeout,
 		idleTimeout:       DefaultIdleTimeout,
-		reader:            wsutil.NewServerSideReader(conn),
-		writer:            wsutil.NewWriter(conn, ws.StateServerSide, ws.OpBinary),
+		reader:            wswrapper.NewServerSideReader(conn),
 		initRetryInterval: DefaultInitRetryInterval,
 		maxRetryInterval:  DefaultMaxRetryInterval,
 		maxRetries:        DefaultMaxRetries,
@@ -139,11 +129,12 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 		opt(l)
 	}
 
-	// 根据是否启用压缩设置扩展
-	if l.compressionEnabled {
-		l.reader.Extensions = []wsutil.RecvExtension{l.readerMessageState}
-		l.writer.SetExtensions(l.writerMessageState)
+	// 根据 compressionState 初始化 writer
+	var compressionEnabled bool
+	if l.compressionState != nil {
+		compressionEnabled = l.compressionState.Enabled
 	}
+	l.writer = wswrapper.NewServerSideWriter(conn, compressionEnabled)
 
 	go l.sendLoop()
 	go l.receiveLoop()
@@ -183,11 +174,8 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 
 		// 设置写超时并发送
 		_ = l.conn.SetWriteDeadline(time.Now().Add(l.writeTimeout))
-		// 写入消息内容（wsflate会自动处理压缩）
+		// 写入消息内容（wswrapper.Writer 会自动处理压缩和 flush）
 		_, err := l.writer.Write(payload)
-		if err == nil {
-			err = l.writer.Flush()
-		}
 		if err == nil {
 			// 发送成功
 			return true
@@ -197,7 +185,7 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 			elog.String("linkID", l.id),
 			elog.Any("session", l.sess),
 			elog.Int("payloadLen", len(payload)),
-			elog.Any("compressionEnabled", l.compressionEnabled),
+			elog.Any("compressionState", l.compressionState),
 			elog.FieldErr(err),
 		)
 
@@ -209,7 +197,7 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 				l.logger.Error("重试次数耗尽，放弃发送",
 					elog.String("linkID", l.id),
 					elog.Any("session", l.sess),
-					elog.Any("compressionEnabled", l.compressionEnabled),
+					elog.Any("compressionState", l.compressionState),
 				)
 				return false
 			}
@@ -243,7 +231,7 @@ func (l *Link) receiveLoop() {
 			l.logger.Info("连接空闲超时，关闭连接",
 				elog.String("linkID", l.id),
 				elog.Any("session", l.sess),
-				elog.Any("compressionEnabled", l.compressionEnabled),
+				elog.Any("compressionState", l.compressionState),
 				elog.Duration("idleTimeout", l.idleTimeout),
 			)
 			return
@@ -254,7 +242,8 @@ func (l *Link) receiveLoop() {
 
 		// 设置读超时并读取消息
 		_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
-		payload, err := l.receive()
+		// wswrapper.Reader 会自动处理控制帧和解压缩
+		payload, err := l.reader.Read()
 		if err != nil {
 			//  检查是否为可重试的网络超时错误
 			var ne net.Error
@@ -268,7 +257,7 @@ func (l *Link) receiveLoop() {
 				l.logger.Info("客户端关闭连接",
 					elog.String("linkID", l.id),
 					elog.Any("session", l.sess),
-					elog.Any("compressionEnabled", l.compressionEnabled),
+					elog.Any("compressionState", l.compressionState),
 				)
 				return
 			}
@@ -276,7 +265,7 @@ func (l *Link) receiveLoop() {
 			l.logger.Error("从客户端读取消息失败",
 				elog.String("linkID", l.id),
 				elog.Any("session", l.sess),
-				elog.Any("compressionEnabled", l.compressionEnabled),
+				elog.Any("compressionState", l.compressionState),
 				elog.FieldErr(err),
 			)
 			// 不可重试，退出
@@ -291,7 +280,7 @@ func (l *Link) receiveLoop() {
 			l.logger.Info("连接空闲超时，关闭连接",
 				elog.String("linkID", l.id),
 				elog.Any("session", l.sess),
-				elog.Any("compressionEnabled", l.compressionEnabled),
+				elog.Any("compressionState", l.compressionState),
 				elog.Duration("idleTimeout", l.idleTimeout))
 			return
 		case <-l.ctx.Done():
@@ -300,22 +289,6 @@ func (l *Link) receiveLoop() {
 			// 发送成功，继续下一轮循环
 		}
 	}
-}
-
-func (l *Link) receive() ([]byte, error) {
-	for {
-		header, err := l.reader.NextFrame()
-		if err != nil {
-			return nil, err
-		}
-		if header.OpCode.IsControl() {
-			// 处理控制帧，继续读取下一帧
-			continue
-		}
-		break
-	}
-	// 读取消息内容（wsflate会自动处理解压缩）
-	return io.ReadAll(l.reader)
 }
 
 func (l *Link) ID() string                 { return l.id }

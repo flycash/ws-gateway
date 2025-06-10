@@ -10,23 +10,17 @@ import (
 )
 
 type Writer struct {
-	dest         io.Writer
-	state        ws.State
-	opCode       ws.OpCode
 	writer       *wsutil.Writer
 	messageState *wsflate.MessageState
 	flateWriter  *wsflate.Writer
 }
 
-func NewWriter(dest io.Writer, compressed bool) *Writer {
+func NewServerSideWriter(dest io.Writer, compressed bool) *Writer {
 	messageState := wsflate.MessageState{}
 	messageState.SetCompressed(compressed)
 	state := ws.StateServerSide | ws.StateExtended
 	opCode := ws.OpBinary
 	w := &Writer{
-		dest:         dest,
-		state:        state,
-		opCode:       opCode,
 		writer:       wsutil.NewWriter(dest, state, opCode),
 		messageState: &messageState,
 		flateWriter: wsflate.NewWriter(nil, func(w io.Writer) wsflate.Compressor {
@@ -47,8 +41,6 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 
 // writeCompressed 写入压缩消息
 func (w *Writer) writeCompressed(p []byte) (n int, err error) {
-	// 重置writers
-	w.writer.Reset(w.dest, w.state, w.opCode)
 	w.flateWriter.Reset(w.writer)
 
 	// 写入压缩数据
@@ -69,8 +61,6 @@ func (w *Writer) writeCompressed(p []byte) (n int, err error) {
 
 // writeUncompressed 写入未压缩消息
 func (w *Writer) writeUncompressed(p []byte) (n int, err error) {
-	// 重置writer
-	w.writer.Reset(w.dest, w.state, w.opCode)
 	// 写入未压缩数据
 	n, err = w.writer.Write(p)
 	if err != nil {

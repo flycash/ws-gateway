@@ -1,3 +1,5 @@
+//go:build unit
+
 package wswrapper_test
 
 import (
@@ -29,7 +31,7 @@ func TestReader_NewReader(t *testing.T) {
 	defer client.Close()
 	defer server.Close()
 
-	reader := wswrapper.NewReader(server)
+	reader := wswrapper.NewServerSideReader(server)
 	assert.NotNil(t, reader)
 }
 
@@ -39,11 +41,11 @@ func TestWriter_NewWriter(t *testing.T) {
 	var buf bytes.Buffer
 
 	// 测试未压缩 Writer
-	uncompressedWriter := wswrapper.NewWriter(&buf, false)
+	uncompressedWriter := wswrapper.NewServerSideWriter(&buf, false)
 	assert.NotNil(t, uncompressedWriter)
 
 	// 测试压缩 Writer
-	compressedWriter := wswrapper.NewWriter(&buf, true)
+	compressedWriter := wswrapper.NewServerSideWriter(&buf, true)
 	assert.NotNil(t, compressedWriter)
 }
 
@@ -51,7 +53,7 @@ func TestWriter_NewWriter(t *testing.T) {
 func TestWriter_WriteUncompressed(t *testing.T) {
 	t.Parallel()
 	var buf bytes.Buffer
-	writer := wswrapper.NewWriter(&buf, false)
+	writer := wswrapper.NewServerSideWriter(&buf, false)
 
 	testData := []byte("Hello, WebSocket!")
 	n, err := writer.Write(testData)
@@ -65,7 +67,7 @@ func TestWriter_WriteUncompressed(t *testing.T) {
 func TestWriter_WriteCompressed(t *testing.T) {
 	t.Parallel()
 	var buf bytes.Buffer
-	writer := wswrapper.NewWriter(&buf, true)
+	writer := wswrapper.NewServerSideWriter(&buf, true)
 
 	testData := []byte("Hello, WebSocket! This is a longer message that should compress well.")
 	n, err := writer.Write(testData)
@@ -78,7 +80,6 @@ func TestWriter_WriteCompressed(t *testing.T) {
 // TestWriter_EmptyData 测试写入空数据
 func TestWriter_EmptyData(t *testing.T) {
 	t.Parallel()
-	var buf bytes.Buffer
 
 	tests := []struct {
 		name       string
@@ -91,8 +92,8 @@ func TestWriter_EmptyData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			buf.Reset()
-			writer := wswrapper.NewWriter(&buf, tt.compressed)
+			var buf bytes.Buffer // 每个子测试使用独立的buffer
+			writer := wswrapper.NewServerSideWriter(&buf, tt.compressed)
 
 			n, err := writer.Write([]byte{})
 			assert.NoError(t, err)
@@ -108,7 +109,7 @@ func TestIntegration_ReadStandardWebSocketMessage(t *testing.T) {
 	defer client.Close()
 	defer server.Close()
 
-	reader := wswrapper.NewReader(server)
+	reader := wswrapper.NewServerSideReader(server)
 	testData := []byte("Hello, WebSocket!")
 
 	// 使用标准库发送掩码消息（客户端到服务端）
@@ -161,8 +162,32 @@ func TestReader_ReadCompressedMessage(t *testing.T) {
 	}()
 
 	// 服务端读取并验证
-	reader := wswrapper.NewReader(server)
+	reader := wswrapper.NewServerSideReader(server)
 	received, err := reader.Read()
+	assert.NoError(t, err)
+	assert.Equal(t, originalData, received)
+}
+
+// TestClientReader_ReadServerCompressedMessage 测试客户端接收服务端压缩数据
+func TestClientReader_ReadServerCompressedMessage(t *testing.T) {
+	t.Parallel()
+	client, server := testConnection(t)
+	defer client.Close()
+	defer server.Close()
+
+	originalData := []byte("Hello server compression! This data will be compressed by server and received by client.")
+
+	// 服务端发送压缩帧
+	go func() {
+		// 使用wswrapper.Writer发送压缩数据
+		writer := wswrapper.NewServerSideWriter(server, true) // 启用压缩
+		_, err := writer.Write(originalData)
+		assert.NoError(t, err)
+	}()
+
+	// 客户端使用NewClientReader接收
+	clientReader := wswrapper.NewClientSideReader(client)
+	received, err := clientReader.Read()
 	assert.NoError(t, err)
 	assert.Equal(t, originalData, received)
 }
@@ -174,7 +199,7 @@ func TestIntegration_MultipleMessages(t *testing.T) {
 	defer client.Close()
 	defer server.Close()
 
-	reader := wswrapper.NewReader(server)
+	reader := wswrapper.NewServerSideReader(server)
 	messages := [][]byte{
 		[]byte("First message"),
 		[]byte("Second message"),
@@ -199,8 +224,6 @@ func TestIntegration_MultipleMessages(t *testing.T) {
 // TestWriter_MultipleWrites 测试多次写入
 func TestWriter_MultipleWrites(t *testing.T) {
 	t.Parallel()
-	var buf bytes.Buffer
-	writer := wswrapper.NewWriter(&buf, false)
 
 	messages := [][]byte{
 		[]byte("First message"),
@@ -209,7 +232,8 @@ func TestWriter_MultipleWrites(t *testing.T) {
 	}
 
 	for i, msg := range messages {
-		buf.Reset() // 每次重置缓冲区
+		var buf bytes.Buffer // 每次使用新的buffer
+		writer := wswrapper.NewServerSideWriter(&buf, false)
 		n, err := writer.Write(msg)
 		assert.NoError(t, err, "Failed at message %d", i)
 		assert.Equal(t, len(msg), n, "Length mismatch at message %d", i)
@@ -220,7 +244,6 @@ func TestWriter_MultipleWrites(t *testing.T) {
 // TestWriter_LargeData 测试大数据写入
 func TestWriter_LargeData(t *testing.T) {
 	t.Parallel()
-	var buf bytes.Buffer
 
 	// 创建大数据（1MB）
 	largeData := make([]byte, 1024*1024)
@@ -239,8 +262,8 @@ func TestWriter_LargeData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			buf.Reset()
-			writer := wswrapper.NewWriter(&buf, tt.compressed)
+			var buf bytes.Buffer // 每个子测试使用独立的buffer
+			writer := wswrapper.NewServerSideWriter(&buf, tt.compressed)
 
 			n, err := writer.Write(largeData)
 			assert.NoError(t, err)
@@ -257,7 +280,7 @@ func TestReader_ControlFrames(t *testing.T) {
 	defer client.Close()
 	defer server.Close()
 
-	reader := wswrapper.NewReader(server)
+	reader := wswrapper.NewServerSideReader(server)
 	testData := []byte("Hello after control frames!")
 
 	go func() {
@@ -283,7 +306,7 @@ func TestReader_ControlFrames(t *testing.T) {
 func TestError_ClosedConnection(t *testing.T) {
 	t.Parallel()
 	client, server := testConnection(t)
-	reader := wswrapper.NewReader(server)
+	reader := wswrapper.NewServerSideReader(server)
 
 	// 立即关闭连接
 	client.Close()
@@ -297,7 +320,7 @@ func TestError_ClosedConnection(t *testing.T) {
 // BenchmarkWriter_Uncompressed 性能测试：未压缩写入
 func BenchmarkWriter_Uncompressed(b *testing.B) {
 	var buf bytes.Buffer
-	writer := wswrapper.NewWriter(&buf, false)
+	writer := wswrapper.NewServerSideWriter(&buf, false)
 	data := []byte("This is a test message for benchmarking purposes.")
 
 	b.ResetTimer()
@@ -310,7 +333,7 @@ func BenchmarkWriter_Uncompressed(b *testing.B) {
 // BenchmarkWriter_Compressed 性能测试：压缩写入
 func BenchmarkWriter_Compressed(b *testing.B) {
 	var buf bytes.Buffer
-	writer := wswrapper.NewWriter(&buf, true)
+	writer := wswrapper.NewServerSideWriter(&buf, true)
 	data := []byte("This is a test message for benchmarking purposes. It should be long enough to benefit from compression.")
 
 	b.ResetTimer()
@@ -325,14 +348,14 @@ func BenchmarkReader_ReadCompressed(b *testing.B) {
 	// 预先准备压缩数据
 	testData := bytes.Repeat([]byte("Benchmark compressed read test data. "), 100)
 	var compressedBuf bytes.Buffer
-	writer := wswrapper.NewWriter(&compressedBuf, true)
+	writer := wswrapper.NewServerSideWriter(&compressedBuf, true)
 	_, _ = writer.Write(testData)
 	compressedBytes := compressedBuf.Bytes()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		client, server := testConnection(nil)
-		reader := wswrapper.NewReader(server)
+		reader := wswrapper.NewServerSideReader(server)
 
 		go func() {
 			_, _ = client.Write(compressedBytes)
@@ -352,8 +375,8 @@ func TestWriter_CompressionEffectiveness(t *testing.T) {
 
 	var uncompressedBuf, compressedBuf bytes.Buffer
 
-	uncompressedWriter := wswrapper.NewWriter(&uncompressedBuf, false)
-	compressedWriter := wswrapper.NewWriter(&compressedBuf, true)
+	uncompressedWriter := wswrapper.NewServerSideWriter(&uncompressedBuf, false)
+	compressedWriter := wswrapper.NewServerSideWriter(&compressedBuf, true)
 
 	// 写入相同数据
 	_, err1 := uncompressedWriter.Write(repeatableData)
