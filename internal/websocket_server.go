@@ -185,6 +185,15 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 		return
 	}
 
+	defer func() {
+		// 优雅关闭link
+		if err1 := s.linkEventHandler.OnDisconnect(lk); err1 != nil {
+			s.logger.Error("处理断连事件失败",
+				elog.String("step", "handleConn"),
+				elog.FieldErr(err1))
+		}
+	}()
+
 	for {
 		select {
 		// case <-time.After(): 在xxx时间内要么拿到数据包,要么拿到心跳包检查连接是否存活
@@ -215,12 +224,6 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 				elog.String("step", "handleConn"),
 				elog.String("ctx", "被关闭"),
 			)
-			// 优雅关闭link
-			if err1 := s.linkEventHandler.OnDisconnect(lk); err1 != nil {
-				s.logger.Error("处理断链事件失败",
-					elog.String("step", "handleConn"),
-					elog.FieldErr(err1))
-			}
 			return
 		}
 	}
@@ -232,7 +235,7 @@ func (s *WebSocketServer) getLinkID(bizID, userID int64) string {
 
 func (s *WebSocketServer) cacheSessionInfo(sess session.Session) error {
 	key := consts.SessionCacheKey(sess)
-	err := s.cache.Set(context.Background(), key, sess, 0)
+	err := s.cache.Set(context.Background(), key, sess.String(), 0)
 	if err != nil {
 		s.logger.Error("记录Session失败",
 			elog.String("step", "handleConn"),
