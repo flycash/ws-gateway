@@ -237,6 +237,34 @@ func TestWriter_LargeData(t *testing.T) {
 	}
 }
 
+// TestReader_ControlFrames 测试控制帧处理分支
+func TestReader_ControlFrames(t *testing.T) {
+	client, server := testConnection(t)
+	defer client.Close()
+	defer server.Close()
+
+	reader := wswrapper.NewReader(server)
+	testData := []byte("Hello after control frames!")
+
+	go func() {
+		// 发送一个pong控制帧（不需要响应，避免死锁）
+		pongFrame := ws.NewFrame(ws.OpPong, true, []byte("pong"))
+		pongFrame.Header.Masked = true
+		pongFrame.Header.Mask = ws.NewMask()
+		err := ws.WriteFrame(client, pongFrame)
+		assert.NoError(t, err)
+
+		// 然后发送正常数据帧
+		err = wsutil.WriteClientMessage(client, ws.OpBinary, testData)
+		assert.NoError(t, err)
+	}()
+
+	// 读取数据（控制帧会被自动处理并跳过）
+	received, err := reader.Read()
+	assert.NoError(t, err)
+	assert.Equal(t, testData, received)
+}
+
 // TestError_ClosedConnection 测试连接关闭时的错误处理
 func TestError_ClosedConnection(t *testing.T) {
 	client, server := testConnection(t)

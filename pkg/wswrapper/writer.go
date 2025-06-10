@@ -57,7 +57,7 @@ func (w *Writer) writeCompressed(p []byte) (n int, err error) {
 		return 0, err
 	}
 
-	// 刷新flate writer
+	// 完成flate writer压缩（写入尾部标记）
 	err = w.flateWriter.Close()
 	if err != nil {
 		return 0, err
