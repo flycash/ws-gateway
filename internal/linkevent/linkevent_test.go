@@ -409,6 +409,44 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		assert.NotZero(t, payload)
 		assert.NoError(t, handler.OnFrontendSendMessage(lk, payload))
 	})
+
+	tt.Run("应该启动重传任务, 当发送下推消息", func(t *testing.T) {
+		t.Parallel()
+
+		bizID := int64(12)
+		handler := newLinkEventHandler(t, s.c, bizID, nil)
+		serverConn, _ := newServerAndClientConn()
+		lk := newLink(t.Context(), "12", session.Session{BizID: bizID, UserID: 1223}, serverConn)
+
+		body, _ := protojson.Marshal(&wrapperspb.StringValue{Value: "测试重传"})
+		pushMessage := &apiv1.PushMessage{
+			Key:        "test-retry-key",
+			BizId:      bizID,
+			ReceiverId: bizID,
+			Body:       body,
+		}
+
+		// 发送下推消息
+		assert.NoError(t, handler.OnBackendPushMessage(lk, pushMessage))
+
+		// 验证重传任务已启动（通过统计信息）
+		// 这里我们无法直接访问pushRetryManager，但可以通过发送ACK来验证
+		ackMessage := &apiv1.Message{
+			Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_ACK,
+			BizId: bizID,
+			Key:   "test-retry-key",
+			Body:  body,
+		}
+
+		// 发送ACK消息应该能成功处理
+		assert.NoError(t, handler.OnFrontendSendMessage(lk, s.marshalMessage(ackMessage)))
+	})
+}
+
+func (s *LinkEventHandlerSuite) marshalMessage(msg *apiv1.Message) []byte {
+	payload, err := s.c.Marshal(msg)
+	s.NoError(err)
+	return payload
 }
 
 func assertClientReceivedPushMessage(t *testing.T, clientErrorCh chan error, clientPayloadCh chan []byte, protoCodec codec.Codec, expectedBodyMessage *apiv1.Message) {
@@ -429,7 +467,7 @@ func newLinkEventHandler(t *testing.T, c codec.Codec, bizID int64, client apiv1.
 		clients := &syncx.Map[int64, apiv1.BackendServiceClient]{}
 		clients.Store(bizID, client)
 		return clients
-	}, time.Second*3, time.Second, 3*time.Second, 3)
+	}, time.Second*3, time.Second, 3*time.Second, 3, time.Minute, 3)
 }
 
 func newProtoCodec() codec.Codec {

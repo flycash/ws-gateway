@@ -50,6 +50,9 @@ func InitWebSocketServer(
 	maxRetryInterval := econf.GetDuration("retryStrategy.maxRetryInterval")
 	maxRetries := econf.GetInt("retryStrategy.maxRetries")
 
+	pushRetryInterval := econf.GetDuration("retryStrategy.pushMessage.retryInterval")
+	pushMaxRetries := econf.GetInt("retryStrategy.pushMessage.maxRetries")
+
 	log.Printf("codec = %#v, encryptor = %#v\n", codecHelper, encryptor)
 
 	cacheRequestTimeout := econf.GetDuration("cache.requestTimeout")
@@ -67,6 +70,7 @@ func InitWebSocketServer(
 			encryptor,
 			InitBackendClientLoader(etcdClient),
 			onReceiveTimeout,
-			initRetryInterval, maxRetryInterval, int32(maxRetries))),
+			initRetryInterval, maxRetryInterval, int32(maxRetries),
+			pushRetryInterval, pushMaxRetries)),
 	)
 }

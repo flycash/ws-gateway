@@ -10,6 +10,7 @@ import (
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
+	"gitee.com/flycash/ws-gateway/pkg/pushretry"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
@@ -49,6 +50,8 @@ type Handler struct {
 	maxRetryInterval  time.Duration
 	maxRetries        int32
 
+	pushRetryManager *pushretry.Manager
+
 	logger *elog.Component
 }
 
@@ -64,6 +67,8 @@ func NewHandler(
 	initRetryInterval,
 	maxRetryInterval time.Duration,
 	maxRetries int32,
+	pushRetryInterval time.Duration,
+	pushMaxRetries int,
 ) *Handler {
 	h := &Handler{
 		cache:                           cache,
@@ -80,6 +85,13 @@ func NewHandler(
 		maxRetries:                      maxRetries,
 		logger:                          elog.EgoLogger.With(elog.FieldComponent("LinkEventHandler")),
 	}
+
+	// 初始化重传管理器
+	h.pushRetryManager = pushretry.NewManager(
+		pushRetryInterval,
+		pushMaxRetries,
+		h.push, // 将Handler的push方法作为重传函数
+	)
 
 	h.onFrontendSendMessageHandleFunc[apiv1.Message_COMMAND_TYPE_HEARTBEAT] = h.handleOnHeartbeatCmd
 	h.onFrontendSendMessageHandleFunc[apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE] = h.handleOnUpstreamMessageCmd
@@ -233,6 +245,7 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 		)
 		return err
 	}
+	// 内部已实现重试
 	err = lk.Send(payload)
 	if err != nil {
 		l.logger.Error("通过link对象下推消息给前端用户失败",
@@ -328,8 +341,11 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 	return nil
 }
 
-// handleDownstreamAckCmd 处理前端发来的“对下行消息的确认”请求
+// handleDownstreamAckCmd 处理前端发来的"对下行消息的确认"请求
 func (l *Handler) handleDownstreamAckCmd(lk gateway.Link, msg *apiv1.Message) error {
+	// 停止重传任务
+	l.pushRetryManager.Stop(msg.GetKey())
+
 	// 这里可以考虑通知业务后端下行消息的发送结果 如 使用 BackendService.OnPushed 方法
 	// 也可以考虑使用消息队列通知业务后端，规避GRPC客户端的各种重试、超时问题，并保证高吞吐量
 	// 开启body加密后，需要先解密再调用业务后端
@@ -348,12 +364,14 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 		return fmt.Errorf("%w", ErrUnKnownBackendMessageFormat)
 	}
 
-	err := l.push(lk, &apiv1.Message{
+	message := &apiv1.Message{
 		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
 		BizId: msg.GetBizId(),
 		Key:   msg.GetKey(),
 		Body:  msg.GetBody(),
-	})
+	}
+
+	err := l.push(lk, message)
 	if err != nil {
 		l.logger.Error("向前端推送下行消息失败",
 			elog.String("step", "OnBackendPushMessage"),
@@ -361,10 +379,16 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 		)
 		return fmt.Errorf("%w", err)
 	}
+
+	// 启动重传任务
+	l.pushRetryManager.Start(msg.GetKey(), lk, message)
+
 	return nil
 }
 
 func (l *Handler) OnDisconnect(lk gateway.Link) error {
+	// 清理该连接的重传任务
+	l.pushRetryManager.StopByLinkID(lk.ID())
 	// 退出清理操作
 	l.logger.Info("Goodbye link = " + lk.ID())
 	return nil

@@ -62,6 +62,9 @@ retryStrategy:
   initRetryInterval: 1000000000
   maxRetryInterval: 3000000000
   maxRetries: 3
+  pushMessage:
+    retryInterval: 60000000000  # 1分钟
+    maxRetries: 3
 
 linkEvent:
   onReceiveTimeout: 3000000000
