@@ -19,6 +19,7 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"gitee.com/flycash/ws-gateway/pkg/session"
+	"github.com/ecodeclub/ecache/memory/lru"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/stretchr/testify/assert"
@@ -423,7 +424,8 @@ func newLinkEventHandler(t *testing.T, c codec.Codec, bizID int64, client apiv1.
 	t.Helper()
 	// 测试中使用none加密器（不加密）
 	encryptor := encrypt.NewNoneEncryptor()
-	return linkevent.NewHandler(c, encryptor, func() *syncx.Map[int64, apiv1.BackendServiceClient] {
+
+	return linkevent.NewHandler(lru.NewCache(10000), 3*time.Second, 10*time.Minute, c, encryptor, func() *syncx.Map[int64, apiv1.BackendServiceClient] {
 		clients := &syncx.Map[int64, apiv1.BackendServiceClient]{}
 		clients.Store(bizID, client)
 		return clients

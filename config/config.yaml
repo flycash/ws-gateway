@@ -18,6 +18,9 @@ etcd:
 cache:
   local:
     capacity: 1000000
+  requestTimeout: 3000000000
+  valueExpiration: 600000000000
+
 
 server:
   governor:

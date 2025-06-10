@@ -26,8 +26,8 @@ var (
 )
 
 type Upgrader struct {
-	//  localCache 与Component共享同一个实例,用于获取session中的数据
-	localCache        ecache.Cache
+	//  cache 与Component共享同一个实例,用于获取session中的数据
+	cache             ecache.Cache
 	token             *jwt.UserToken
 	compressionConfig compression.Config
 	logger            *elog.Component
@@ -36,7 +36,7 @@ type Upgrader struct {
 // New 创建一个升级器
 func New(cache ecache.Cache, token *jwt.UserToken, compressionConfig compression.Config) *Upgrader {
 	return &Upgrader{
-		localCache:        cache,
+		cache:             cache,
 		token:             token,
 		compressionConfig: compressionConfig,
 		logger:            elog.EgoLogger.With(elog.FieldComponent("Upgrader")),
@@ -78,7 +78,7 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 				return fmt.Errorf("%w", err)
 			}
 
-			v := u.localCache.Get(context.Background(), consts.SessionCacheKey(s))
+			v := u.cache.Get(context.Background(), consts.SessionCacheKey(s))
 			if !v.KeyNotFound() {
 				err = ErrExistedLink
 				u.logger.Error("Link已存在",

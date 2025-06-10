@@ -20,7 +20,7 @@ import (
 func InitWebSocketServer(
 	configKey string,
 	q mq.MQ,
-	localCache ecache.Cache,
+	cache ecache.Cache,
 	userToken *jwt.UserToken,
 	codecHelper codec.Codec,
 	etcdClient *eetcd.Component,
@@ -52,11 +52,17 @@ func InitWebSocketServer(
 
 	log.Printf("codec = %#v, encryptor = %#v\n", codecHelper, encryptor)
 
+	cacheRequestTimeout := econf.GetDuration("cache.requestTimeout")
+	cacheValueExpiration := econf.GetDuration("cache.valueExpiration")
+
 	return internal.Load(configKey).Build(
 		internal.WithMQ(q, partitions, topic),
-		internal.WithCache(localCache),
-		internal.WithUpgrader(upgrader.New(localCache, userToken, compressionConfig)),
+		internal.WithCache(cache),
+		internal.WithUpgrader(upgrader.New(cache, userToken, compressionConfig)),
 		internal.WithLinkEventHandler(linkevent.NewHandler(
+			cache,
+			cacheRequestTimeout,
+			cacheValueExpiration,
 			codecHelper,
 			encryptor,
 			InitBackendClientLoader(etcdClient),

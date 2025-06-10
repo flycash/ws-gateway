@@ -31,7 +31,7 @@ type WebSocketServer struct {
 
 	upgrader         gateway.Upgrader
 	linkEventHandler gateway.LinkEventHandler
-	localCache       ecache.Cache
+	cache            ecache.Cache
 
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
@@ -51,7 +51,7 @@ func newWebSocketServer(c *Container) *WebSocketServer {
 		config:           c.config,
 		upgrader:         c.upgrader,
 		linkEventHandler: c.linkEventHandler,
-		localCache:       c.cache,
+		cache:            c.cache,
 		ctx:              ctx,
 		ctxCancelFunc:    cancelFunc,
 		mq:               c.mq,
@@ -232,7 +232,7 @@ func (s *WebSocketServer) getLinkID(bizID, userID int64) string {
 
 func (s *WebSocketServer) cacheSessionInfo(sess session.Session) error {
 	key := consts.SessionCacheKey(sess)
-	err := s.localCache.Set(context.Background(), key, sess, 0)
+	err := s.cache.Set(context.Background(), key, sess, 0)
 	if err != nil {
 		s.logger.Error("记录Session失败",
 			elog.String("step", "handleConn"),
@@ -246,7 +246,7 @@ func (s *WebSocketServer) cacheSessionInfo(sess session.Session) error {
 
 func (s *WebSocketServer) deleteSessionInfo(sess session.Session) error {
 	key := consts.SessionCacheKey(sess)
-	_, err := s.localCache.Delete(context.Background(), key)
+	_, err := s.cache.Delete(context.Background(), key)
 	if err != nil {
 		s.logger.Error("删除Session失败",
 			elog.String("step", "handleConn"),

@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
+	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gotomicro/ego/core/elog"
@@ -19,6 +19,9 @@ import (
 var (
 	ErrUnKnownFrontendMessageFormat      = errors.New("非法的网关消息格式")
 	ErrUnKnownFrontendMessageCommandType = errors.New("非法的网关消息Cmd类型")
+	ErrDuplicatedFrontendMessage         = errors.New("重复的网关消息")
+	ErrDecryptMessageBodyFailed          = errors.New("解密消息体失败")
+	ErrEncryptMessageBodyFailed          = errors.New("加密消息体失败")
 
 	ErrMaxRetriesExceeded = errors.New("最大重试次数已耗尽")
 	ErrUnknownBizID       = errors.New("未知的BizID")
@@ -29,6 +32,10 @@ var (
 type BackendClientLoader func() *syncx.Map[int64, apiv1.BackendServiceClient]
 
 type Handler struct {
+	cache                ecache.Cache
+	cacheRequestTimeout  time.Duration
+	cacheValueExpiration time.Duration
+
 	codecHelper                     codec.Codec
 	encryptor                       encrypt.Encryptor
 	onFrontendSendMessageHandleFunc map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error
@@ -47,6 +54,9 @@ type Handler struct {
 
 // NewHandler 创建一个Link生命周期事件管理器
 func NewHandler(
+	cache ecache.Cache,
+	cacheRequestTimeout time.Duration,
+	cacheValueExpiration time.Duration,
 	codecHelper codec.Codec,
 	encryptor encrypt.Encryptor,
 	backendClientLoader BackendClientLoader,
@@ -56,6 +66,9 @@ func NewHandler(
 	maxRetries int32,
 ) *Handler {
 	h := &Handler{
+		cache:                           cache,
+		cacheRequestTimeout:             cacheRequestTimeout,
+		cacheValueExpiration:            cacheValueExpiration,
 		codecHelper:                     codecHelper,
 		encryptor:                       encryptor,
 		onFrontendSendMessageHandleFunc: make(map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error),
@@ -83,30 +96,16 @@ func (l *Handler) OnConnect(lk gateway.Link) error {
 
 // OnFrontendSendMessage 统一处理前端发来的各种请求
 func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
-	msg := &apiv1.Message{}
-	err := l.codecHelper.Unmarshal(payload, msg)
-	if err != nil || (msg.GetBizId() == 0 && msg.GetKey() == "") {
-		l.logger.Error("反序列化消息失败",
-			elog.Any("codecHelper", fmt.Sprintf("%#v", l.codecHelper)),
+	msg, err := l.getMessage(payload)
+	if err != nil {
+		l.logger.Error("获取消息失败",
 			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("linkID", lk.ID()),
 			elog.Any("session", lk.Session()),
 			elog.FieldErr(err),
 		)
-		return fmt.Errorf("%w", ErrUnKnownFrontendMessageFormat)
+		return err
 	}
-
-	// 解密消息体
-	decryptedBody, err := l.encryptor.Decrypt(msg.GetBody())
-	if err != nil {
-		l.logger.Error("解密消息体失败",
-			elog.String("step", "OnBackendPushMessage"),
-			elog.String("encryptor", l.encryptor.Name()),
-			elog.FieldErr(err),
-		)
-		return fmt.Errorf("解密消息体失败: %w", err)
-	}
-	msg.Body = decryptedBody
 
 	l.logger.Info("OnFrontendSendMessage",
 		elog.String("step", "前端发送的消息(上行消息+对下行消息的响应)"),
@@ -122,7 +121,81 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 		)
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageCommandType)
 	}
-	return handleFunc(lk, msg)
+	err = handleFunc(lk, msg)
+	if err != nil {
+		return err
+	}
+
+	err = l.cacheHandledMessage(msg)
+	if err != nil {
+		l.logger.Warn("缓存处理成功的消息失败",
+			elog.String("step", "OnFrontendSendMessage"),
+			elog.String("linkID", lk.ID()),
+			elog.Any("session", lk.Session()),
+			elog.String("消息体", msg.String()))
+	}
+
+	return nil
+}
+
+func (l *Handler) getMessage(payload []byte) (*apiv1.Message, error) {
+	msg := &apiv1.Message{}
+	// 反序列化
+	err := l.codecHelper.Unmarshal(payload, msg)
+	if err != nil || (msg.GetBizId() == 0 && msg.GetKey() == "") {
+		l.logger.Error("反序列化消息失败",
+			elog.String("step", "getMessage"),
+			elog.Any("codecHelper", l.codecHelper.Name()),
+			elog.String("消息体", msg.String()),
+			elog.FieldErr(err),
+		)
+		return nil, fmt.Errorf("%w", ErrUnKnownFrontendMessageFormat)
+	}
+
+	// 解密消息体
+	decryptedBody, err := l.encryptor.Decrypt(msg.GetBody())
+	if err != nil {
+		l.logger.Error("解密消息体失败",
+			elog.String("step", "getMessage"),
+			elog.String("encryptor", l.encryptor.Name()),
+			elog.String("消息体", msg.String()),
+			elog.FieldErr(err),
+		)
+		return nil, fmt.Errorf("%w: %w", ErrDecryptMessageBodyFailed, err)
+	}
+	msg.Body = decryptedBody
+
+	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
+		return msg, nil
+	}
+
+	// 消息幂等
+	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
+	defer cancelFunc()
+	if v := l.cache.Get(ctx, l.cacheKey(msg)); v.Err == nil {
+		err = fmt.Errorf("%w", ErrDuplicatedFrontendMessage)
+		l.logger.Error("重复消息，已丢弃",
+			elog.String("step", "getMessage"),
+			elog.String("消息体", msg.String()),
+			elog.FieldErr(err),
+		)
+		return nil, err
+	}
+	return msg, nil
+}
+
+func (l *Handler) cacheKey(msg *apiv1.Message) string {
+	return fmt.Sprintf("%d-%s", msg.GetBizId(), msg.GetKey())
+}
+
+func (l *Handler) cacheHandledMessage(msg *apiv1.Message) error {
+	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
+		return nil
+	}
+	// 处理成功的消息
+	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
+	defer cancelFunc()
+	return l.cache.Set(ctx, l.cacheKey(msg), msg.GetKey(), l.cacheValueExpiration)
 }
 
 // handleOnHeartbeatCmd 处理前端发来的“心跳”请求
@@ -143,9 +216,10 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 		l.logger.Error("加密消息体失败",
 			elog.String("step", "push"),
 			elog.String("encryptor", l.encryptor.Name()),
+			elog.String("消息体", msg.String()),
 			elog.FieldErr(err),
 		)
-		return fmt.Errorf("加密消息体失败: %w", err)
+		return fmt.Errorf("%w：%w", ErrEncryptMessageBodyFailed, err)
 	}
 	msg.Body = encryptedBody
 
@@ -255,10 +329,16 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 }
 
 // handleDownstreamAckCmd 处理前端发来的“对下行消息的确认”请求
-func (l *Handler) handleDownstreamAckCmd(_ gateway.Link, _ *apiv1.Message) error {
+func (l *Handler) handleDownstreamAckCmd(lk gateway.Link, msg *apiv1.Message) error {
 	// 这里可以考虑通知业务后端下行消息的发送结果 如 使用 BackendService.OnPushed 方法
 	// 也可以考虑使用消息队列通知业务后端，规避GRPC客户端的各种重试、超时问题，并保证高吞吐量
 	// 开启body加密后，需要先解密再调用业务后端
+	l.logger.Info("收到下行消息确认",
+		elog.String("step", "handleDownstreamAckCmd"),
+		elog.String("linkID", lk.ID()),
+		elog.Any("session", lk.Session()),
+		elog.String("msg", msg.String()),
+	)
 	return nil
 }
 
@@ -286,6 +366,6 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 
 func (l *Handler) OnDisconnect(lk gateway.Link) error {
 	// 退出清理操作
-	log.Printf("Goodbye link = %s!\n", lk.ID())
+	l.logger.Info("Goodbye link = " + lk.ID())
 	return nil
 }
