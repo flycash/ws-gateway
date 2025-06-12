@@ -25,10 +25,7 @@ func InitApp() App {
 		ioc.InitMQ,
 		ioc.InitSerializer,
 
-		ioc.InitLinkEventHandler,
-		ioc.InitUserActionHandler,
-		ioc.InitOnlineUserHandler,
-		ioc.InitLintEventHandlerWrapper,
+		ioc.InitLinkEventHandlerWrapper,
 
 		convertToWebsocketComponents,
 

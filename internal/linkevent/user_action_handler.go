@@ -70,16 +70,18 @@ func (u *UserActionHandler) OnConnect(lk gateway.Link) error {
 	err := u.sendUserActionEvent(lk, ActionOnline)
 	if err != nil {
 		u.logger.Error("发送用户上线事件失败",
-			elog.Any("action", ActionOnline),
-			elog.Any("linkID", lk.ID()),
+			elog.String("action", ActionOnline),
+			elog.String("linkID", lk.ID()),
+			elog.Any("session", lk.Session()),
+			elog.FieldErr(err),
+		)
+	} else {
+		u.logger.Info("发送用户上线事件成功",
+			elog.String("action", ActionOnline),
+			elog.String("linkID", lk.ID()),
 			elog.Any("session", lk.Session()),
 		)
 	}
-	u.logger.Info("发送用户上线事件成功",
-		elog.Any("action", ActionOnline),
-		elog.Any("linkID", lk.ID()),
-		elog.Any("session", lk.Session()),
-	)
 	return nil
 }
 
@@ -87,7 +89,6 @@ func (u *UserActionHandler) sendUserActionEvent(lk gateway.Link, action string) 
 	sess := lk.Session()
 	ctx, cancel := context.WithTimeout(context.Background(), u.requestTimeout)
 	defer cancel()
-	// todo:是否重试？
 	return u.producer.Produce(ctx, UserAction{
 		BizID:  sess.BizID,
 		UserID: sess.UserID,
@@ -107,15 +108,17 @@ func (u *UserActionHandler) OnDisconnect(lk gateway.Link) error {
 	err := u.sendUserActionEvent(lk, ActionOffline)
 	if err != nil {
 		u.logger.Error("发送用户下线事件失败",
-			elog.Any("action", ActionOffline),
-			elog.Any("linkID", lk.ID()),
+			elog.String("action", ActionOffline),
+			elog.String("linkID", lk.ID()),
+			elog.Any("session", lk.Session()),
+			elog.FieldErr(err),
+		)
+	} else {
+		u.logger.Info("发送用户下线事件成功",
+			elog.String("action", ActionOffline),
+			elog.String("linkID", lk.ID()),
 			elog.Any("session", lk.Session()),
 		)
 	}
-	u.logger.Info("发送用户下线事件成功",
-		elog.Any("action", ActionOffline),
-		elog.Any("linkID", lk.ID()),
-		elog.Any("session", lk.Session()),
-	)
 	return nil
 }

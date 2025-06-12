@@ -23,10 +23,7 @@ func InitApp() App {
 	userToken := ioc.InitUserToken()
 	codec := ioc.InitSerializer()
 	component := ioc.InitEtcdClient()
-	handler := ioc.InitLinkEventHandler(cache, codec, component)
-	userActionHandler := ioc.InitUserActionHandler()
-	onlineUserHandler := ioc.InitOnlineUserHandler()
-	linkEventHandlerWrapper := ioc.InitLintEventHandlerWrapper(handler, userActionHandler, onlineUserHandler)
+	linkEventHandlerWrapper := ioc.InitLinkEventHandlerWrapper(cache, codec, component, mq)
 	v := convertToWebsocketComponents(mq, cache, userToken, linkEventHandlerWrapper)
 	app := App{
 		OrderServer: v,

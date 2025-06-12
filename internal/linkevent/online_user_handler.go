@@ -1,7 +1,7 @@
 package linkevent
 
 import (
-	"fmt"
+	"strconv"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
@@ -10,17 +10,17 @@ import (
 )
 
 type OnlineUserHandler struct {
-	counter *prometheus.CounterVec
+	counter *prometheus.GaugeVec
 	logger  *elog.Component
 }
 
 func NewOnlineUserHandler() *OnlineUserHandler {
 	registry := prometheus.DefaultRegisterer
-	counter := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	counter := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: "websocket_gateway",
-			Name:      "online_users_total",
-			Help:      "Total number of WebSocket Gateway users.",
+			Name:      "online_users",
+			Help:      "Current number of online WebSocket Gateway users.",
 		},
 		[]string{"biz_id", "user_id"},
 	)
@@ -42,7 +42,10 @@ func (o *OnlineUserHandler) OnConnect(lk gateway.Link) error {
 
 func (o *OnlineUserHandler) labelValues(lk gateway.Link) []string {
 	sess := lk.Session()
-	return []string{fmt.Sprintf("%d", sess.BizID), fmt.Sprintf("%d", sess.UserID)}
+	return []string{
+		strconv.FormatInt(sess.BizID, 10),
+		strconv.FormatInt(sess.UserID, 10),
+	}
 }
 
 func (o *OnlineUserHandler) OnFrontendSendMessage(_ gateway.Link, _ []byte) error {
@@ -55,7 +58,7 @@ func (o *OnlineUserHandler) OnBackendPushMessage(_ gateway.Link, _ *apiv1.PushMe
 
 func (o *OnlineUserHandler) OnDisconnect(lk gateway.Link) error {
 	labelValues := o.labelValues(lk)
-	o.counter.WithLabelValues(labelValues...).Desc()
+	o.counter.WithLabelValues(labelValues...).Dec()
 	o.logger.Info("统计在线用户总数：-1", elog.Any("labelValues", labelValues))
 	return nil
 }
