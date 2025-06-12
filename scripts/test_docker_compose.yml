@@ -41,5 +41,22 @@ services:
       - 2379:2379
       #      集群节点通信端口
       - 2380:2380
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      #  - 将本地的 prometheus 文件映射到容器内的配置文件
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      #  - 访问数据的端口
+      - 9090:9090
+    command:
+      - "--web.enable-remote-write-receiver"
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    ports:
+      - 3000:3000
 volumes:
   default:

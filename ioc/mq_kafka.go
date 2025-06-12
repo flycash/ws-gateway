@@ -17,12 +17,24 @@ func initMQ() (mq.MQ, error) {
 	if err != nil {
 		return nil, err
 	}
-	partitions := econf.GetInt("pushMessageEvent.partitions")
-	topic := econf.GetString("pushMessageEvent.topic")
-	log.Printf("initMQ: Topic = %#v, Partitions = %#v\n", topic, partitions)
-	err = queue.CreateTopic(context.Background(), topic, partitions)
+	err = createTopic(queue, "pushMessageEvent.topic", "pushMessageEvent.partitions")
+	if err != nil {
+		return nil, err
+	}
+	err = createTopic(queue, "userActionEvent.topic", "userActionEvent.partitions")
 	if err != nil {
 		return nil, err
 	}
 	return queue, nil
+}
+
+func createTopic(queue mq.MQ, topicKey, partitionsKey string) error {
+	topic := econf.GetString(topicKey)
+	partitions := econf.GetInt(partitionsKey)
+	log.Printf("initMQ: Topic = %#v, Partitions = %#v\n", topic, partitions)
+	err := queue.CreateTopic(context.Background(), topic, partitions)
+	if err != nil {
+		return err
+	}
+	return nil
 }

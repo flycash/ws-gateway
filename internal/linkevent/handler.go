@@ -21,6 +21,9 @@ var (
 	ErrUnKnownFrontendMessageFormat      = errors.New("非法的网关消息格式")
 	ErrUnKnownFrontendMessageCommandType = errors.New("非法的网关消息Cmd类型")
 	ErrDuplicatedFrontendMessage         = errors.New("重复的网关消息")
+	ErrCacheFrontendMessageFailed        = errors.New("缓存网关消息失败")
+	ErrDeleteCachedFrontendMessageFailed = errors.New("删除缓存的网关消息失败")
+	ErrMarshalMessageFailed              = errors.New("序列化网关消息失败")
 	ErrDecryptMessageBodyFailed          = errors.New("解密消息体失败")
 	ErrEncryptMessageBodyFailed          = errors.New("加密消息体失败")
 
@@ -83,7 +86,7 @@ func NewHandler(
 		initRetryInterval:               initRetryInterval,
 		maxRetryInterval:                maxRetryInterval,
 		maxRetries:                      maxRetries,
-		logger:                          elog.EgoLogger.With(elog.FieldComponent("LinkEventHandler")),
+		logger:                          elog.EgoLogger.With(elog.FieldComponent("LinkEvent.Handler")),
 	}
 
 	// 初始化重传管理器
@@ -110,12 +113,14 @@ func (l *Handler) OnConnect(lk gateway.Link) error {
 func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 	msg, err := l.getMessage(payload)
 	if err != nil {
-		l.logger.Error("获取消息失败",
-			elog.String("step", "OnFrontendSendMessage"),
-			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
-			elog.FieldErr(err),
-		)
+		if !errors.Is(err, ErrDuplicatedFrontendMessage) {
+			l.logger.Error("获取消息失败",
+				elog.String("step", "OnFrontendSendMessage"),
+				elog.String("linkID", lk.ID()),
+				elog.Any("session", lk.Session()),
+				elog.FieldErr(err),
+			)
+		}
 		return err
 	}
 
@@ -134,20 +139,21 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageCommandType)
 	}
 	err = handleFunc(lk, msg)
-	if err != nil {
-		return err
+	if err == nil {
+		return nil
 	}
-
-	err = l.cacheHandledMessage(msg)
-	if err != nil {
-		l.logger.Warn("缓存处理成功的消息失败",
-			elog.String("step", "OnFrontendSendMessage"),
-			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
-			elog.String("消息体", msg.String()))
+	// 只有在特定错误类型下才删除缓存
+	if l.shouldDeleteCacheOnError(err) {
+		if err1 := l.deleteCacheMessage(msg); err1 != nil {
+			l.logger.Warn("删除消息缓存失败",
+				elog.String("step", "OnFrontendSendMessage"),
+				elog.String("linkID", lk.ID()),
+				elog.String("msg", msg.String()),
+				elog.FieldErr(err1),
+			)
+		}
 	}
-
-	return nil
+	return err
 }
 
 func (l *Handler) getMessage(payload []byte) (*apiv1.Message, error) {
@@ -177,16 +183,19 @@ func (l *Handler) getMessage(payload []byte) (*apiv1.Message, error) {
 	}
 	msg.Body = decryptedBody
 
-	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
-		return msg, nil
-	}
-
 	// 消息幂等
-	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
-	defer cancelFunc()
-	if v := l.cache.Get(ctx, l.cacheKey(msg)); v.Err == nil {
+	ok, err := l.cacheMessage(msg)
+	if err != nil {
+		err = fmt.Errorf("%w; %w", ErrCacheFrontendMessageFailed, err)
+		l.logger.Error("缓存消息失败",
+			elog.String("step", "getMessage"),
+			elog.String("消息体", msg.String()),
+			elog.FieldErr(err),
+		)
+		return nil, err
+	} else if !ok {
 		err = fmt.Errorf("%w", ErrDuplicatedFrontendMessage)
-		l.logger.Error("重复消息，已丢弃",
+		l.logger.Warn("重复消息，已丢弃",
 			elog.String("step", "getMessage"),
 			elog.String("消息体", msg.String()),
 			elog.FieldErr(err),
@@ -196,21 +205,44 @@ func (l *Handler) getMessage(payload []byte) (*apiv1.Message, error) {
 	return msg, nil
 }
 
+func (l *Handler) cacheMessage(msg *apiv1.Message) (bool, error) {
+	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
+		// 心跳消息不需要缓存
+		return true, nil
+	}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
+	defer cancelFunc()
+	return l.cache.SetNX(ctx, l.cacheKey(msg), msg.GetKey(), l.cacheValueExpiration)
+}
+
 func (l *Handler) cacheKey(msg *apiv1.Message) string {
 	return fmt.Sprintf("%d-%s", msg.GetBizId(), msg.GetKey())
 }
 
-func (l *Handler) cacheHandledMessage(msg *apiv1.Message) error {
-	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
-		return nil
-	}
-	// 处理成功的消息
-	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
-	defer cancelFunc()
-	return l.cache.Set(ctx, l.cacheKey(msg), msg.GetKey(), l.cacheValueExpiration)
+// 判断是否应该在错误时删除缓存
+func (l *Handler) shouldDeleteCacheOnError(err error) bool {
+	// 消息已缓存但业务逻辑无法正常执行时删除缓存，允许前端重试
+	return errors.Is(err, ErrUnknownBizID) ||
+		errors.Is(err, ErrEncryptMessageBodyFailed) ||
+		errors.Is(err, ErrMarshalMessageFailed) ||
+		errors.Is(err, ErrMaxRetriesExceeded)
 }
 
-// handleOnHeartbeatCmd 处理前端发来的“心跳”请求
+func (l *Handler) deleteCacheMessage(msg *apiv1.Message) error {
+	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
+		// 心跳消息不需要删除缓存
+		return nil
+	}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
+	defer cancelFunc()
+	_, err := l.cache.Delete(ctx, l.cacheKey(msg))
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrDeleteCachedFrontendMessageFailed, err)
+	}
+	return nil
+}
+
+// handleOnHeartbeatCmd 处理前端发来的"心跳"请求
 func (l *Handler) handleOnHeartbeatCmd(lk gateway.Link, msg *apiv1.Message) error {
 	// 心跳包原样返回
 	l.logger.Info("收到心跳包，原样返回",
@@ -231,7 +263,7 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 			elog.String("消息体", msg.String()),
 			elog.FieldErr(err),
 		)
-		return fmt.Errorf("%w：%w", ErrEncryptMessageBodyFailed, err)
+		return fmt.Errorf("%w: %w", ErrEncryptMessageBodyFailed, err)
 	}
 	msg.Body = encryptedBody
 
@@ -243,7 +275,7 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 			elog.String("消息体", msg.String()),
 			elog.FieldErr(err),
 		)
-		return err
+		return fmt.Errorf("%w: %w", ErrMarshalMessageFailed, err)
 	}
 	// 内部已实现重试
 	err = lk.Send(payload)
@@ -259,13 +291,12 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 	return nil
 }
 
-// handleOnUpstreamMessageCmd 处理前端发来的“上行业务消息”请求
+// handleOnUpstreamMessageCmd 处理前端发来的"上行业务消息"请求
 func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message) error {
 	resp, err := l.forwardToBusinessBackend(msg)
 	if err != nil {
 		// 向业务后端转发失败，（包含已经重试）如何处理？ 这里返回err相当于丢掉了，等待前端超时重试
 		l.logger.Warn("向业务后端转发消息失败",
-			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("step", "handleOnUpstreamMessageCmd"),
 			elog.FieldErr(err),
 		)
@@ -321,10 +352,17 @@ func (l *Handler) getBackendServiceClient(bizID int64) (apiv1.BackendServiceClie
 }
 
 func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveResponse) error {
-	// 将业务后端返回的“上行消息”的响应直接封装为body
-	respBody, _ := l.codecHelper.Marshal(resp)
+	// 将业务后端返回的"上行消息"的响应直接封装为body
+	respBody, err := l.codecHelper.Marshal(resp)
+	if err != nil {
+		l.logger.Error("序列化业务后端响应失败",
+			elog.String("step", "sendUpstreamMessageAck"),
+			elog.FieldErr(err),
+		)
+		return fmt.Errorf("%w: %w", ErrMarshalMessageFailed, err)
+	}
 
-	err := l.push(lk, &apiv1.Message{
+	err = l.push(lk, &apiv1.Message{
 		Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
 		BizId: resp.GetBizId(),
 		Key:   fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
@@ -332,11 +370,10 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 	})
 	if err != nil {
 		l.logger.Error("向前端下推对上行消息的确认失败",
-			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("step", "sendUpstreamMessageAck"),
 			elog.FieldErr(err),
 		)
-		return fmt.Errorf("%w", err)
+		return err
 	}
 	return nil
 }
@@ -375,18 +412,18 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 		Body:  msg.GetBody(),
 	}
 
+	// 无论推送成功与否都启动重传任务，等待前端ACK确认后才停止
+	defer l.pushRetryManager.Start(l.retryKey(msg.GetBizId(), msg.GetKey()), lk, message)
+
 	err := l.push(lk, message)
 	if err != nil {
+		// 启动重传任务
 		l.logger.Error("向前端推送下行消息失败",
 			elog.String("step", "OnBackendPushMessage"),
 			elog.FieldErr(err),
 		)
 		return fmt.Errorf("%w", err)
 	}
-
-	// 启动重传任务
-	l.pushRetryManager.Start(l.retryKey(msg.GetBizId(), msg.GetKey()), lk, message)
-
 	return nil
 }
 

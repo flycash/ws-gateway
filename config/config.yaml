@@ -55,16 +55,20 @@ backend:
     etcdKey: "gateway.backend.services"
 
 pushMessageEvent:
-  partitions: 2
   topic: "push_message_event"
+  partitions: 2
 
-retryStrategy:
-  initRetryInterval: 1000000000
-  maxRetryInterval: 3000000000
-  maxRetries: 3
-  pushMessage:
-    retryInterval: 60000000000  # 1分钟
-    maxRetries: 3
+userActionEvent:
+  topic: "gateway_users_action"
+  partitions: 2
 
 linkEvent:
-  onReceiveTimeout: 3000000000
+  requestTimeout: 3000000000
+  retryStrategy:
+    initRetryInterval: 1000000000
+    maxRetryInterval: 3000000000
+    maxRetries: 3
+  pushMessage:
+    retryInterval: 10000000000  # 1分钟
+    maxRetries: 6
+

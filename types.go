@@ -7,10 +7,11 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/gotomicro/ego/server"
+	"go.uber.org/multierr"
 )
 
 type Server interface {
-	server.OrderServer
+	server.Server
 }
 
 // Link 表示一个用户连接
@@ -41,4 +42,46 @@ type LinkEventHandler interface {
 type Upgrader interface {
 	Name() string
 	Upgrade(conn net.Conn) (session.Session, *compression.State, error)
+}
+
+type LinkEventHandlerWrapper struct {
+	handlers []LinkEventHandler
+}
+
+func NewLinkEventHandlerWrapper(handler ...LinkEventHandler) *LinkEventHandlerWrapper {
+	return &LinkEventHandlerWrapper{
+		handlers: handler,
+	}
+}
+
+func (l *LinkEventHandlerWrapper) OnConnect(lk Link) error {
+	var err error
+	for i := range l.handlers {
+		err = multierr.Append(err, l.handlers[i].OnConnect(lk))
+	}
+	return err
+}
+
+func (l *LinkEventHandlerWrapper) OnFrontendSendMessage(lk Link, payload []byte) error {
+	var err error
+	for i := range l.handlers {
+		err = multierr.Append(err, l.handlers[i].OnFrontendSendMessage(lk, payload))
+	}
+	return err
+}
+
+func (l *LinkEventHandlerWrapper) OnBackendPushMessage(lk Link, message *apiv1.PushMessage) error {
+	var err error
+	for i := range l.handlers {
+		err = multierr.Append(err, l.handlers[i].OnBackendPushMessage(lk, message))
+	}
+	return err
+}
+
+func (l *LinkEventHandlerWrapper) OnDisconnect(lk Link) error {
+	var err error
+	for i := range l.handlers {
+		err = multierr.Append(err, l.handlers[i].OnDisconnect(lk))
+	}
+	return err
 }

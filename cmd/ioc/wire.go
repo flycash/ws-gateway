@@ -4,15 +4,12 @@ package ioc
 
 import (
 	gateway "gitee.com/flycash/ws-gateway"
-	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 
 	"gitee.com/flycash/ws-gateway/ioc"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
-	"github.com/ego-component/eetcd"
 	"github.com/google/wire"
-	"github.com/gotomicro/ego/core/econf"
 )
 
 type App struct {
@@ -21,10 +18,18 @@ type App struct {
 
 func InitApp() App {
 	wire.Build(
-		ioc.InitLocalCache,
+		ioc.InitRedisCmd,
+		ioc.InitRedisCache,
 		ioc.InitUserToken,
 		ioc.InitEtcdClient,
 		ioc.InitMQ,
+		ioc.InitSerializer,
+
+		ioc.InitLinkEventHandler,
+		ioc.InitUserActionHandler,
+		ioc.InitOnlineUserHandler,
+		ioc.InitLintEventHandlerWrapper,
+
 		convertToWebsocketComponents,
 
 		wire.Struct(new(App), "*"))
@@ -33,27 +38,15 @@ func InitApp() App {
 
 func convertToWebsocketComponents(
 	messageQueue mq.MQ,
-	localCache ecache.Cache,
+	c ecache.Cache,
 	userToken *jwt.UserToken,
-	etcdClient *eetcd.Component,
+	wrapper *gateway.LinkEventHandlerWrapper,
 ) []gateway.Server {
 	configKey := "server.websocket"
-	config := econf.GetStringMap(configKey)
-	serializer, ok := config["serializer"].(string)
-	if !ok {
-		panic("server.websocket.serializer配置解析错误")
-	}
-	delete(config, "serializer")
-
-	codecMapping := map[string]codec.Codec{
-		"json":  codec.NewJSONCodec(),
-		"proto": codec.NewProtoCodec(),
-	}
-
-	s := make([]gateway.Server, 0, len(config))
+	s := make([]gateway.Server, 0, 1)
 	// for i := range config {
 	// configKey := fmt.Sprintf("server.websocket.%d", i)
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, localCache, userToken, codecMapping[serializer], etcdClient))
+	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, userToken, wrapper))
 	// }
 	return s
 }

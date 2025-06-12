@@ -9,22 +9,25 @@ package ioc
 import (
 	"gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/ioc"
-	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
-	"github.com/ego-component/eetcd"
-	"github.com/gotomicro/ego/core/econf"
 )
 
 // Injectors from wire.go:
 
 func InitApp() App {
 	mq := ioc.InitMQ()
-	cache := ioc.InitLocalCache()
+	cmdable := ioc.InitRedisCmd()
+	cache := ioc.InitRedisCache(cmdable)
 	userToken := ioc.InitUserToken()
+	codec := ioc.InitSerializer()
 	component := ioc.InitEtcdClient()
-	v := convertToWebsocketComponents(mq, cache, userToken, component)
+	handler := ioc.InitLinkEventHandler(cache, codec, component)
+	userActionHandler := ioc.InitUserActionHandler()
+	onlineUserHandler := ioc.InitOnlineUserHandler()
+	linkEventHandlerWrapper := ioc.InitLintEventHandlerWrapper(handler, userActionHandler, onlineUserHandler)
+	v := convertToWebsocketComponents(mq, cache, userToken, linkEventHandlerWrapper)
 	app := App{
 		OrderServer: v,
 	}
@@ -39,26 +42,14 @@ type App struct {
 
 func convertToWebsocketComponents(
 	messageQueue mq.MQ,
-	localCache ecache.Cache,
+	c ecache.Cache,
 	userToken *jwt.UserToken,
-	etcdClient *eetcd.Component,
+	wrapper *gateway.LinkEventHandlerWrapper,
 ) []gateway.Server {
 	configKey := "server.websocket"
-	config := econf.GetStringMap(configKey)
-	serializer, ok := config["serializer"].(string)
-	if !ok {
-		panic("server.websocket.serializer配置解析错误")
-	}
-	delete(config, "serializer")
+	s := make([]gateway.Server, 0, 1)
 
-	codecMapping := map[string]codec.Codec{
-		"json":  codec.NewJSONCodec(),
-		"proto": codec.NewProtoCodec(),
-	}
-
-	s := make([]gateway.Server, 0, len(config))
-
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, localCache, userToken, codecMapping[serializer], etcdClient))
+	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, userToken, wrapper))
 
 	return s
 }
