@@ -217,7 +217,7 @@ func TestLink_WithCompression(t *testing.T) {
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
 			link.WithCompression(compressionState),
-			link.WithTimeouts(time.Second, time.Second, time.Minute),
+			link.WithTimeouts(time.Second, time.Second),
 		)
 
 		assert.Equal(t, "test-compression", lk.ID())
@@ -292,7 +292,7 @@ func TestLink_CompressionDataTransfer(t *testing.T) {
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
 			link.WithCompression(compressionState),
-			link.WithTimeouts(5*time.Second, 5*time.Second, time.Minute),
+			link.WithTimeouts(5*time.Second, 5*time.Second),
 		)
 
 		// 创建高重复性数据（压缩效果明显）
@@ -341,7 +341,7 @@ func TestLink_CompressionDataTransfer(t *testing.T) {
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
 			link.WithCompression(compressionState),
-			link.WithTimeouts(5*time.Second, 5*time.Second, time.Minute),
+			link.WithTimeouts(5*time.Second, 5*time.Second),
 		)
 
 		expected := createCompressibleData(2048) // 2KB重复数据
@@ -383,7 +383,7 @@ func TestLink_CompressionEffectiveness(t *testing.T) {
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
 			link.WithCompression(compressionState),
-			link.WithTimeouts(5*time.Second, 5*time.Second, time.Minute),
+			link.WithTimeouts(5*time.Second, 5*time.Second),
 		)
 
 		// 创建高重复性数据（这种数据最适合压缩）
@@ -432,7 +432,7 @@ func TestLink_BidirectionalCompression(t *testing.T) {
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
 			link.WithCompression(compressionState),
-			link.WithTimeouts(5*time.Second, 5*time.Second, time.Minute),
+			link.WithTimeouts(5*time.Second, 5*time.Second),
 		)
 
 		serverData := createCompressibleData(1024)
@@ -517,7 +517,7 @@ func TestLink_ConcurrentCompression(t *testing.T) {
 				createTestSession(t, session.UserInfo{BizID: int64(i + 1), UserID: int64(i + 10)}),
 				serverConn,
 				link.WithCompression(compressionState),
-				link.WithTimeouts(10*time.Second, 10*time.Second, time.Minute),
+				link.WithTimeouts(10*time.Second, 10*time.Second),
 			)
 		}
 
@@ -620,7 +620,7 @@ func TestLink_CompressionParameters(t *testing.T) {
 				createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 				serverConn,
 				link.WithCompression(compressionState),
-				link.WithTimeouts(5*time.Second, 5*time.Second, time.Minute),
+				link.WithTimeouts(5*time.Second, 5*time.Second),
 			)
 
 			testData := createCompressibleData(2048)
@@ -693,7 +693,7 @@ func TestLink_NetworkTimeout(t *testing.T) {
 		lk := link.New(context.Background(), "test-read-timeout",
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
-			link.WithTimeouts(10*time.Millisecond, time.Second, time.Minute),
+			link.WithTimeouts(10*time.Millisecond, time.Second),
 		)
 
 		// 客户端不发送任何数据，应该触发读取超时
@@ -720,47 +720,6 @@ func TestLink_NetworkTimeout(t *testing.T) {
 	})
 }
 
-func TestLink_IdleTimeout(t *testing.T) {
-	t.Parallel()
-
-	t.Run("应该在空闲超时后关闭连接", func(t *testing.T) {
-		t.Parallel()
-
-		serverConn, clientConn := newServerAndClientConn()
-
-		// 使用很短的空闲超时
-		lk := link.New(context.Background(), "test-idle-timeout",
-			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
-			serverConn,
-			link.WithTimeouts(50*time.Millisecond, time.Second, 100*time.Millisecond), // 短的读超时
-		)
-
-		// 发送一条消息然后停止，让连接空闲
-		go func() {
-			time.Sleep(10 * time.Millisecond)
-			_ = wsutil.WriteClientBinary(clientConn, []byte("test"))
-		}()
-
-		// 接收消息
-		select {
-		case <-lk.Receive():
-			// 收到消息
-		case <-time.After(200 * time.Millisecond):
-			t.Error("接收超时")
-		}
-
-		// 现在连接应该空闲，等待空闲超时触发
-		select {
-		case <-lk.HasClosed():
-			// 连接应该因为空闲超时被关闭
-		case <-time.After(500 * time.Millisecond):
-			// 超时没触发，可能是因为读取超时在不断重试
-			// 这是正常的，因为网络超时错误会被重试
-			t.Skip("空闲超时可能被读取超时重试掩盖，这是正常行为")
-		}
-	})
-}
-
 func TestLink_WriteRetry(t *testing.T) {
 	t.Parallel()
 
@@ -773,7 +732,7 @@ func TestLink_WriteRetry(t *testing.T) {
 		lk := link.New(context.Background(), "test-write-retry",
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
-			link.WithTimeouts(time.Second, 10*time.Millisecond, time.Minute), // 很短的写超时
+			link.WithTimeouts(time.Second, 10*time.Millisecond), // 很短的写超时
 			link.WithRetry(50*time.Millisecond, 200*time.Millisecond, 2),
 		)
 
@@ -938,8 +897,8 @@ func TestLink_SendWithRetryExhaustion(t *testing.T) {
 		lk := link.New(context.Background(), "test-retry-exhaustion",
 			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
 			serverConn,
-			link.WithTimeouts(time.Second, 1*time.Millisecond, time.Minute), // 很短的写超时
-			link.WithRetry(10*time.Millisecond, 50*time.Millisecond, 1),     // 只重试1次
+			link.WithTimeouts(time.Second, 1*time.Millisecond),          // 很短的写超时
+			link.WithRetry(10*time.Millisecond, 50*time.Millisecond, 1), // 只重试1次
 		)
 
 		// 发送消息，应该会重试然后失败
@@ -1031,7 +990,7 @@ func newAlwaysTimeoutConn(t *testing.T) (server, client net.Conn) {
 	return &alwaysTimeoutConn{Conn: serverConn}, clientConn
 }
 
-func (atc *alwaysTimeoutConn) Write(b []byte) (n int, err error) {
+func (atc *alwaysTimeoutConn) Write(_ []byte) (n int, err error) {
 	// 返回超时错误
 	return 0, &net.OpError{
 		Op:  "write",
@@ -1057,7 +1016,7 @@ func newErrorConn(t *testing.T) (server, client net.Conn) {
 	return &errorConn{Conn: serverConn}, clientConn
 }
 
-func (ec *errorConn) Write(b []byte) (n int, err error) {
+func (ec *errorConn) Write(_ []byte) (n int, err error) {
 	// 返回非网络错误
 	return 0, fmt.Errorf("custom error")
 }

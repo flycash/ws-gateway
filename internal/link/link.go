@@ -22,7 +22,6 @@ import (
 const (
 	DefaultReadTimeout       = 30 * time.Second
 	DefaultWriteTimeout      = 10 * time.Second
-	DefaultIdleTimeout       = 5 * time.Minute
 	DefaultInitRetryInterval = 1 * time.Second
 	DefaultMaxRetryInterval  = 5 * time.Second
 	DefaultMaxRetries        = 3
@@ -42,7 +41,6 @@ type Link struct {
 	conn         net.Conn
 	readTimeout  time.Duration
 	writeTimeout time.Duration
-	idleTimeout  time.Duration
 
 	// ws读写器
 	reader *wswrapper.Reader
@@ -74,13 +72,10 @@ type Link struct {
 
 type Option func(*Link)
 
-// WithCompression 新增压缩选项
-
-func WithTimeouts(read, write, idle time.Duration) Option {
+func WithTimeouts(read, write time.Duration) Option {
 	return func(l *Link) {
 		l.readTimeout = read
 		l.writeTimeout = write
-		l.idleTimeout = idle
 	}
 }
 
@@ -113,7 +108,6 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 		conn:              conn,
 		readTimeout:       DefaultReadTimeout,
 		writeTimeout:      DefaultWriteTimeout,
-		idleTimeout:       DefaultIdleTimeout,
 		reader:            wswrapper.NewServerSideReader(conn),
 		initRetryInterval: DefaultInitRetryInterval,
 		maxRetryInterval:  DefaultMaxRetryInterval,
@@ -218,10 +212,7 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 }
 
 func (l *Link) receiveLoop() {
-	timer := time.NewTimer(l.idleTimeout)
-
 	defer func() {
-		timer.Stop()
 		close(l.receiveCh) // 由写端关闭
 		_ = l.Close()
 	}()
@@ -229,14 +220,6 @@ func (l *Link) receiveLoop() {
 	for {
 		// 检查连接状态
 		select {
-		case <-timer.C:
-			l.logger.Info("连接空闲超时，关闭连接",
-				elog.String("linkID", l.id),
-				elog.Any("userInfo", l.sess.UserInfo()),
-				elog.Any("compressionState", l.compressionState),
-				elog.Duration("idleTimeout", l.idleTimeout),
-			)
-			return
 		case <-l.ctx.Done():
 			return
 		default:
@@ -274,17 +257,8 @@ func (l *Link) receiveLoop() {
 			return
 		}
 
-		timer.Reset(l.idleTimeout)
-
 		// 成功读取，阻塞发送到接收通道
 		select {
-		case <-timer.C:
-			l.logger.Info("连接空闲超时，关闭连接",
-				elog.String("linkID", l.id),
-				elog.Any("userInfo", l.sess.UserInfo()),
-				elog.Any("compressionState", l.compressionState),
-				elog.Duration("idleTimeout", l.idleTimeout))
-			return
 		case <-l.ctx.Done():
 			return
 		case l.receiveCh <- payload:
