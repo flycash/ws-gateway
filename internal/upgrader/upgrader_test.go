@@ -722,3 +722,179 @@ func TestUpgrader_Upgrade_InvalidHTTPRequest(t *testing.T) {
 	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }
+
+// ==================== AutoClose Header 测试 ====================
+
+// TestUpgrader_AutoCloseHeader_True 测试X-AutoClose: true header
+func TestUpgrader_AutoCloseHeader_True(t *testing.T) {
+	t.Parallel()
+
+	token := createTestToken()
+	compressionConfig := createDisabledCompressionConfig()
+	u := createTestUpgrader(t, token, compressionConfig)
+
+	validToken := generateValidToken(token)
+	requestURI := createTestURI(validToken)
+
+	// 创建支持X-AutoClose: true的WebSocket连接
+	serverConn, clientConn := mockWebSocketConnectionWithAutoClose(t, requestURI, "X-AutoClose", "true")
+	defer serverConn.Close()
+	defer clientConn.Close()
+
+	sess, compressionState, err := u.Upgrade(serverConn)
+
+	assert.NoError(t, err)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
+	assert.True(t, userInfo.AutoClose, "AutoClose应该为true")
+	assert.Nil(t, compressionState)
+}
+
+// TestUpgrader_AutoCloseHeader_False 测试X-AutoClose: false header
+func TestUpgrader_AutoCloseHeader_False(t *testing.T) {
+	t.Parallel()
+
+	token := createTestToken()
+	compressionConfig := createDisabledCompressionConfig()
+	u := createTestUpgrader(t, token, compressionConfig)
+
+	validToken := generateValidToken(token)
+	requestURI := createTestURI(validToken)
+
+	// 创建支持X-AutoClose: false的WebSocket连接
+	serverConn, clientConn := mockWebSocketConnectionWithAutoClose(t, requestURI, "X-AutoClose", "false")
+	defer serverConn.Close()
+	defer clientConn.Close()
+
+	sess, compressionState, err := u.Upgrade(serverConn)
+
+	assert.NoError(t, err)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
+	assert.False(t, userInfo.AutoClose, "AutoClose应该为false")
+	assert.Nil(t, compressionState)
+}
+
+// TestUpgrader_AutoCloseHeader_Missing 测试缺少X-AutoClose header
+func TestUpgrader_AutoCloseHeader_Missing(t *testing.T) {
+	t.Parallel()
+
+	token := createTestToken()
+	compressionConfig := createDisabledCompressionConfig()
+	u := createTestUpgrader(t, token, compressionConfig)
+
+	validToken := generateValidToken(token)
+	requestURI := createTestURI(validToken)
+
+	// 创建不带X-AutoClose header的WebSocket连接
+	serverConn, clientConn := mockWebSocketConnection(t, requestURI, false)
+	defer serverConn.Close()
+	defer clientConn.Close()
+
+	sess, compressionState, err := u.Upgrade(serverConn)
+
+	assert.NoError(t, err)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
+	assert.False(t, userInfo.AutoClose, "缺少header时AutoClose应该为false")
+	assert.Nil(t, compressionState)
+}
+
+// TestUpgrader_AutoCloseHeader_CaseInsensitive 测试header大小写不敏感
+func TestUpgrader_AutoCloseHeader_CaseInsensitive(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		headerName  string
+		headerValue string
+		expected    bool
+	}{
+		{"大写header", "X-AUTOCLOSE", "true", true},
+		{"小写header", "x-autoclose", "true", true},
+		{"混合大小写header", "X-AutoClose", "true", true},
+		{"小写值", "X-AutoClose", "TRUE", false}, // 值必须严格为"true"
+		{"其他值", "X-AutoClose", "yes", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			token := createTestToken()
+			compressionConfig := createDisabledCompressionConfig()
+			u := createTestUpgrader(t, token, compressionConfig)
+
+			validToken := generateValidToken(token)
+			requestURI := createTestURI(validToken)
+
+			serverConn, clientConn := mockWebSocketConnectionWithAutoClose(t, requestURI, tc.headerName, tc.headerValue)
+			defer serverConn.Close()
+			defer clientConn.Close()
+
+			sess, compressionState, err := u.Upgrade(serverConn)
+
+			assert.NoError(t, err)
+			userInfo := sess.UserInfo()
+			assert.Equal(t, tc.expected, userInfo.AutoClose,
+				"HeaderName: %s, HeaderValue: %s", tc.headerName, tc.headerValue)
+			assert.Nil(t, compressionState)
+		})
+	}
+}
+
+// mockWebSocketConnectionWithAutoClose 创建带有自定义header的WebSocket连接
+func mockWebSocketConnectionWithAutoClose(t *testing.T, requestURI, headerName, headerValue string) (serverConn net.Conn, clientConn net.Conn) {
+	serverConn, clientConn = net.Pipe()
+
+	// 使用context控制goroutine生命周期
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("客户端协程panic: %v\n", r)
+			}
+		}()
+
+		req := fmt.Sprintf("GET %s HTTP/1.1\r\n", requestURI)
+		req += hostHeader
+		req += upgradeHeader
+		req += connectionHeader
+		req += webSocketKeyHeader
+		req += webSocketVersionHeader
+
+		// 添加自定义header
+		req += fmt.Sprintf("%s: %s\r\n", headerName, headerValue)
+
+		req += crlfSeparator
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		_, err := clientConn.Write([]byte(req))
+		if err != nil {
+			return
+		}
+
+		buffer := make([]byte, 1024)
+		n, err := clientConn.Read(buffer)
+		if err != nil {
+			return
+		}
+
+		response := string(buffer[:n])
+		_ = response // 验证响应
+	}()
+
+	// 给goroutine一点时间启动
+	time.Sleep(10 * time.Millisecond)
+	return serverConn, clientConn
+}

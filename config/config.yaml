@@ -49,6 +49,9 @@ server:
       algorithm: "aes"  # 支持: aes, chacha20poly1305
       key: "1234567890abcdef1234567890abcdef"  # ChaCha20/AES-256需要32字节密钥
       iv: ""  # 初始化向量，留空时自动生成
+    autoClose:
+      idleTimeout: 10000000000
+      idleScanInterval: 5000000000
 
 backend:
   services:

@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/redis/go-redis/v9"
 
 	"gitee.com/flycash/ws-gateway/pkg/compression"
-	session "gitee.com/flycash/ws-gateway/pkg/session"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/gobwas/httphead"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsflate"
@@ -49,6 +50,8 @@ func (u *Upgrader) Name() string {
 func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, error) {
 	var ss session.Session
 	var compressionState *compression.State
+	var autoClose bool
+	var userInfo session.UserInfo
 
 	// 只有配置启用时才创建压缩扩展
 	var ext *wsflate.Extension
@@ -68,27 +71,45 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			return httphead.Option{}, nil
 		},
 		OnRequest: func(uri []byte) error {
-			userInfo, err := u.getUserInfo(string(uri))
+			var err error
+			userInfo, err = u.getUserInfo(string(uri))
 			if err != nil {
 				u.logger.Error("获取用户信息失败",
 					elog.FieldErr(err),
 				)
 				return fmt.Errorf("%w", err)
 			}
+			return nil
+		},
+		OnHeader: func(key, value []byte) error {
+			// 解析 X-AutoClose header (大小写不敏感)
+			if strings.EqualFold(string(key), "X-AutoClose") {
+				autoClose = string(value) == "true"
+				u.logger.Debug("解析到AutoClose header",
+					elog.String("key", string(key)),
+					elog.String("value", string(value)),
+					elog.Any("autoClose", autoClose))
+			}
+			return nil
+		},
+		OnBeforeUpgrade: func() (ws.HandshakeHeader, error) {
+			// 在升级前设置autoClose并创建session
+			userInfo.AutoClose = autoClose
+
 			provider := session.NewRedisSessionProvider(u.rdb)
 			s, isNew, err := provider.Provide(context.Background(), userInfo)
 			if err != nil {
-				return fmt.Errorf("%w", err)
+				return nil, fmt.Errorf("%w", err)
 			}
 			if !isNew {
 				err = ErrExistedUser
 				u.logger.Error("用户已存在",
 					elog.FieldErr(err),
 				)
-				return fmt.Errorf("%w", err)
+				return nil, fmt.Errorf("%w", err)
 			}
 			ss = s
-			return nil
+			return ws.HandshakeHeaderString(""), nil
 		},
 	}
 
@@ -126,5 +147,10 @@ func (u *Upgrader) getUserInfo(uri string) (session.UserInfo, error) {
 	if err != nil {
 		return session.UserInfo{}, fmt.Errorf("%w: %w", ErrInvalidUserToken, err)
 	}
-	return session.UserInfo{BizID: userClaims.BizID, UserID: userClaims.UserID}, nil
+
+	return session.UserInfo{
+		BizID:  userClaims.BizID,
+		UserID: userClaims.UserID,
+		// AutoClose将在OnHeader回调中设置
+	}, nil
 }

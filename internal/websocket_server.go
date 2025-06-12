@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
@@ -38,7 +39,11 @@ type WebSocketServer struct {
 	mqPartitions int
 	mqTopic      string
 
-	links  *syncx.Map[string, gateway.Link]
+	links *syncx.Map[string, gateway.Link]
+
+	idleTimeout      time.Duration
+	idleScanInterval time.Duration
+
 	logger *elog.Component
 }
 
@@ -56,6 +61,8 @@ func newWebSocketServer(c *Container) *WebSocketServer {
 		mqPartitions:     c.mqPartitions,
 		mqTopic:          c.mqTopic,
 		links:            &syncx.Map[string, gateway.Link]{},
+		idleTimeout:      c.idleTimeout,
+		idleScanInterval: c.idleScanInterval,
 		logger:           c.logger,
 	}
 }
@@ -84,6 +91,10 @@ func (s *WebSocketServer) Start() error {
 	if err != nil {
 		return err
 	}
+
+	// 启动空闲连接清理协程
+	go s.cleanIdleLinks()
+
 	go s.acceptConn(l)
 
 	<-s.ctx.Done()
@@ -158,7 +169,10 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 
 	userInfo := sess.UserInfo()
 	linkID := s.getLinkID(userInfo.BizID, userInfo.UserID)
-	lk := link.New(s.ctx, linkID, sess, conn, link.WithCompression(compressionState))
+	lk := link.New(s.ctx, linkID, sess, conn,
+		link.WithCompression(compressionState),
+		link.WithAutoClose(userInfo.AutoClose),
+	)
 	s.links.Store(linkID, lk)
 
 	defer func() {
@@ -326,4 +340,34 @@ func (s *WebSocketServer) findLink(msg *apiv1.PushMessage) (gateway.Link, error)
 		return nil, fmt.Errorf("%w: bizID=%d, userID=%d", ErrUnknownReceiver, msg.GetBizId(), msg.GetReceiverId())
 	}
 	return lk, nil
+}
+
+func (s *WebSocketServer) cleanIdleLinks() {
+	ticker := time.NewTicker(s.idleScanInterval)
+	defer ticker.Stop()
+
+	s.logger.Info("空闲连接清理器已启动",
+		elog.Duration("scanInterval", s.idleScanInterval),
+		elog.Duration("idleTimeout", s.idleTimeout))
+
+	for {
+		select {
+		case <-s.ctx.Done():
+			s.logger.Info("空闲连接清理器已停止")
+			return
+		case <-ticker.C:
+			s.links.Range(func(key string, link gateway.Link) bool {
+				if link.TryCloseIfIdle(s.idleTimeout) {
+					// TryCloseIfIdle已经关闭了连接，这里只需要原子删除
+					if l, deleted := s.links.LoadAndDelete(key); deleted {
+						s.logger.Info("清理空闲连接",
+							elog.String("linkID", l.ID()),
+							elog.Any("userInfo", l.Session().UserInfo()),
+						)
+					}
+				}
+				return true
+			})
+		}
+	}
 }

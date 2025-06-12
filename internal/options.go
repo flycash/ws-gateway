@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"time"
+
 	gateway "gitee.com/flycash/ws-gateway"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
@@ -61,5 +63,12 @@ func WithMQ(q mq.MQ, partitions int, topic string) Option {
 		c.mq = q
 		c.mqPartitions = partitions
 		c.mqTopic = topic
+	}
+}
+
+func WithAutoCloseIdleLink(idleTimeout, idleScanInterval time.Duration) Option {
+	return func(c *Container) {
+		c.idleTimeout = idleTimeout
+		c.idleScanInterval = idleScanInterval
 	}
 }

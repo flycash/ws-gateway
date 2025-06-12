@@ -293,6 +293,9 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 
 // handleOnUpstreamMessageCmd 处理前端发来的"上行业务消息"请求
 func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message) error {
+	// 收到有意义的上行消息，更新活跃时间
+	lk.UpdateActiveTime()
+
 	resp, err := l.forwardToBusinessBackend(msg)
 	if err != nil {
 		// 向业务后端转发失败，（包含已经重试）如何处理？ 这里返回err相当于丢掉了，等待前端超时重试
@@ -424,6 +427,9 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 		)
 		return fmt.Errorf("%w", err)
 	}
+
+	// 成功推送下行消息，更新活跃时间
+	lk.UpdateActiveTime()
 	return nil
 }
 

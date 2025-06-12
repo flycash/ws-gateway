@@ -158,6 +158,9 @@ func (t *Task) retry() {
 		return
 	}
 
+	// 重传成功，更新活跃时间
+	t.link.UpdateActiveTime()
+
 	t.manager.logger.Info("重传消息成功",
 		elog.String("key", t.key),
 		elog.String("linkID", t.link.ID()),

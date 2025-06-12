@@ -27,10 +27,13 @@ func InitWebSocketServer(
 	}
 	partitions := econf.GetInt("pushMessageEvent.partitions")
 	topic := econf.GetString("pushMessageEvent.topic")
+	idleTimeout := econf.GetDuration("server.websocket.autoClose.idleTimeout")
+	idleScanInterval := econf.GetDuration("server.websocket.autoClose.idleScanInterval")
 	return internal.Load(configKey).Build(
 		internal.WithMQ(q, partitions, topic),
 		internal.WithCache(cache),
 		internal.WithUpgrader(upgrader.New(rdb, userToken, compressionConfig)),
 		internal.WithLinkEventHandler(wrapper),
+		internal.WithAutoCloseIdleLink(idleTimeout, idleScanInterval),
 	)
 }

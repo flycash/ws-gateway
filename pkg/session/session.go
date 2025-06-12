@@ -54,8 +54,9 @@ type Session interface {
 
 // UserInfo 结构体定义了用户会话信息。
 type UserInfo struct {
-	BizID  int64 `json:"bizId"`
-	UserID int64 `json:"userId"`
+	BizID     int64 `json:"bizId"`
+	UserID    int64 `json:"userId"`
+	AutoClose bool  `json:"autoClose"` // 是否允许空闲时自动关闭连接
 }
 
 // redisSession 是 Session 接口的Redis实现。

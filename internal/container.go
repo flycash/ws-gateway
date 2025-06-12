@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"time"
+
 	gateway "gitee.com/flycash/ws-gateway"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
@@ -23,7 +25,11 @@ type Container struct {
 	mq               mq.MQ
 	mqPartitions     int
 	mqTopic          string
-	logger           *elog.Component
+
+	idleTimeout      time.Duration
+	idleScanInterval time.Duration
+
+	logger *elog.Component
 }
 
 // DefaultContainer 返回暂存Component的默认配置信息的Container

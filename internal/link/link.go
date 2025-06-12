@@ -66,6 +66,11 @@ type Link struct {
 	closeOnce sync.Once
 	closeErr  error
 
+	// 空闲连接管理
+	mu             sync.RWMutex
+	autoClose      bool
+	lastActiveTime time.Time
+
 	// 日志
 	logger *elog.Component
 }
@@ -100,6 +105,12 @@ func WithBuffer(sendBuf, recvBuf int) Option {
 	}
 }
 
+func WithAutoClose(autoClose bool) Option {
+	return func(l *Link) {
+		l.autoClose = autoClose
+	}
+}
+
 func New(parent context.Context, id string, sess session.Session, conn net.Conn, opts ...Option) *Link {
 	ctx, cancel := context.WithCancel(parent)
 	l := &Link{
@@ -116,6 +127,7 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 		receiveCh:         make(chan []byte, DefaultReadBufferSize),
 		ctx:               ctx,
 		cancel:            cancel,
+		lastActiveTime:    time.Now(), // 初始化活跃时间
 		logger:            elog.EgoLogger.With(elog.FieldComponent("Link")),
 	}
 
@@ -307,4 +319,32 @@ func (l *Link) Close() error {
 		cancelFunc()
 	})
 	return l.closeErr
+}
+
+func (l *Link) UpdateActiveTime() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.ctx.Err() == nil {
+		l.lastActiveTime = time.Now()
+	}
+}
+
+func (l *Link) TryCloseIfIdle(timeout time.Duration) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// 合并条件判断
+	if !l.autoClose || time.Since(l.lastActiveTime) <= timeout || l.ctx.Err() != nil {
+		return false
+	}
+
+	// 执行关闭逻辑
+	if err := l.Close(); err != nil {
+		l.logger.Error("关闭空闲连接失败",
+			elog.String("linkID", l.id),
+			elog.FieldErr(err))
+	}
+
+	return true
 }
