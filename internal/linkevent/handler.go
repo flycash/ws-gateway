@@ -117,7 +117,7 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 			l.logger.Error("获取消息失败",
 				elog.String("step", "OnFrontendSendMessage"),
 				elog.String("linkID", lk.ID()),
-				elog.Any("session", lk.Session()),
+				elog.Any("userInfo", lk.Session().UserInfo()),
 				elog.FieldErr(err),
 			)
 		}
@@ -134,7 +134,7 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 		l.logger.Error("前端发送未知消息类型",
 			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
+			elog.Any("userInfo", lk.Session().UserInfo()),
 		)
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageCommandType)
 	}
@@ -248,7 +248,7 @@ func (l *Handler) handleOnHeartbeatCmd(lk gateway.Link, msg *apiv1.Message) erro
 	l.logger.Info("收到心跳包，原样返回",
 		elog.String("step", "handleOnHeartbeatCmd"),
 		elog.String("linkID", lk.ID()),
-		elog.Any("session", lk.Session()),
+		elog.Any("userInfo", lk.Session().UserInfo()),
 		elog.String("消息体", msg.String()))
 	return l.push(lk, msg)
 }
@@ -284,7 +284,7 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 			elog.String("step", "push"),
 			elog.String("消息体", msg.String()),
 			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
+			elog.Any("userInfo", lk.Session().UserInfo()),
 			elog.FieldErr(err))
 		return err
 	}
@@ -389,7 +389,7 @@ func (l *Handler) handleDownstreamAckCmd(lk gateway.Link, msg *apiv1.Message) er
 	l.logger.Info("收到下行消息确认",
 		elog.String("step", "handleDownstreamAckCmd"),
 		elog.String("linkID", lk.ID()),
-		elog.Any("session", lk.Session()),
+		elog.Any("userInfo", lk.Session().UserInfo()),
 		elog.String("msg", msg.String()),
 	)
 	return nil

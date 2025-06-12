@@ -9,9 +9,7 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	"gitee.com/flycash/ws-gateway/internal/consts"
 	"gitee.com/flycash/ws-gateway/internal/link"
-	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/ecodeclub/mq-api"
@@ -157,18 +155,14 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 		)
 		return
 	}
-	if err1 := s.cacheSessionInfo(sess); err1 != nil {
-		return
-	}
 
-	linkID := s.getLinkID(sess.BizID, sess.UserID)
+	userInfo := sess.UserInfo()
+	linkID := s.getLinkID(userInfo.BizID, userInfo.UserID)
 	lk := link.New(s.ctx, linkID, sess, conn, link.WithCompression(compressionState))
 	s.links.Store(linkID, lk)
 
 	defer func() {
-		if err1 := s.deleteSessionInfo(sess); err1 == nil {
-			s.links.Delete(lk.ID())
-		}
+		s.links.Delete(lk.ID())
 		if err1 := lk.Close(); err1 != nil {
 			s.logger.Error("关闭Link失败",
 				elog.String("step", "handleConn"),
@@ -231,34 +225,6 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 
 func (s *WebSocketServer) getLinkID(bizID, userID int64) string {
 	return fmt.Sprintf("%d-%d", bizID, userID)
-}
-
-func (s *WebSocketServer) cacheSessionInfo(sess session.Session) error {
-	key := consts.SessionCacheKey(sess)
-	err := s.cache.Set(context.Background(), key, sess.String(), 0)
-	if err != nil {
-		s.logger.Error("记录Session失败",
-			elog.String("step", "handleConn"),
-			elog.String("step", "cacheSessionInfo"),
-			elog.String("key", key),
-			elog.FieldErr(err))
-		return err
-	}
-	return nil
-}
-
-func (s *WebSocketServer) deleteSessionInfo(sess session.Session) error {
-	key := consts.SessionCacheKey(sess)
-	_, err := s.cache.Delete(context.Background(), key)
-	if err != nil {
-		s.logger.Error("删除Session失败",
-			elog.String("step", "handleConn"),
-			elog.String("step", "deleteSessionInfo"),
-			elog.String("key", key),
-			elog.FieldErr(err))
-		return err
-	}
-	return nil
 }
 
 func (s *WebSocketServer) Stop() error {

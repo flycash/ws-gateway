@@ -15,6 +15,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/gotomicro/ego/core/elog"
+	"go.uber.org/multierr"
 )
 
 // 默认配置常量
@@ -135,8 +136,9 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 		compressionEnabled = l.compressionState.Enabled
 	}
 	l.writer = wswrapper.NewServerSideWriter(conn, compressionEnabled)
-
+	//nolint:contextcheck // 内部已处理
 	go l.sendLoop()
+	//nolint:contextcheck // 内部已处理
 	go l.receiveLoop()
 	return l
 }
@@ -183,7 +185,7 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 
 		l.logger.Error("向客户端发消息失败",
 			elog.String("linkID", l.id),
-			elog.Any("session", l.sess),
+			elog.Any("userInfo", l.sess.UserInfo()),
 			elog.Int("payloadLen", len(payload)),
 			elog.Any("compressionState", l.compressionState),
 			elog.FieldErr(err),
@@ -196,7 +198,7 @@ func (l *Link) sendWithRetry(payload []byte) bool {
 			if !couldRetry {
 				l.logger.Error("重试次数耗尽，放弃发送",
 					elog.String("linkID", l.id),
-					elog.Any("session", l.sess),
+					elog.Any("userInfo", l.sess.UserInfo()),
 					elog.Any("compressionState", l.compressionState),
 				)
 				return false
@@ -230,7 +232,7 @@ func (l *Link) receiveLoop() {
 		case <-timer.C:
 			l.logger.Info("连接空闲超时，关闭连接",
 				elog.String("linkID", l.id),
-				elog.Any("session", l.sess),
+				elog.Any("userInfo", l.sess.UserInfo()),
 				elog.Any("compressionState", l.compressionState),
 				elog.Duration("idleTimeout", l.idleTimeout),
 			)
@@ -256,7 +258,7 @@ func (l *Link) receiveLoop() {
 				wsErr.Code == ws.StatusGoingAway {
 				l.logger.Info("客户端关闭连接",
 					elog.String("linkID", l.id),
-					elog.Any("session", l.sess),
+					elog.Any("userInfo", l.sess.UserInfo()),
 					elog.Any("compressionState", l.compressionState),
 				)
 				return
@@ -264,7 +266,7 @@ func (l *Link) receiveLoop() {
 
 			l.logger.Error("从客户端读取消息失败",
 				elog.String("linkID", l.id),
-				elog.Any("session", l.sess),
+				elog.Any("userInfo", l.sess.UserInfo()),
 				elog.Any("compressionState", l.compressionState),
 				elog.FieldErr(err),
 			)
@@ -279,7 +281,7 @@ func (l *Link) receiveLoop() {
 		case <-timer.C:
 			l.logger.Info("连接空闲超时，关闭连接",
 				elog.String("linkID", l.id),
-				elog.Any("session", l.sess),
+				elog.Any("userInfo", l.sess.UserInfo()),
 				elog.Any("compressionState", l.compressionState),
 				elog.Duration("idleTimeout", l.idleTimeout))
 			return
@@ -324,6 +326,11 @@ func (l *Link) Close() error {
 
 		// 4. 关闭底层连接
 		l.closeErr = l.conn.Close()
+
+		// 5.销毁session
+		ctx, cancelFunc := context.WithTimeout(context.Background(), DefaultCloseTimeout)
+		l.closeErr = multierr.Append(l.closeErr, l.sess.Destroy(ctx))
+		cancelFunc()
 	})
 	return l.closeErr
 }

@@ -41,10 +41,10 @@ func (o *OnlineUserHandler) OnConnect(lk gateway.Link) error {
 }
 
 func (o *OnlineUserHandler) labelValues(lk gateway.Link) []string {
-	sess := lk.Session()
+	userInfo := lk.Session().UserInfo()
 	return []string{
-		strconv.FormatInt(sess.BizID, 10),
-		strconv.FormatInt(sess.UserID, 10),
+		strconv.FormatInt(userInfo.BizID, 10),
+		strconv.FormatInt(userInfo.UserID, 10),
 	}
 }
 

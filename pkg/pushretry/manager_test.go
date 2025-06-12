@@ -16,8 +16,11 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/pushretry"
 	"gitee.com/flycash/ws-gateway/pkg/session"
+	"gitee.com/flycash/ws-gateway/pkg/session/mocks"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 type ManagerTestSuite struct {
@@ -349,5 +352,22 @@ func (s *ManagerTestSuite) TestConcurrentOperations() {
 
 func (s *ManagerTestSuite) createTestLink(linkID string) gateway.Link {
 	server, _ := net.Pipe()
-	return link.New(context.Background(), linkID, session.Session{BizID: 1, UserID: 123}, server)
+
+	// 创建mock Redis
+	ctrl := gomock.NewController(s.T())
+	mockRedis := mocks.NewMockCmdable(ctrl)
+
+	// Mock session creation
+	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(redis.NewCmdResult(int64(1), nil)).AnyTimes()
+
+	// Mock session destruction (Del operation) - 用于Link关闭时
+	mockRedis.EXPECT().Del(gomock.Any(), gomock.Any()).
+		Return(redis.NewIntResult(int64(1), nil)).AnyTimes()
+
+	provider := session.NewRedisSessionProvider(mockRedis)
+	userInfo := session.UserInfo{BizID: 1, UserID: 123}
+	sess, _, _ := provider.Provide(context.Background(), userInfo)
+
+	return link.New(context.Background(), linkID, sess, server)
 }

@@ -5,6 +5,7 @@ package ioc
 import (
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
+	"github.com/redis/go-redis/v9"
 
 	"gitee.com/flycash/ws-gateway/ioc"
 	"github.com/ecodeclub/ecache"
@@ -36,6 +37,7 @@ func InitApp() App {
 func convertToWebsocketComponents(
 	messageQueue mq.MQ,
 	c ecache.Cache,
+	rdb redis.Cmdable,
 	userToken *jwt.UserToken,
 	wrapper *gateway.LinkEventHandlerWrapper,
 ) []gateway.Server {
@@ -43,7 +45,7 @@ func convertToWebsocketComponents(
 	s := make([]gateway.Server, 0, 1)
 	// for i := range config {
 	// configKey := fmt.Sprintf("server.websocket.%d", i)
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, userToken, wrapper))
+	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, rdb, userToken, wrapper))
 	// }
 	return s
 }

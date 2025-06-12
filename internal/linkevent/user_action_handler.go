@@ -72,26 +72,26 @@ func (u *UserActionHandler) OnConnect(lk gateway.Link) error {
 		u.logger.Error("发送用户上线事件失败",
 			elog.String("action", ActionOnline),
 			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
+			elog.Any("userInfo", lk.Session().UserInfo()),
 			elog.FieldErr(err),
 		)
 	} else {
 		u.logger.Info("发送用户上线事件成功",
 			elog.String("action", ActionOnline),
 			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
+			elog.Any("userInfo", lk.Session().UserInfo()),
 		)
 	}
 	return nil
 }
 
 func (u *UserActionHandler) sendUserActionEvent(lk gateway.Link, action string) error {
-	sess := lk.Session()
+	userInfo := lk.Session().UserInfo()
 	ctx, cancel := context.WithTimeout(context.Background(), u.requestTimeout)
 	defer cancel()
 	return u.producer.Produce(ctx, UserAction{
-		BizID:  sess.BizID,
-		UserID: sess.UserID,
+		BizID:  userInfo.BizID,
+		UserID: userInfo.UserID,
 		Action: action,
 	})
 }
@@ -110,14 +110,14 @@ func (u *UserActionHandler) OnDisconnect(lk gateway.Link) error {
 		u.logger.Error("发送用户下线事件失败",
 			elog.String("action", ActionOffline),
 			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
+			elog.Any("userInfo", lk.Session().UserInfo()),
 			elog.FieldErr(err),
 		)
 	} else {
 		u.logger.Info("发送用户下线事件成功",
 			elog.String("action", ActionOffline),
 			elog.String("linkID", lk.ID()),
-			elog.Any("session", lk.Session()),
+			elog.Any("userInfo", lk.Session().UserInfo()),
 		)
 	}
 	return nil

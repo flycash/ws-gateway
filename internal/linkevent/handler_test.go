@@ -19,9 +19,11 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"gitee.com/flycash/ws-gateway/pkg/session"
+	sessionmocks "gitee.com/flycash/ws-gateway/pkg/session/mocks"
 	"github.com/ecodeclub/ecache/memory/lru"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
@@ -58,7 +60,7 @@ func (s *LinkEventHandlerSuite) TestOnConnect() {
 	handler := newLinkEventHandler(t, s.c, bizID, nil)
 
 	serverConn, _ := newServerAndClientConn()
-	lk := newLink(t.Context(), "1", session.Session{BizID: bizID, UserID: 123}, serverConn)
+	lk := newLink(t.Context(), "1", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 123}), serverConn)
 
 	s.NoError(handler.OnConnect(lk))
 }
@@ -69,7 +71,7 @@ func (s *LinkEventHandlerSuite) TestOnDisconnect() {
 	handler := newLinkEventHandler(t, s.c, bizID, nil)
 
 	serverConn, _ := newServerAndClientConn()
-	lk := newLink(t.Context(), "2", session.Session{BizID: bizID, UserID: 223}, serverConn)
+	lk := newLink(t.Context(), "2", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 223}), serverConn)
 
 	s.NoError(handler.OnDisconnect(lk))
 }
@@ -95,7 +97,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 
 		handler := newLinkEventHandler(t, s.c, bizID, client)
 		serverConn, _ := newServerAndClientConn()
-		lk := newLink(t.Context(), "3", session.Session{BizID: bizID, UserID: 323}, serverConn)
+		lk := newLink(t.Context(), "3", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 323}), serverConn)
 		assert.NoError(t, lk.Close())
 		<-lk.HasClosed()
 
@@ -120,7 +122,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		bizID := int64(4)
 		handler := newLinkEventHandler(t, s.c, bizID, nil)
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink(t.Context(), "4", session.Session{BizID: bizID, UserID: 423}, serverConn)
+		lk := newLink(t.Context(), "4", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 423}), serverConn)
 
 		clientErrorCh := make(chan error)
 		go func() {
@@ -145,7 +147,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		bizID := int64(5)
 		handler := newLinkEventHandler(t, s.c, bizID, nil)
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink(t.Context(), "5", session.Session{BizID: bizID, UserID: 523}, serverConn)
+		lk := newLink(t.Context(), "5", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 523}), serverConn)
 
 		apiMessage := &apiv1.Message{
 			Cmd:   apiv1.Message_COMMAND_TYPE_INVALID_UNSPECIFIED,
@@ -176,7 +178,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		bizID := int64(7)
 		handler := newLinkEventHandler(t, s.c, bizID, nil)
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink(t.Context(), "7", session.Session{BizID: bizID, UserID: 723}, serverConn)
+		lk := newLink(t.Context(), "7", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 723}), serverConn)
 
 		expectedHeartbeat := &apiv1.Message{
 			Cmd:   apiv1.Message_COMMAND_TYPE_HEARTBEAT,
@@ -229,7 +231,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 
 		handler := newLinkEventHandler(t, s.c, bizID, client)
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink(t.Context(), "8", session.Session{BizID: bizID, UserID: 823}, serverConn)
+		lk := newLink(t.Context(), "8", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 823}), serverConn)
 
 		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "Hello 船新IM"})
 		assert.NoError(t, err)
@@ -278,7 +280,7 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 
 		handler := newLinkEventHandler(t, s.c, bizID, client)
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink(t.Context(), "8", session.Session{BizID: bizID, UserID: 623}, serverConn)
+		lk := newLink(t.Context(), "8", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 623}), serverConn)
 
 		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "Hello 船新IM"})
 		assert.NoError(t, err)
@@ -328,7 +330,7 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		bizID := int64(9)
 		handler := newLinkEventHandler(t, s.c, bizID, nil)
 		serverConn, _ := newServerAndClientConn()
-		lk := newLink(t.Context(), "9", session.Session{BizID: bizID, UserID: 923}, serverConn)
+		lk := newLink(t.Context(), "9", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 923}), serverConn)
 		assert.NoError(t, lk.Close())
 		<-lk.HasClosed()
 
@@ -350,7 +352,7 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		bizID := int64(10)
 		handler := newLinkEventHandler(t, s.c, bizID, nil)
 		serverConn, _ := newServerAndClientConn()
-		lk := newLink(t.Context(), "10", session.Session{BizID: bizID, UserID: 1023}, serverConn)
+		lk := newLink(t.Context(), "10", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 1023}), serverConn)
 
 		message := (*apiv1.PushMessage)(nil)
 		assert.ErrorIs(t, handler.OnBackendPushMessage(lk, message), linkevent.ErrUnKnownBackendMessageFormat)
@@ -362,7 +364,7 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		bizID := int64(11)
 		handler := newLinkEventHandler(t, s.c, bizID, nil)
 		serverConn, clientConn := newServerAndClientConn()
-		lk := newLink(t.Context(), "11", session.Session{BizID: bizID, UserID: 1123}, serverConn)
+		lk := newLink(t.Context(), "11", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 1123}), serverConn)
 
 		msgID := int64(1)
 		body, _ := protojson.Marshal(&wrapperspb.Int64Value{Value: msgID})
@@ -416,7 +418,7 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		bizID := int64(12)
 		handler := newLinkEventHandler(t, s.c, bizID, nil)
 		serverConn, _ := newServerAndClientConn()
-		lk := newLink(t.Context(), "12", session.Session{BizID: bizID, UserID: 1223}, serverConn)
+		lk := newLink(t.Context(), "12", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 1223}), serverConn)
 
 		body, _ := protojson.Marshal(&wrapperspb.StringValue{Value: "测试重传"})
 		pushMessage := &apiv1.PushMessage{
@@ -484,4 +486,23 @@ func newLink(ctx context.Context, linkID string, sess session.Session, server ne
 
 func newServerAndClientConn() (server, client net.Conn) {
 	return net.Pipe()
+}
+
+// createTestSession 创建测试用的session
+func createTestSession(ctx context.Context, userInfo session.UserInfo) session.Session {
+	ctrl := gomock.NewController(&testing.T{})
+	mockRedis := sessionmocks.NewMockCmdable(ctrl)
+
+	// Mock session creation
+	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(redis.NewCmdResult(int64(1), nil)).AnyTimes()
+
+	// Mock session destruction (Del operation) - 用于Link关闭时
+	mockRedis.EXPECT().Del(gomock.Any(), gomock.Any()).
+		Return(redis.NewIntResult(int64(1), nil)).AnyTimes()
+
+	provider := session.NewRedisSessionProvider(mockRedis)
+	sess, _, _ := provider.Provide(ctx, userInfo)
+
+	return sess
 }

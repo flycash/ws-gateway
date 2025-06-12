@@ -8,11 +8,10 @@ import (
 	"net/url"
 
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
+	"github.com/redis/go-redis/v9"
 
-	"gitee.com/flycash/ws-gateway/internal/consts"
 	"gitee.com/flycash/ws-gateway/pkg/compression"
-	"gitee.com/flycash/ws-gateway/pkg/session"
-	"github.com/ecodeclub/ecache"
+	session "gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/gobwas/httphead"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsflate"
@@ -22,21 +21,20 @@ import (
 var (
 	ErrInvalidURI       = errors.New("无效的URI")
 	ErrInvalidUserToken = errors.New("无效的UserToken")
-	ErrExistedLink      = errors.New("连接已存在")
+	ErrExistedUser      = errors.New("用户已存在")
 )
 
 type Upgrader struct {
-	//  cache 与Component共享同一个实例,用于获取session中的数据
-	cache             ecache.Cache
+	rdb               redis.Cmdable
 	token             *jwt.UserToken
 	compressionConfig compression.Config
 	logger            *elog.Component
 }
 
 // New 创建一个升级器
-func New(cache ecache.Cache, token *jwt.UserToken, compressionConfig compression.Config) *Upgrader {
+func New(rdb redis.Cmdable, token *jwt.UserToken, compressionConfig compression.Config) *Upgrader {
 	return &Upgrader{
-		cache:             cache,
+		rdb:               rdb,
 		token:             token,
 		compressionConfig: compressionConfig,
 		logger:            elog.EgoLogger.With(elog.FieldComponent("Upgrader")),
@@ -49,7 +47,7 @@ func (u *Upgrader) Name() string {
 
 // Upgrade 升级连接并支持压缩协商
 func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, error) {
-	var sess session.Session
+	var ss session.Session
 	var compressionState *compression.State
 
 	// 只有配置启用时才创建压缩扩展
@@ -70,31 +68,33 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			return httphead.Option{}, nil
 		},
 		OnRequest: func(uri []byte) error {
-			s, err := u.getSession(string(uri))
+			userInfo, err := u.getUserInfo(string(uri))
 			if err != nil {
-				u.logger.Error("获取session失败",
+				u.logger.Error("获取用户信息失败",
 					elog.FieldErr(err),
 				)
 				return fmt.Errorf("%w", err)
 			}
-
-			v := u.cache.Get(context.Background(), consts.SessionCacheKey(s))
-			if !v.KeyNotFound() {
-				err = ErrExistedLink
-				u.logger.Error("Link已存在",
+			provider := session.NewRedisSessionProvider(u.rdb)
+			s, isNew, err := provider.Provide(context.Background(), userInfo)
+			if err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			if !isNew {
+				err = ErrExistedUser
+				u.logger.Error("用户已存在",
 					elog.FieldErr(err),
 				)
 				return fmt.Errorf("%w", err)
 			}
-
-			sess = s
+			ss = s
 			return nil
 		},
 	}
 
 	_, err := upgrader.Upgrade(conn)
 	if err != nil {
-		return session.Session{}, nil, err
+		return nil, nil, err
 	}
 
 	// 检查压缩协商结果
@@ -111,21 +111,20 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			u.logger.Warn("压缩协商失败，降级到无压缩模式")
 		}
 	}
-
-	return sess, compressionState, nil
+	return ss, compressionState, nil
 }
 
-func (u *Upgrader) getSession(uri string) (session.Session, error) {
+func (u *Upgrader) getUserInfo(uri string) (session.UserInfo, error) {
 	uu, err := url.Parse(uri)
 	if err != nil {
-		return session.Session{}, ErrInvalidURI
+		return session.UserInfo{}, ErrInvalidURI
 	}
 
 	params := uu.Query()
 	token := params.Get("token")
 	userClaims, err := u.token.Decode(token)
 	if err != nil {
-		return session.Session{}, fmt.Errorf("%w: %w", ErrInvalidUserToken, err)
+		return session.UserInfo{}, fmt.Errorf("%w: %w", ErrInvalidUserToken, err)
 	}
-	return session.Session{BizID: userClaims.BizID, UserID: userClaims.UserID}, nil
+	return session.UserInfo{BizID: userClaims.BizID, UserID: userClaims.UserID}, nil
 }

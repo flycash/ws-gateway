@@ -9,12 +9,14 @@ import (
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/econf"
+	"github.com/redis/go-redis/v9"
 )
 
 func InitWebSocketServer(
 	configKey string,
 	q mq.MQ,
 	cache ecache.Cache,
+	rdb redis.Cmdable,
 	userToken *jwt.UserToken,
 	wrapper *gateway.LinkEventHandlerWrapper,
 ) gateway.Server {
@@ -28,7 +30,7 @@ func InitWebSocketServer(
 	return internal.Load(configKey).Build(
 		internal.WithMQ(q, partitions, topic),
 		internal.WithCache(cache),
-		internal.WithUpgrader(upgrader.New(cache, userToken, compressionConfig)),
+		internal.WithUpgrader(upgrader.New(rdb, userToken, compressionConfig)),
 		internal.WithLinkEventHandler(wrapper),
 	)
 }

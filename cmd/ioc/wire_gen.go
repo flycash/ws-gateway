@@ -12,6 +12,7 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
+	"github.com/redis/go-redis/v9"
 )
 
 // Injectors from wire.go:
@@ -24,7 +25,7 @@ func InitApp() App {
 	codec := ioc.InitSerializer()
 	component := ioc.InitEtcdClient()
 	linkEventHandlerWrapper := ioc.InitLinkEventHandlerWrapper(cache, codec, component, mq)
-	v := convertToWebsocketComponents(mq, cache, userToken, linkEventHandlerWrapper)
+	v := convertToWebsocketComponents(mq, cache, cmdable, userToken, linkEventHandlerWrapper)
 	app := App{
 		OrderServer: v,
 	}
@@ -40,13 +41,14 @@ type App struct {
 func convertToWebsocketComponents(
 	messageQueue mq.MQ,
 	c ecache.Cache,
+	rdb redis.Cmdable,
 	userToken *jwt.UserToken,
 	wrapper *gateway.LinkEventHandlerWrapper,
 ) []gateway.Server {
 	configKey := "server.websocket"
 	s := make([]gateway.Server, 0, 1)
 
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, userToken, wrapper))
+	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, rdb, userToken, wrapper))
 
 	return s
 }

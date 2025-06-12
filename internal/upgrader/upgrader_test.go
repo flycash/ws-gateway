@@ -11,17 +11,16 @@ import (
 	"testing"
 	"time"
 
-	"gitee.com/flycash/ws-gateway/internal/consts"
 	"gitee.com/flycash/ws-gateway/internal/upgrader"
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
-	"gitee.com/flycash/ws-gateway/pkg/session"
+	"gitee.com/flycash/ws-gateway/pkg/session/mocks"
 
-	"github.com/ecodeclub/ecache"
-	"github.com/ecodeclub/ecache/memory/lru"
 	jwtgo "github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 // 定义常量以满足 goconst 要求
@@ -36,14 +35,6 @@ const (
 )
 
 // ==================== 测试辅助函数 ====================
-
-// createTestCache 创建测试用的缓存
-func createTestCache() ecache.Cache {
-	return &ecache.NamespaceCache{
-		C:         lru.NewCache(100),
-		Namespace: "ws-gateway-test",
-	}
-}
 
 // createTestToken 创建测试用的JWT token组件
 func createTestToken() *jwt.UserToken {
@@ -108,8 +99,27 @@ func createDisabledCompressionConfig() compression.Config {
 }
 
 // createTestUpgrader 创建测试用的Upgrader
-func createTestUpgrader(cache ecache.Cache, token *jwt.UserToken, compressionConfig compression.Config) *upgrader.Upgrader {
-	return upgrader.New(cache, token, compressionConfig)
+func createTestUpgrader(t *testing.T, token *jwt.UserToken, compressionConfig compression.Config) *upgrader.Upgrader {
+	ctrl := gomock.NewController(t)
+	mockRedis := mocks.NewMockCmdable(ctrl)
+
+	// Mock 新建Session成功
+	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(redis.NewCmdResult(int64(1), nil)).AnyTimes()
+
+	return upgrader.New(mockRedis, token, compressionConfig)
+}
+
+// createTestUpgraderWithExistingSession 创建已存在Session的Upgrader
+func createTestUpgraderWithExistingSession(t *testing.T, token *jwt.UserToken, compressionConfig compression.Config) *upgrader.Upgrader {
+	ctrl := gomock.NewController(t)
+	mockRedis := mocks.NewMockCmdable(ctrl)
+
+	// Mock Session已存在
+	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(redis.NewCmdResult(int64(0), nil)).AnyTimes()
+
+	return upgrader.New(mockRedis, token, compressionConfig)
 }
 
 // mockWebSocketConnection 模拟WebSocket连接升级
@@ -176,11 +186,10 @@ func mockWebSocketConnection(t *testing.T, requestURI string, supportCompression
 func TestUpgrader_New(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createEnabledCompressionConfig()
 
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	assert.NotNil(t, u)
 	assert.Equal(t, "gateway.Upgrader", u.Name())
@@ -189,11 +198,10 @@ func TestUpgrader_New(t *testing.T) {
 func TestUpgrader_Name(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
 
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	assert.Equal(t, "gateway.Upgrader", u.Name())
 }
@@ -203,10 +211,9 @@ func TestUpgrader_Name(t *testing.T) {
 func TestUpgrader_Upgrade_Success_NoCompression(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	validToken := generateValidToken(token)
 	requestURI := createTestURI(validToken)
@@ -218,20 +225,20 @@ func TestUpgrader_Upgrade_Success_NoCompression(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(12345), sess.UserID)
-	assert.Equal(t, int64(67890), sess.BizID)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
 	assert.Nil(t, compressionState) // 压缩未启用
 }
 
 func TestUpgrader_Upgrade_Success_WithCompression(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 
 	// 使用已经验证可以协商成功的配置
 	compressionConfig := createEnabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	validToken := generateValidToken(token)
 	requestURI := createTestURI(validToken)
@@ -244,8 +251,9 @@ func TestUpgrader_Upgrade_Success_WithCompression(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(12345), sess.UserID)
-	assert.Equal(t, int64(67890), sess.BizID)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
 
 	// 验证压缩状态（这个测试已经验证过能成功协商）
 	if compressionState != nil {
@@ -258,10 +266,9 @@ func TestUpgrader_Upgrade_Success_WithCompression(t *testing.T) {
 func TestUpgrader_Upgrade_CompressionFallback(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createEnabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	validToken := generateValidToken(token)
 	requestURI := createTestURI(validToken)
@@ -274,8 +281,9 @@ func TestUpgrader_Upgrade_CompressionFallback(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(12345), sess.UserID)
-	assert.Equal(t, int64(67890), sess.BizID)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
 	// 客户端不支持时应该降级，compressionState可能为nil或Enabled为false
 	_ = compressionState // 忽略压缩状态，因为降级行为取决于具体实现
 }
@@ -285,10 +293,9 @@ func TestUpgrader_Upgrade_CompressionFallback(t *testing.T) {
 func TestUpgrader_Upgrade_InvalidURI(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	// 无效的URI（包含无效字符）
 	invalidURI := "/ws?token=invalid\x00uri"
@@ -301,17 +308,16 @@ func TestUpgrader_Upgrade_InvalidURI(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "无效的URI")
-	assert.Equal(t, session.Session{}, sess)
+	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }
 
 func TestUpgrader_Upgrade_MissingToken(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	// 缺少token参数的URI
 	requestURI := "/ws"
@@ -324,17 +330,16 @@ func TestUpgrader_Upgrade_MissingToken(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "无效的UserToken")
-	assert.Equal(t, session.Session{}, sess)
+	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }
 
 func TestUpgrader_Upgrade_InvalidToken(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	// 无效的JWT token
 	invalidToken := invalidTokenPlaceholder
@@ -348,17 +353,16 @@ func TestUpgrader_Upgrade_InvalidToken(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "无效的UserToken")
-	assert.Equal(t, session.Session{}, sess)
+	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }
 
 func TestUpgrader_Upgrade_ExpiredToken(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	// 过期的JWT token
 	expiredToken := generateExpiredToken(token)
@@ -372,25 +376,19 @@ func TestUpgrader_Upgrade_ExpiredToken(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "无效的UserToken")
-	assert.Equal(t, session.Session{}, sess)
+	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }
 
 func TestUpgrader_Upgrade_ExistingConnection(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgraderWithExistingSession(t, token, compressionConfig)
 
 	validToken := generateValidToken(token)
 	requestURI := createTestURI(validToken)
-
-	// 预先在缓存中设置session，模拟连接已存在
-	testSession := session.Session{UserID: 12345, BizID: 67890}
-	err := cache.Set(context.Background(), consts.SessionCacheKey(testSession), "existing", time.Minute)
-	require.NoError(t, err)
 
 	serverConn, clientConn := mockWebSocketConnection(t, requestURI, false)
 	defer serverConn.Close()
@@ -399,8 +397,8 @@ func TestUpgrader_Upgrade_ExistingConnection(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "连接已存在")
-	assert.Equal(t, session.Session{}, sess)
+	assert.Contains(t, err.Error(), "用户已存在")
+	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }
 
@@ -409,7 +407,6 @@ func TestUpgrader_Upgrade_ExistingConnection(t *testing.T) {
 func TestUpgrader_CompressionNegotiation_Enabled(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 
 	// 测试不同的压缩配置
@@ -444,7 +441,7 @@ func TestUpgrader_CompressionNegotiation_Enabled(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			u := createTestUpgrader(cache, token, tc.config)
+			u := createTestUpgrader(t, token, tc.config)
 
 			validToken := generateValidToken(token)
 			requestURI := createTestURI(validToken)
@@ -456,8 +453,9 @@ func TestUpgrader_CompressionNegotiation_Enabled(t *testing.T) {
 			sess, compressionState, err := u.Upgrade(serverConn)
 
 			assert.NoError(t, err)
-			assert.Equal(t, int64(12345), sess.UserID)
-			assert.Equal(t, int64(67890), sess.BizID)
+			userInfo := sess.UserInfo()
+			assert.Equal(t, int64(12345), userInfo.UserID)
+			assert.Equal(t, int64(67890), userInfo.BizID)
 
 			// 验证压缩状态（实际的协商结果取决于客户端支持情况）
 			if compressionState != nil {
@@ -470,10 +468,9 @@ func TestUpgrader_CompressionNegotiation_Enabled(t *testing.T) {
 func TestUpgrader_CompressionNegotiation_Disabled(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	validToken := generateValidToken(token)
 	requestURI := createTestURI(validToken)
@@ -485,8 +482,9 @@ func TestUpgrader_CompressionNegotiation_Disabled(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(12345), sess.UserID)
-	assert.Equal(t, int64(67890), sess.BizID)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
 	assert.Nil(t, compressionState) // 压缩配置禁用时应该为nil
 }
 
@@ -562,10 +560,8 @@ func createRealWebSocketConnection(t *testing.T, requestURI string, supportCompr
 func TestUpgrader_SessionParsing_VariousTokenFormats(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
 
 	testCases := []struct {
 		name          string
@@ -596,6 +592,8 @@ func TestUpgrader_SessionParsing_VariousTokenFormats(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			u := createTestUpgrader(t, token, compressionConfig)
+
 			// 创建特定的用户声明
 			claims := jwt.UserClaims{
 				UserID: tc.userID,
@@ -620,8 +618,9 @@ func TestUpgrader_SessionParsing_VariousTokenFormats(t *testing.T) {
 
 			if tc.expectSuccess {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.userID, sess.UserID)
-				assert.Equal(t, tc.bizID, sess.BizID)
+				userInfo := sess.UserInfo()
+				assert.Equal(t, tc.userID, userInfo.UserID)
+				assert.Equal(t, tc.bizID, userInfo.BizID)
 				assert.Nil(t, compressionState)
 			} else {
 				assert.Error(t, err)
@@ -633,10 +632,9 @@ func TestUpgrader_SessionParsing_VariousTokenFormats(t *testing.T) {
 func TestUpgrader_SessionParsing_URLEncoding(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	validToken := generateValidToken(token)
 
@@ -651,8 +649,9 @@ func TestUpgrader_SessionParsing_URLEncoding(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.NoError(t, err)
-	assert.Equal(t, int64(12345), sess.UserID)
-	assert.Equal(t, int64(67890), sess.BizID)
+	userInfo := sess.UserInfo()
+	assert.Equal(t, int64(12345), userInfo.UserID)
+	assert.Equal(t, int64(67890), userInfo.BizID)
 	assert.Nil(t, compressionState)
 }
 
@@ -661,10 +660,9 @@ func TestUpgrader_SessionParsing_URLEncoding(t *testing.T) {
 func TestUpgrader_Upgrade_ConnectionClosed(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	serverConn, clientConn := net.Pipe()
 
@@ -674,7 +672,7 @@ func TestUpgrader_Upgrade_ConnectionClosed(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.Error(t, err)
-	assert.Equal(t, session.Session{}, sess)
+	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 
 	serverConn.Close()
@@ -683,10 +681,9 @@ func TestUpgrader_Upgrade_ConnectionClosed(t *testing.T) {
 func TestUpgrader_Upgrade_InvalidHTTPRequest(t *testing.T) {
 	t.Parallel()
 
-	cache := createTestCache()
 	token := createTestToken()
 	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgrader(cache, token, compressionConfig)
+	u := createTestUpgrader(t, token, compressionConfig)
 
 	serverConn, clientConn := net.Pipe()
 	defer serverConn.Close()
@@ -722,6 +719,6 @@ func TestUpgrader_Upgrade_InvalidHTTPRequest(t *testing.T) {
 	sess, compressionState, err := u.Upgrade(serverConn)
 
 	assert.Error(t, err)
-	assert.Equal(t, session.Session{}, sess)
+	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }
