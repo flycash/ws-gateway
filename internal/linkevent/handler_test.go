@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"testing"
 	"time"
@@ -105,10 +104,9 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		assert.NoError(t, err)
 
 		apiMessage := &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
-			BizId: bizID,
-			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  body,
+			Cmd:  apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
+			Key:  fmt.Sprintf("bizID-%d", bizID),
+			Body: body,
 		}
 		payload, err := s.c.Marshal(apiMessage)
 		assert.NoError(t, err)
@@ -137,7 +135,6 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		payload, ok := <-lk.Receive()
 		assert.True(t, ok)
 		assert.NotZero(t, payload)
-		log.Printf("ABC\n")
 		assert.ErrorIs(t, handler.OnFrontendSendMessage(lk, payload), linkevent.ErrUnKnownFrontendMessageFormat)
 	})
 
@@ -150,10 +147,9 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		lk := newLink(t.Context(), "5", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 523}), serverConn)
 
 		apiMessage := &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_INVALID_UNSPECIFIED,
-			BizId: bizID,
-			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  []byte{},
+			Cmd:  apiv1.Message_COMMAND_TYPE_INVALID_UNSPECIFIED,
+			Key:  fmt.Sprintf("bizID-%d", bizID),
+			Body: []byte{},
 		}
 
 		clientErrorCh := make(chan error)
@@ -181,10 +177,9 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		lk := newLink(t.Context(), "7", createTestSession(t.Context(), session.UserInfo{BizID: bizID, UserID: 723}), serverConn)
 
 		expectedHeartbeat := &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_HEARTBEAT,
-			BizId: bizID,
-			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  nil,
+			Cmd:  apiv1.Message_COMMAND_TYPE_HEARTBEAT,
+			Key:  fmt.Sprintf("bizID-%d", bizID),
+			Body: nil,
 		}
 
 		clientPayloadCh := make(chan []byte)
@@ -236,10 +231,9 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "Hello 船新IM"})
 		assert.NoError(t, err)
 		expectedAPIMessage := &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
-			BizId: bizID,
-			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  body,
+			Cmd:  apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
+			Key:  fmt.Sprintf("bizID-%d", bizID),
+			Body: body,
 		}
 
 		clientPayloadCh := make(chan []byte)
@@ -285,10 +279,9 @@ func (s *LinkEventHandlerSuite) TestOnFrontendSendMessage() {
 		body, err := protojson.Marshal(&wrapperspb.StringValue{Value: "Hello 船新IM"})
 		assert.NoError(t, err)
 		expectedAPIMessage := &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
-			BizId: bizID,
-			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  body,
+			Cmd:  apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
+			Key:  fmt.Sprintf("bizID-%d", bizID),
+			Body: body,
 		}
 
 		clientPayloadCh := make(chan []byte)
@@ -369,10 +362,9 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		msgID := int64(1)
 		body, _ := protojson.Marshal(&wrapperspb.Int64Value{Value: msgID})
 		expectedResponseAPIMessage := &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_ACK,
-			BizId: bizID,
-			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  body,
+			Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_ACK,
+			Key:  fmt.Sprintf("bizID-%d", bizID),
+			Body: body,
 		}
 		clientPayloadCh := make(chan []byte)
 		clientErrorCh := make(chan error)
@@ -398,10 +390,9 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 
 		// 断言前端收到的下推消息
 		assertClientReceivedPushMessage(t, clientErrorCh, clientPayloadCh, s.c, &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-			BizId: bizID,
-			Key:   fmt.Sprintf("bizID-%d", bizID),
-			Body:  body,
+			Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+			Key:  fmt.Sprintf("bizID-%d", bizID),
+			Body: body,
 		})
 
 		// 断言后端收到的下推消息的响应
@@ -434,10 +425,9 @@ func (s *LinkEventHandlerSuite) TestOnBackendPushMessage() {
 		// 验证重传任务已启动（通过统计信息）
 		// 这里我们无法直接访问pushRetryManager，但可以通过发送ACK来验证
 		ackMessage := &apiv1.Message{
-			Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_ACK,
-			BizId: bizID,
-			Key:   "test-retry-key",
-			Body:  body,
+			Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_ACK,
+			Key:  "test-retry-key",
+			Body: body,
 		}
 
 		// 发送ACK消息应该能成功处理
@@ -501,8 +491,8 @@ func createTestSession(ctx context.Context, userInfo session.UserInfo) session.S
 	mockRedis.EXPECT().Del(gomock.Any(), gomock.Any()).
 		Return(redis.NewIntResult(int64(1), nil)).AnyTimes()
 
-	provider := session.NewRedisSessionProvider(mockRedis)
-	sess, _, _ := provider.Provide(ctx, userInfo)
+	provider := session.NewRedisSessionBuilder(mockRedis)
+	sess, _, _ := provider.Build(ctx, userInfo)
 
 	return sess
 }

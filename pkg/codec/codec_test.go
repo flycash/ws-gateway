@@ -45,10 +45,9 @@ func (c *CodecSuite) TestMarshalAndUnmarshal() {
 	assert.NoError(tt, err)
 
 	sendMsg := &apiv1.Message{
-		Key:   "biz-id-1-key",
-		BizId: 1,
-		Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
-		Body:  body,
+		Key:  "biz-id-1-key",
+		Cmd:  apiv1.Message_COMMAND_TYPE_UPSTREAM_MESSAGE,
+		Body: body,
 	}
 
 	bytes, err := c.c.Marshal(sendMsg)
@@ -70,10 +69,9 @@ func (c *CodecSuite) TestMarshalAndUnmarshal() {
 func (c *CodecSuite) TestHeartbeatMessage() {
 	t := c.T()
 	sendMsg := &apiv1.Message{
-		Key:   "biz-id-2-key",
-		BizId: 2,
-		Cmd:   apiv1.Message_COMMAND_TYPE_HEARTBEAT,
-		Body:  nil,
+		Key:  "biz-id-2-key",
+		Cmd:  apiv1.Message_COMMAND_TYPE_HEARTBEAT,
+		Body: nil,
 	}
 
 	bytes, err := c.c.Marshal(sendMsg)

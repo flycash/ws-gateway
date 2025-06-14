@@ -11,6 +11,7 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"gitee.com/flycash/ws-gateway/pkg/pushretry"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
@@ -113,14 +114,33 @@ func (l *Handler) OnConnect(lk gateway.Link) error {
 func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 	msg, err := l.getMessage(payload)
 	if err != nil {
-		if !errors.Is(err, ErrDuplicatedFrontendMessage) {
-			l.logger.Error("获取消息失败",
-				elog.String("step", "OnFrontendSendMessage"),
-				elog.String("linkID", lk.ID()),
-				elog.Any("userInfo", lk.Session().UserInfo()),
-				elog.FieldErr(err),
-			)
-		}
+		l.logger.Error("获取消息失败",
+			elog.String("step", "OnFrontendSendMessage"),
+			elog.String("linkID", lk.ID()),
+			elog.Any("userInfo", l.userInfo(lk)),
+			elog.FieldErr(err),
+		)
+		return err
+	}
+
+	// 消息幂等
+	bizID := l.userInfo(lk).BizID
+	ok, err := l.cacheMessage(bizID, msg)
+	if err != nil {
+		err = fmt.Errorf("%w; %w", ErrCacheFrontendMessageFailed, err)
+		l.logger.Error("缓存消息失败",
+			elog.String("step", "getMessage"),
+			elog.String("消息体", msg.String()),
+			elog.FieldErr(err),
+		)
+		return err
+	} else if !ok {
+		err = fmt.Errorf("%w", ErrDuplicatedFrontendMessage)
+		l.logger.Warn("重复消息，已丢弃",
+			elog.String("step", "getMessage"),
+			elog.String("消息体", msg.String()),
+			elog.FieldErr(err),
+		)
 		return err
 	}
 
@@ -134,7 +154,7 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 		l.logger.Error("前端发送未知消息类型",
 			elog.String("step", "OnFrontendSendMessage"),
 			elog.String("linkID", lk.ID()),
-			elog.Any("userInfo", lk.Session().UserInfo()),
+			elog.Any("userInfo", l.userInfo(lk)),
 		)
 		return fmt.Errorf("%w", ErrUnKnownFrontendMessageCommandType)
 	}
@@ -144,7 +164,7 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 	}
 	// 只有在特定错误类型下才删除缓存
 	if l.shouldDeleteCacheOnError(err) {
-		if err1 := l.deleteCacheMessage(msg); err1 != nil {
+		if err1 := l.deleteCacheMessage(bizID, msg); err1 != nil {
 			l.logger.Warn("删除消息缓存失败",
 				elog.String("step", "OnFrontendSendMessage"),
 				elog.String("linkID", lk.ID()),
@@ -156,11 +176,15 @@ func (l *Handler) OnFrontendSendMessage(lk gateway.Link, payload []byte) error {
 	return err
 }
 
+func (l *Handler) userInfo(lk gateway.Link) session.UserInfo {
+	return lk.Session().UserInfo()
+}
+
 func (l *Handler) getMessage(payload []byte) (*apiv1.Message, error) {
 	msg := &apiv1.Message{}
 	// 反序列化
 	err := l.codecHelper.Unmarshal(payload, msg)
-	if err != nil || (msg.GetBizId() == 0 && msg.GetKey() == "") {
+	if err != nil || msg.GetKey() == "" {
 		l.logger.Error("反序列化消息失败",
 			elog.String("step", "getMessage"),
 			elog.Any("codecHelper", l.codecHelper.Name()),
@@ -183,40 +207,21 @@ func (l *Handler) getMessage(payload []byte) (*apiv1.Message, error) {
 	}
 	msg.Body = decryptedBody
 
-	// 消息幂等
-	ok, err := l.cacheMessage(msg)
-	if err != nil {
-		err = fmt.Errorf("%w; %w", ErrCacheFrontendMessageFailed, err)
-		l.logger.Error("缓存消息失败",
-			elog.String("step", "getMessage"),
-			elog.String("消息体", msg.String()),
-			elog.FieldErr(err),
-		)
-		return nil, err
-	} else if !ok {
-		err = fmt.Errorf("%w", ErrDuplicatedFrontendMessage)
-		l.logger.Warn("重复消息，已丢弃",
-			elog.String("step", "getMessage"),
-			elog.String("消息体", msg.String()),
-			elog.FieldErr(err),
-		)
-		return nil, err
-	}
 	return msg, nil
 }
 
-func (l *Handler) cacheMessage(msg *apiv1.Message) (bool, error) {
+func (l *Handler) cacheMessage(bizID int64, msg *apiv1.Message) (bool, error) {
 	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
 		// 心跳消息不需要缓存
 		return true, nil
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
 	defer cancelFunc()
-	return l.cache.SetNX(ctx, l.cacheKey(msg), msg.GetKey(), l.cacheValueExpiration)
+	return l.cache.SetNX(ctx, l.cacheKey(bizID, msg), msg.GetKey(), l.cacheValueExpiration)
 }
 
-func (l *Handler) cacheKey(msg *apiv1.Message) string {
-	return fmt.Sprintf("%d-%s", msg.GetBizId(), msg.GetKey())
+func (l *Handler) cacheKey(bizID int64, msg *apiv1.Message) string {
+	return fmt.Sprintf("%d-%s", bizID, msg.GetKey())
 }
 
 // 判断是否应该在错误时删除缓存
@@ -228,14 +233,14 @@ func (l *Handler) shouldDeleteCacheOnError(err error) bool {
 		errors.Is(err, ErrMaxRetriesExceeded)
 }
 
-func (l *Handler) deleteCacheMessage(msg *apiv1.Message) error {
+func (l *Handler) deleteCacheMessage(bizID int64, msg *apiv1.Message) error {
 	if msg.GetCmd() == apiv1.Message_COMMAND_TYPE_HEARTBEAT {
 		// 心跳消息不需要删除缓存
 		return nil
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), l.cacheRequestTimeout)
 	defer cancelFunc()
-	_, err := l.cache.Delete(ctx, l.cacheKey(msg))
+	_, err := l.cache.Delete(ctx, l.cacheKey(bizID, msg))
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrDeleteCachedFrontendMessageFailed, err)
 	}
@@ -248,7 +253,7 @@ func (l *Handler) handleOnHeartbeatCmd(lk gateway.Link, msg *apiv1.Message) erro
 	l.logger.Info("收到心跳包，原样返回",
 		elog.String("step", "handleOnHeartbeatCmd"),
 		elog.String("linkID", lk.ID()),
-		elog.Any("userInfo", lk.Session().UserInfo()),
+		elog.Any("userInfo", l.userInfo(lk)),
 		elog.String("消息体", msg.String()))
 	return l.push(lk, msg)
 }
@@ -284,7 +289,7 @@ func (l *Handler) push(lk gateway.Link, msg *apiv1.Message) error {
 			elog.String("step", "push"),
 			elog.String("消息体", msg.String()),
 			elog.String("linkID", lk.ID()),
-			elog.Any("userInfo", lk.Session().UserInfo()),
+			elog.Any("userInfo", l.userInfo(lk)),
 			elog.FieldErr(err))
 		return err
 	}
@@ -296,7 +301,7 @@ func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message
 	// 收到有意义的上行消息，更新活跃时间
 	lk.UpdateActiveTime()
 
-	resp, err := l.forwardToBusinessBackend(msg)
+	resp, err := l.forwardToBusinessBackend(l.userInfo(lk).BizID, msg)
 	if err != nil {
 		// 向业务后端转发失败，（包含已经重试）如何处理？ 这里返回err相当于丢掉了，等待前端超时重试
 		l.logger.Warn("向业务后端转发消息失败",
@@ -308,8 +313,8 @@ func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message
 	return l.sendUpstreamMessageAck(lk, resp)
 }
 
-func (l *Handler) forwardToBusinessBackend(msg *apiv1.Message) (*apiv1.OnReceiveResponse, error) {
-	client, err := l.getBackendServiceClient(msg.GetBizId())
+func (l *Handler) forwardToBusinessBackend(bizID int64, msg *apiv1.Message) (*apiv1.OnReceiveResponse, error) {
+	client, err := l.getBackendServiceClient(bizID)
 	if err != nil {
 		return nil, err
 	}
@@ -366,10 +371,9 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 	}
 
 	err = l.push(lk, &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
-		BizId: resp.GetBizId(),
-		Key:   fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
-		Body:  respBody,
+		Cmd:  apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
+		Key:  fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
+		Body: respBody,
 	})
 	if err != nil {
 		l.logger.Error("向前端下推对上行消息的确认失败",
@@ -384,7 +388,7 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 // handleDownstreamAckCmd 处理前端发来的"对下行消息的确认"请求
 func (l *Handler) handleDownstreamAckCmd(lk gateway.Link, msg *apiv1.Message) error {
 	// 停止重传任务
-	l.pushRetryManager.Stop(l.retryKey(msg.GetBizId(), msg.GetKey()))
+	l.pushRetryManager.Stop(l.retryKey(l.userInfo(lk).BizID, msg.GetKey()))
 
 	// 这里可以考虑通知业务后端下行消息的发送结果 如 使用 BackendService.OnPushed 方法
 	// 也可以考虑使用消息队列通知业务后端，规避GRPC客户端的各种重试、超时问题，并保证高吞吐量
@@ -392,7 +396,7 @@ func (l *Handler) handleDownstreamAckCmd(lk gateway.Link, msg *apiv1.Message) er
 	l.logger.Info("收到下行消息确认",
 		elog.String("step", "handleDownstreamAckCmd"),
 		elog.String("linkID", lk.ID()),
-		elog.Any("userInfo", lk.Session().UserInfo()),
+		elog.Any("userInfo", l.userInfo(lk)),
 		elog.String("msg", msg.String()),
 	)
 	return nil
@@ -409,10 +413,9 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 	}
 
 	message := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: msg.GetBizId(),
-		Key:   msg.GetKey(),
-		Body:  msg.GetBody(),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  msg.GetKey(),
+		Body: msg.GetBody(),
 	}
 
 	// 无论推送成功与否都启动重传任务，等待前端ACK确认后才停止

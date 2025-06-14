@@ -62,10 +62,9 @@ func (s *ManagerTestSuite) TestStart() {
 
 	// 创建测试消息
 	msg := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "test-key-1",
-		Body:  []byte("test body"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "test-key-1",
+		Body: []byte("test body"),
 	}
 
 	// 启动重传任务
@@ -97,10 +96,9 @@ func (s *ManagerTestSuite) TestStop() {
 	defer lk.Close()
 
 	msg := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "test-key-2",
-		Body:  []byte("test body"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "test-key-2",
+		Body: []byte("test body"),
 	}
 
 	// 启动重传任务
@@ -139,16 +137,14 @@ func (s *ManagerTestSuite) TestStopByLinkID() {
 
 	// 为两个连接创建重传任务
 	msg1 := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "test-key-3-1",
-		Body:  []byte("test body 1"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "test-key-3-1",
+		Body: []byte("test body 1"),
 	}
 	msg2 := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "test-key-3-2",
-		Body:  []byte("test body 2"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "test-key-3-2",
+		Body: []byte("test body 2"),
 	}
 
 	manager.Start("test-key-3-1", lk1, msg1)
@@ -184,10 +180,9 @@ func (s *ManagerTestSuite) TestMaxRetries() {
 	defer lk.Close()
 
 	msg := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "test-key-4",
-		Body:  []byte("test body"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "test-key-4",
+		Body: []byte("test body"),
 	}
 
 	manager.Start("test-key-4", lk, msg)
@@ -217,10 +212,9 @@ func (s *ManagerTestSuite) TestPushFuncError() {
 	defer lk.Close()
 
 	msg := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "test-key-5",
-		Body:  []byte("test body"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "test-key-5",
+		Body: []byte("test body"),
 	}
 
 	manager.Start("test-key-5", lk, msg)
@@ -247,10 +241,9 @@ func (s *ManagerTestSuite) TestClose() {
 	defer lk.Close()
 
 	msg := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "test-key-6",
-		Body:  []byte("test body"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "test-key-6",
+		Body: []byte("test body"),
 	}
 
 	// 启动多个重传任务
@@ -284,16 +277,14 @@ func (s *ManagerTestSuite) TestDuplicateKey() {
 	defer lk.Close()
 
 	msg1 := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "duplicate-key",
-		Body:  []byte("test body 1"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "duplicate-key",
+		Body: []byte("test body 1"),
 	}
 	msg2 := &apiv1.Message{
-		Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-		BizId: 1,
-		Key:   "duplicate-key",
-		Body:  []byte("test body 2"),
+		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+		Key:  "duplicate-key",
+		Body: []byte("test body 2"),
 	}
 
 	// 启动第一个任务
@@ -324,10 +315,9 @@ func (s *ManagerTestSuite) TestConcurrentOperations() {
 			defer wg.Done()
 			key := fmt.Sprintf("concurrent-key-%d", id)
 			msg := &apiv1.Message{
-				Cmd:   apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
-				BizId: 1,
-				Key:   key,
-				Body:  []byte("test body"),
+				Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,
+				Key:  key,
+				Body: []byte("test body"),
 			}
 			manager.Start(key, lk, msg)
 		}(i)
@@ -365,9 +355,9 @@ func (s *ManagerTestSuite) createTestLink(linkID string) gateway.Link {
 	mockRedis.EXPECT().Del(gomock.Any(), gomock.Any()).
 		Return(redis.NewIntResult(int64(1), nil)).AnyTimes()
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	provider := session.NewRedisSessionBuilder(mockRedis)
 	userInfo := session.UserInfo{BizID: 1, UserID: 123}
-	sess, _, _ := provider.Provide(context.Background(), userInfo)
+	sess, _, _ := provider.Build(context.Background(), userInfo)
 
 	return link.New(context.Background(), linkID, sess, server)
 }

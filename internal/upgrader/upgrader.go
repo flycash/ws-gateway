@@ -96,8 +96,8 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			// 在升级前设置autoClose并创建session
 			userInfo.AutoClose = autoClose
 
-			provider := session.NewRedisSessionProvider(u.rdb)
-			s, isNew, err := provider.Provide(context.Background(), userInfo)
+			provider := session.NewRedisSessionBuilder(u.rdb)
+			s, isNew, err := provider.Build(context.Background(), userInfo)
 			if err != nil {
 				return nil, fmt.Errorf("%w", err)
 			}

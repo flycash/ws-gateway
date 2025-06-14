@@ -1134,8 +1134,8 @@ func createTestSession(t *testing.T, userInfo session.UserInfo) session.Session 
 	mockRedis.EXPECT().Del(gomock.Any(), gomock.Any()).
 		Return(redis.NewIntResult(int64(1), nil)).AnyTimes()
 
-	provider := session.NewRedisSessionProvider(mockRedis)
-	sess, _, _ := provider.Provide(context.Background(), userInfo)
+	provider := session.NewRedisSessionBuilder(mockRedis)
+	sess, _, _ := provider.Build(context.Background(), userInfo)
 
 	return sess
 }

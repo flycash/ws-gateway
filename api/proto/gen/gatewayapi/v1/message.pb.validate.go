@@ -58,8 +58,6 @@ func (m *Message) validate(all bool) error {
 
 	// no validation rules for Cmd
 
-	// no validation rules for BizId
-
 	// no validation rules for Key
 
 	// no validation rules for Body

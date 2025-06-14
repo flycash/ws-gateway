@@ -27,11 +27,10 @@ message Message {
     // 添加其他命令类型
   }
   CommandType cmd = 1; // 消息类型
-  int64 biz_id = 2; // 执行业务分发
   // A -> gateway，是 A 生成；
-  // biz + key 唯一
-  string key = 3; // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
-  bytes body = 4; // 业务相关的具体消息体
+  // bizId（token中获取） + key 唯一
+  string key = 2; // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
+  bytes body = 3; // 业务相关的具体消息体
 
   //  enum SerializeType {
   //    SERIALIZE_TYPE_INVALID_UNSPECIFIED = 0;

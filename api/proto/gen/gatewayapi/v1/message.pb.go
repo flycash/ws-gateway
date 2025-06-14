@@ -101,11 +101,10 @@ func (Message_CommandType) EnumDescriptor() ([]byte, []int) {
 type Message struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Cmd   Message_CommandType    `protobuf:"varint,1,opt,name=cmd,proto3,enum=gatewayapi.v1.Message_CommandType" json:"cmd,omitempty"` // 消息类型
-	BizId int64                  `protobuf:"varint,2,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`                       // 执行业务分发
 	// A -> gateway，是 A 生成；
-	// biz + key 唯一
-	Key           string `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`   // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
-	Body          []byte `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"` // 业务相关的具体消息体
+	// bizId（token中获取） + key 唯一
+	Key           string `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`   // UUID, 后续当前端支持超时重传,后端需要用此 key 来去重
+	Body          []byte `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"` // 业务相关的具体消息体
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -145,13 +144,6 @@ func (x *Message) GetCmd() Message_CommandType {
 		return x.Cmd
 	}
 	return Message_COMMAND_TYPE_INVALID_UNSPECIFIED
-}
-
-func (x *Message) GetBizId() int64 {
-	if x != nil {
-		return x.BizId
-	}
-	return 0
 }
 
 func (x *Message) GetKey() string {
@@ -428,12 +420,11 @@ var File_gatewayapi_v1_message_proto protoreflect.FileDescriptor
 
 const file_gatewayapi_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\"\xf1\x02\n" +
+	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\"\xda\x02\n" +
 	"\aMessage\x124\n" +
-	"\x03cmd\x18\x01 \x01(\x0e2\".gatewayapi.v1.Message.CommandTypeR\x03cmd\x12\x15\n" +
-	"\x06biz_id\x18\x02 \x01(\x03R\x05bizId\x12\x10\n" +
-	"\x03key\x18\x03 \x01(\tR\x03key\x12\x12\n" +
-	"\x04body\x18\x04 \x01(\fR\x04body\"\xf2\x01\n" +
+	"\x03cmd\x18\x01 \x01(\x0e2\".gatewayapi.v1.Message.CommandTypeR\x03cmd\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x12\n" +
+	"\x04body\x18\x03 \x01(\fR\x04body\"\xf2\x01\n" +
 	"\vCommandType\x12$\n" +
 	" COMMAND_TYPE_INVALID_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16COMMAND_TYPE_HEARTBEAT\x10\x01\x12!\n" +

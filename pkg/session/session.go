@@ -135,26 +135,26 @@ func (s *redisSession) Destroy(ctx context.Context) error {
 	return nil
 }
 
-// Provider 是一个Session提供者的抽象接口。
-type Provider interface {
-	// Provide 获取或创建一个Session。
+// Builder 是一个Session构建器的抽象接口。
+type Builder interface {
+	// Build 获取或创建一个Session。
 	// 无论Session是新创建的还是已存在的，都会返回一个可用的Session实例。
 	// 返回的bool值表示Session是否为本次调用新创建的。
-	Provide(ctx context.Context, info UserInfo) (session Session, isNew bool, err error)
+	Build(ctx context.Context, info UserInfo) (session Session, isNew bool, err error)
 }
 
-// RedisSessionProvider 是 Provider 接口的Redis实现。
-type RedisSessionProvider struct {
+// RedisSessionBuilder 是 Builder 接口的Redis实现。
+type RedisSessionBuilder struct {
 	rdb redis.Cmdable
 }
 
-// NewRedisSessionProvider 是 RedisSessionProvider 的构造函数。
-func NewRedisSessionProvider(rdb redis.Cmdable) *RedisSessionProvider {
-	return &RedisSessionProvider{rdb: rdb}
+// NewRedisSessionBuilder 是 RedisSessionBuilder 的构造函数。
+func NewRedisSessionBuilder(rdb redis.Cmdable) *RedisSessionBuilder {
+	return &RedisSessionBuilder{rdb: rdb}
 }
 
-// Provide 实现 "GetOrCreate" 语义
-func (r *RedisSessionProvider) Provide(ctx context.Context, userInfo UserInfo) (session Session, isNew bool, err error) {
+// Build 实现 "GetOrCreate" 语义
+func (r *RedisSessionBuilder) Build(ctx context.Context, userInfo UserInfo) (session Session, isNew bool, err error) {
 	s := newRedisSession(userInfo, r.rdb)
 	err = s.initialize(ctx)
 	switch {

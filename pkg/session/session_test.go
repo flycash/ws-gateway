@@ -25,13 +25,13 @@ func TestRedisSession_UserInfo(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock Lua script execution for session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, isNew, err := provider.Provide(context.Background(), userInfo)
+	sess, isNew, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 	assert.True(t, isNew)
 
@@ -46,13 +46,13 @@ func TestRedisSession_Get_Success(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, _, err := provider.Provide(context.Background(), userInfo)
+	sess, _, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 
 	// Mock HGet success
@@ -72,13 +72,13 @@ func TestRedisSession_Get_NonExistentKey(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, _, err := provider.Provide(context.Background(), userInfo)
+	sess, _, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 
 	// Mock HGet returns redis.Nil (key not found)
@@ -97,13 +97,13 @@ func TestRedisSession_Get_RedisError(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, _, err := provider.Provide(context.Background(), userInfo)
+	sess, _, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 
 	// Mock HGet returns error
@@ -124,13 +124,13 @@ func TestRedisSession_Set_Success(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, _, err := provider.Provide(context.Background(), userInfo)
+	sess, _, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 
 	// Mock HSet success
@@ -148,13 +148,13 @@ func TestRedisSession_Set_RedisError(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, _, err := provider.Provide(context.Background(), userInfo)
+	sess, _, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 
 	// Mock HSet error
@@ -174,13 +174,13 @@ func TestRedisSession_Destroy_Success(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, _, err := provider.Provide(context.Background(), userInfo)
+	sess, _, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 
 	// Mock Del success
@@ -198,13 +198,13 @@ func TestRedisSession_Destroy_RedisError(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock session creation
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, _, err := provider.Provide(context.Background(), userInfo)
+	sess, _, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 
 	// Mock Del error
@@ -224,7 +224,7 @@ func TestRedisSessionProvider_Provide_NewSession(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock Lua script execution returning 1 (new session created)
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -239,7 +239,7 @@ func TestRedisSessionProvider_Provide_NewSession(t *testing.T) {
 			return redis.NewCmdResult(int64(1), nil)
 		})
 
-	sess, isNew, err := provider.Provide(context.Background(), userInfo)
+	sess, isNew, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 	assert.True(t, isNew)
 	assert.NotNil(t, sess)
@@ -253,13 +253,13 @@ func TestRedisSessionProvider_Provide_ExistingSession(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock Lua script execution returning 0 (session already exists)
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(0), nil))
 
-	sess, isNew, err := provider.Provide(context.Background(), userInfo)
+	sess, isNew, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 	assert.False(t, isNew)
 	assert.NotNil(t, sess)
@@ -273,14 +273,14 @@ func TestRedisSessionProvider_Provide_LuaScriptError(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock Lua script execution error
 	expectedErr := errors.New("lua script execution failed")
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(nil, expectedErr))
 
-	sess, isNew, err := provider.Provide(context.Background(), userInfo)
+	sess, isNew, err := builder.Build(context.Background(), userInfo)
 	assert.Error(t, err)
 	assert.False(t, isNew)
 	assert.Nil(t, sess)
@@ -294,13 +294,13 @@ func TestRedisSessionProvider_Provide_UnexpectedScriptResult(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 123, UserID: 456}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// Mock Lua script execution returning unexpected type
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult("unexpected_string_result", nil))
 
-	sess, isNew, err := provider.Provide(context.Background(), userInfo)
+	sess, isNew, err := builder.Build(context.Background(), userInfo)
 	assert.Error(t, err)
 	assert.False(t, isNew)
 	assert.Nil(t, sess)
@@ -314,8 +314,8 @@ func TestNewRedisSessionProvider(t *testing.T) {
 
 	mockRedis := mocks.NewMockCmdable(ctrl)
 
-	provider := session.NewRedisSessionProvider(mockRedis)
-	assert.NotNil(t, provider)
+	builder := session.NewRedisSessionBuilder(mockRedis)
+	assert.NotNil(t, builder)
 }
 
 func TestSessionLifecycle(t *testing.T) {
@@ -326,13 +326,13 @@ func TestSessionLifecycle(t *testing.T) {
 	mockRedis := mocks.NewMockCmdable(ctrl)
 	userInfo := session.UserInfo{BizID: 999, UserID: 888}
 
-	provider := session.NewRedisSessionProvider(mockRedis)
+	builder := session.NewRedisSessionBuilder(mockRedis)
 
 	// 1. 创建新 Session
 	mockRedis.EXPECT().EvalSha(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(redis.NewCmdResult(int64(1), nil))
 
-	sess, isNew, err := provider.Provide(context.Background(), userInfo)
+	sess, isNew, err := builder.Build(context.Background(), userInfo)
 	require.NoError(t, err)
 	assert.True(t, isNew)
 
