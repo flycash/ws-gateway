@@ -184,7 +184,7 @@ func (l *Handler) getMessage(payload []byte) (*apiv1.Message, error) {
 	msg := &apiv1.Message{}
 	// 反序列化
 	err := l.codecHelper.Unmarshal(payload, msg)
-	if err != nil || msg.GetKey() == "" {
+	if err != nil || (msg.GetKey() == "" && msg.GetCmd() != apiv1.Message_COMMAND_TYPE_HEARTBEAT) {
 		l.logger.Error("反序列化消息失败",
 			elog.String("step", "getMessage"),
 			elog.Any("codecHelper", l.codecHelper.Name()),
@@ -441,5 +441,5 @@ func (l *Handler) OnDisconnect(lk gateway.Link) error {
 	// 清理该连接的重传任务
 	l.pushRetryManager.StopByLinkID(lk.ID())
 	l.logger.Info("Goodbye link = " + lk.ID())
-	return nil
+	return lk.Close()
 }

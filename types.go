@@ -23,7 +23,6 @@ type Link interface {
 	Receive() <-chan []byte
 	HasClosed() <-chan struct{}
 	Close() error
-	// 空闲连接管理
 	UpdateActiveTime()
 	TryCloseIfIdle(timeout time.Duration) bool
 }

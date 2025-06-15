@@ -92,10 +92,9 @@ func (s *WebSocketServer) Start() error {
 		return err
 	}
 
+	go s.acceptConn(l)
 	// 启动空闲连接清理协程
 	go s.cleanIdleLinks()
-
-	go s.acceptConn(l)
 
 	<-s.ctx.Done()
 	return l.Close()
@@ -260,7 +259,7 @@ func (s *WebSocketServer) GracefulStop(_ context.Context) error {
 	// 关闭消息队列客户端
 	// 1. 停止接受新的websocket
 	// 2. 遍历所有link，下发，redirect指令，重试3次，打印log
-
+	s.logger.Info("优雅关闭中......")
 	return nil
 }
 
@@ -358,7 +357,6 @@ func (s *WebSocketServer) cleanIdleLinks() {
 		case <-ticker.C:
 			s.links.Range(func(key string, link gateway.Link) bool {
 				if link.TryCloseIfIdle(s.idleTimeout) {
-					// TryCloseIfIdle已经关闭了连接，这里只需要原子删除
 					if l, deleted := s.links.LoadAndDelete(key); deleted {
 						s.logger.Info("清理空闲连接",
 							elog.String("linkID", l.ID()),

@@ -15,7 +15,6 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/gotomicro/ego/core/elog"
-	"go.uber.org/multierr"
 )
 
 // 默认配置常量
@@ -142,9 +141,7 @@ func New(parent context.Context, id string, sess session.Session, conn net.Conn,
 		compressionEnabled = l.compressionState.Enabled
 	}
 	l.writer = wswrapper.NewServerSideWriter(conn, compressionEnabled)
-	//nolint:contextcheck // 内部已处理
 	go l.sendLoop()
-	//nolint:contextcheck // 内部已处理
 	go l.receiveLoop()
 	return l
 }
@@ -313,10 +310,10 @@ func (l *Link) Close() error {
 		// 4. 关闭底层连接
 		l.closeErr = l.conn.Close()
 
-		// 5.销毁session
-		ctx, cancelFunc := context.WithTimeout(context.Background(), DefaultCloseTimeout)
-		l.closeErr = multierr.Append(l.closeErr, l.sess.Destroy(ctx))
-		cancelFunc()
+		// 5.销毁session 在部分业务场景下，Close并不代表需要销毁Session，例如在IM中，只有用户退出登录才会销毁Session
+		// ctx, cancelFunc := context.WithTimeout(context.Background(), DefaultCloseTimeout)
+		// l.closeErr = multierr.Append(l.closeErr, l.sess.Destroy(ctx))
+		// cancelFunc()
 	})
 	return l.closeErr
 }
@@ -324,7 +321,7 @@ func (l *Link) Close() error {
 func (l *Link) UpdateActiveTime() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-
+	// 未关闭才记录活跃时间
 	if l.ctx.Err() == nil {
 		l.lastActiveTime = time.Now()
 	}
@@ -334,8 +331,12 @@ func (l *Link) TryCloseIfIdle(timeout time.Duration) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	// 合并条件判断
-	if !l.autoClose || time.Since(l.lastActiveTime) <= timeout || l.ctx.Err() != nil {
+	// 因其他原因已关闭了
+	if l.ctx.Err() != nil {
+		return true
+	}
+	//  未设置自动关闭或者活跃时间不超过空闲超时，不需要关闭
+	if !l.autoClose || time.Since(l.lastActiveTime) <= timeout {
 		return false
 	}
 
@@ -343,8 +344,8 @@ func (l *Link) TryCloseIfIdle(timeout time.Duration) bool {
 	if err := l.Close(); err != nil {
 		l.logger.Error("关闭空闲连接失败",
 			elog.String("linkID", l.id),
+			elog.Any("userInfo", l.sess.UserInfo()),
 			elog.FieldErr(err))
 	}
-
 	return true
 }

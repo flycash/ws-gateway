@@ -85,7 +85,7 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			// 解析 X-AutoClose header (大小写不敏感)
 			if strings.EqualFold(string(key), "X-AutoClose") {
 				autoClose = string(value) == "true"
-				u.logger.Debug("解析到AutoClose header",
+				u.logger.Warn("解析到AutoClose header",
 					elog.String("key", string(key)),
 					elog.String("value", string(value)),
 					elog.Any("autoClose", autoClose))
@@ -96,17 +96,17 @@ func (u *Upgrader) Upgrade(conn net.Conn) (session.Session, *compression.State, 
 			// 在升级前设置autoClose并创建session
 			userInfo.AutoClose = autoClose
 
-			provider := session.NewRedisSessionBuilder(u.rdb)
-			s, isNew, err := provider.Build(context.Background(), userInfo)
+			builder := session.NewRedisSessionBuilder(u.rdb)
+			s, isNew, err := builder.Build(context.Background(), userInfo)
 			if err != nil {
 				return nil, fmt.Errorf("%w", err)
 			}
 			if !isNew {
+				// 可能是重连，也可能是多次登录
 				err = ErrExistedUser
-				u.logger.Error("用户已存在",
+				u.logger.Warn("用户已存在",
 					elog.FieldErr(err),
 				)
-				return nil, fmt.Errorf("%w", err)
 			}
 			ss = s
 			return ws.HandshakeHeaderString(""), nil
