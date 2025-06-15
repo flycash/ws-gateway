@@ -16,7 +16,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
-	"gitee.com/flycash/ws-gateway/pkg/session/mocks"
+	mocks "gitee.com/flycash/ws-gateway/pkg/session/mocks"
 	"gitee.com/flycash/ws-gateway/pkg/wswrapper"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsflate"
@@ -976,6 +976,163 @@ func TestLink_CloseRaceCondition(t *testing.T) {
 		default:
 			t.Error("连接未被关闭")
 		}
+	})
+}
+
+func TestLink_UpdateActiveTime(t *testing.T) {
+	t.Parallel()
+
+	t.Run("应该更新活跃时间", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+		lk := link.New(context.Background(), "test-update-active",
+			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
+			serverConn,
+		)
+
+		// 调用UpdateActiveTime
+		lk.UpdateActiveTime()
+
+		// 验证链接仍然活跃（无法直接验证时间，但可以确保没有panic）
+		assert.Equal(t, "test-update-active", lk.ID())
+		assert.NoError(t, lk.Close())
+	})
+
+	t.Run("应该在链接关闭后安全调用", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+		lk := link.New(context.Background(), "test-update-closed",
+			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
+			serverConn,
+		)
+
+		// 先关闭链接
+		assert.NoError(t, lk.Close())
+
+		// 等待关闭完成
+		select {
+		case <-lk.HasClosed():
+			// 链接已关闭
+		case <-time.After(100 * time.Millisecond):
+			t.Error("链接应该已经被关闭")
+		}
+
+		// 在关闭后调用UpdateActiveTime应该是安全的
+		lk.UpdateActiveTime()
+	})
+}
+
+func TestLink_TryCloseIfIdle(t *testing.T) {
+	t.Parallel()
+
+	t.Run("应该关闭空闲的AutoClose链接", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+		lk := link.New(context.Background(), "test-idle-close",
+			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
+			serverConn,
+			link.WithAutoClose(true),
+		)
+
+		// 等待一段时间让链接变为空闲
+		time.Sleep(100 * time.Millisecond)
+
+		// 尝试关闭空闲链接，使用很短的超时时间
+		closed := lk.TryCloseIfIdle(50 * time.Millisecond)
+		assert.True(t, closed)
+
+		// 验证链接被关闭
+		select {
+		case <-lk.HasClosed():
+			// 链接应该被关闭
+		case <-time.After(100 * time.Millisecond):
+			t.Error("链接应该已经被关闭")
+		}
+	})
+
+	t.Run("不应该关闭非AutoClose链接", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+		lk := link.New(context.Background(), "test-no-auto-close",
+			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
+			serverConn,
+			link.WithAutoClose(false),
+		)
+
+		// 等待一段时间
+		time.Sleep(100 * time.Millisecond)
+
+		// 尝试关闭，由于AutoClose=false，应该返回false
+		closed := lk.TryCloseIfIdle(50 * time.Millisecond)
+		assert.False(t, closed)
+
+		// 验证链接仍然活跃
+		select {
+		case <-lk.HasClosed():
+			t.Error("链接不应该被关闭")
+		default:
+			// 链接仍然活跃，符合预期
+		}
+
+		assert.NoError(t, lk.Close())
+	})
+
+	t.Run("不应该关闭最近活跃的链接", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+		lk := link.New(context.Background(), "test-recent-active",
+			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
+			serverConn,
+			link.WithAutoClose(true),
+		)
+
+		// 更新活跃时间
+		lk.UpdateActiveTime()
+
+		// 立即尝试关闭，由于刚刚更新了活跃时间，应该不会被关闭
+		closed := lk.TryCloseIfIdle(10 * time.Second)
+		assert.False(t, closed)
+
+		// 验证链接仍然活跃
+		select {
+		case <-lk.HasClosed():
+			t.Error("链接不应该被关闭")
+		default:
+			// 链接仍然活跃，符合预期
+		}
+
+		assert.NoError(t, lk.Close())
+	})
+
+	t.Run("应该返回true对于已关闭的链接", func(t *testing.T) {
+		t.Parallel()
+
+		serverConn, _ := newServerAndClientConn()
+		lk := link.New(context.Background(), "test-already-closed",
+			createTestSession(t, session.UserInfo{BizID: 1, UserID: 1}),
+			serverConn,
+			link.WithAutoClose(true),
+		)
+
+		// 先关闭链接
+		assert.NoError(t, lk.Close())
+
+		// 等待关闭完成
+		select {
+		case <-lk.HasClosed():
+			// 链接已关闭
+		case <-time.After(100 * time.Millisecond):
+			t.Error("链接应该已经被关闭")
+		}
+
+		// 对于已关闭的链接，TryCloseIfIdle应该返回true
+		closed := lk.TryCloseIfIdle(1 * time.Millisecond)
+		assert.True(t, closed)
 	})
 }
 

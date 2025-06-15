@@ -41,6 +41,7 @@ const (
 	keyFormat = "gateway:session:bizId:%d:userId:%d"
 )
 
+//go:generate mockgen -destination=./mocks/session.mock.go -package=sessmocks -typed -source=./session.go Session
 type Session interface {
 	// UserInfo 返回当前Session关联的用户身份信息。
 	UserInfo() UserInfo

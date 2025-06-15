@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"net"
 	"time"
 
@@ -15,15 +16,39 @@ type Server interface {
 	server.Server
 }
 
-// Link 表示一个用户连接
+// Link 表示一个抽象的用户连接，它封装了底层的网络连接（如 WebSocket、TCP），
+// 并与一个用户会话 (Session) 绑定。它提供了面向业务的、统一的连接操作接口。
+//
+//go:generate mockgen -destination=./internal/mocks/gateway.mock.go -package=mocks -typed -source=./types.go
 type Link interface {
+	// ID 返回此连接的唯一标识符。
 	ID() string
+
+	// Session 返回与此连接绑定的用户会d话信息。
 	Session() session.Session
+
+	// Send 向客户端异步发送一条消息。
+	// 如果发送失败（例如，缓冲区已满或连接已关闭），则返回错误。
 	Send(payload []byte) error
+
+	// Receive 返回一个只读通道，用于从客户端接收消息。
+	// 调用方可以从该通道中持续读取客户端上行的数据。
 	Receive() <-chan []byte
+
+	// HasClosed 返回一个只读通道，该通道在连接被关闭时会关闭。
+	// 这是一种非阻塞的、事件驱动的机制，用于监听连接的关闭事件。
+	// 例如： `select { case <-link.HasClosed(): ... }`
 	HasClosed() <-chan struct{}
+
+	// Close 主动关闭此连接，并释放相关资源。
 	Close() error
+
+	// UpdateActiveTime 更新连接的最后活跃时间戳。
+	// 通常在收到客户端消息或成功发送消息后调用，用于空闲连接检测。
 	UpdateActiveTime()
+
+	// TryCloseIfIdle 检查连接是否超过指定的空闲超时时间。
+	// 如果已空闲超时，则关闭连接并返回 true；否则返回 false。
 	TryCloseIfIdle(timeout time.Duration) bool
 }
 
@@ -87,4 +112,49 @@ func (l *LinkEventHandlerWrapper) OnDisconnect(lk Link) error {
 		err = multierr.Append(err, l.handlers[i].OnDisconnect(lk))
 	}
 	return err
+}
+
+// LinkManager 定义了管理所有 Link 实例的接口。
+// 它是网关节点的核心组件之一，负责连接的生命周期管理、查找和调度。
+type LinkManager interface {
+	// NewLink 基于底层的网络连接和用户会话，创建一个新的 Link 实例并纳入管理。
+	// 这是所有新连接加入系统的入口点。
+	NewLink(ctx context.Context, conn net.Conn, sess session.Session) (Link, error)
+
+	// FindLinkByUserInfo 根据用户会话信息（如用户ID）查找对应的 Link 实例。
+	// 这是一个非常重要的业务功能，例如，用于向特定用户推送消息。
+	FindLinkByUserInfo(userInfo session.UserInfo) (Link, bool)
+
+	// RemoveLink 根据连接ID从管理器中移除一个 Link 实例。
+	// 通常在 Link 关闭后被调用。
+	RemoveLink(linkID string) bool
+
+	// RedirectLinks 根据指定的 LinkSelector 策略，选择一组连接，并将它们重定向到其他可用节点。
+	// 这是实现优雅退出、再均衡等高级功能的关键方法。
+	RedirectLinks(ctx context.Context, selector LinkSelector, availableNodes *apiv1.NodeList) error
+
+	// CleanIdleLinks 遍历所有连接，清理超过指定空闲时长的连接。
+	// 返回被清理的连接数量。此方法通常由一个后台定时任务周期性调用。
+	CleanIdleLinks(idleTimeout time.Duration) int
+
+	// Len 返回当前管理的 Link 实例总数。
+	Len() int64
+
+	// Links 返回当前所有 Link 实例的快照切片。
+	// 注意：这可能是一个耗时操作，应谨慎使用。
+	Links() []Link
+
+	// Close 立即关闭管理器以及其管理的所有连接，不进行任何优雅处理。
+	Close() error
+
+	// GracefulClose 以优雅的方式关闭管理器。
+	// 它会首先尝试将所有连接重定向到其他节点，并在给定的超时时间内等待操作完成。
+	GracefulClose(ctx context.Context) error
+}
+
+// LinkSelector 定义了如何从一组 Link 中挑选出子集的策略接口。
+// 这是一个策略模式的应用，用于解耦“如何挑选”和“如何处理”。
+type LinkSelector interface {
+	// Select 根据特定策略，从输入的 links 切片中选择并返回一个子集。
+	Select(links []Link) []Link
 }

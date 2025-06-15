@@ -17,18 +17,6 @@ import (
 	"github.com/gotomicro/ego/core/elog"
 )
 
-// 默认配置常量
-const (
-	DefaultReadTimeout       = 30 * time.Second
-	DefaultWriteTimeout      = 10 * time.Second
-	DefaultInitRetryInterval = 1 * time.Second
-	DefaultMaxRetryInterval  = 5 * time.Second
-	DefaultMaxRetries        = 3
-	DefaultWriteBufferSize   = 256
-	DefaultReadBufferSize    = 256
-	DefaultCloseTimeout      = 1 * time.Second
-)
-
 var ErrLinkClosed = errors.New("websocket: 连接已关闭")
 
 type Link struct {

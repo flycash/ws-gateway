@@ -15,7 +15,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"gitee.com/flycash/ws-gateway/pkg/session"
-	"gitee.com/flycash/ws-gateway/pkg/session/mocks"
+	mocks "gitee.com/flycash/ws-gateway/pkg/session/mocks"
 )
 
 func TestRedisSession_UserInfo(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/upgrader"
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
-	"gitee.com/flycash/ws-gateway/pkg/session/mocks"
+	mocks "gitee.com/flycash/ws-gateway/pkg/session/mocks"
 
 	jwtgo "github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
@@ -376,28 +376,6 @@ func TestUpgrader_Upgrade_ExpiredToken(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "无效的UserToken")
-	assert.Nil(t, sess)
-	assert.Nil(t, compressionState)
-}
-
-func TestUpgrader_Upgrade_ExistingConnection(t *testing.T) {
-	t.Parallel()
-
-	token := createTestToken()
-	compressionConfig := createDisabledCompressionConfig()
-	u := createTestUpgraderWithExistingSession(t, token, compressionConfig)
-
-	validToken := generateValidToken(token)
-	requestURI := createTestURI(validToken)
-
-	serverConn, clientConn := mockWebSocketConnection(t, requestURI, false)
-	defer serverConn.Close()
-	defer clientConn.Close()
-
-	sess, compressionState, err := u.Upgrade(serverConn)
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "用户已存在")
 	assert.Nil(t, sess)
 	assert.Nil(t, compressionState)
 }

@@ -16,7 +16,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/pushretry"
 	"gitee.com/flycash/ws-gateway/pkg/session"
-	"gitee.com/flycash/ws-gateway/pkg/session/mocks"
+	mocks "gitee.com/flycash/ws-gateway/pkg/session/mocks"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

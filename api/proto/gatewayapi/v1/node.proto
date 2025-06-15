@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package gatewayapi.v1;
+
+option go_package = "v1/gatewayapi;gatewayapiv1";
+
+// Node 表示一个网关节点的详细信息，用于负载均衡和连接重定向决策。
+message Node {
+  // ID 是节点的唯一标识符，例如 "gw-node-1"。
+  // 字段编号从 1 开始。
+  string id = 1;
+
+  // IP 是节点的公网 IP 地址。
+  string ip = 2;
+
+  // Port 是节点提供服务所监听的端口。
+  // 使用 int32 是因为大多数网络端口号都在 0-65535 范围内，int32 足以表示。
+  // 它也比 int64 更节省编码空间。
+  int32 port = 3;
+
+  // Weight 是节点的权重值，用于加权负载均衡算法。取值范围 [0, 100)。
+  // 使用 int32 足够。
+  int32 weight = 4;
+
+  // Location 描述节点的物理或逻辑位置（如 "cn-beijing"），用于地理位置路由。
+  string location = 5;
+
+  // Labels 是附加到节点上的一组标签，用于基于标签的路由。
+  // Go 的 []string 切片类型对应 Protobuf 的 repeated string。
+  repeated string labels = 6;
+
+  // Capacity 是节点设计的最大连接容量。
+  // 对于可能很大的数值（如连接数），使用 int64 会更安全，避免溢出。
+  int64 capacity = 7;
+
+  // Load 是节点当前的负载值，可以是连接数或复合指标。
+  // 同样使用 int64 以保证充足的表示范围。
+  int64 load = 8;
+}
+
+message NodeList {
+  repeated Node nodes = 1;
+}
