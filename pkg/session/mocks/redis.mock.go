@@ -6,7 +6,7 @@
 //	mockgen -destination=./pkg/session/mocks/redis.mock.go -package=sessmocks -typed github.com/redis/go-redis/v9 Cmdable
 //
 
-// Package mocks is a generated GoMock package.
+// Package sessmocks is a generated GoMock package.
 package sessmocks
 
 import (
@@ -40,6 +40,120 @@ func NewMockCmdable(ctrl *gomock.Controller) *MockCmdable {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockCmdable) EXPECT() *MockCmdableMockRecorder {
 	return m.recorder
+}
+
+// ACLCat mocks base method.
+func (m *MockCmdable) ACLCat(ctx context.Context) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ACLCat", ctx)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// ACLCat indicates an expected call of ACLCat.
+func (mr *MockCmdableMockRecorder) ACLCat(ctx any) *MockCmdableACLCatCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ACLCat", reflect.TypeOf((*MockCmdable)(nil).ACLCat), ctx)
+	return &MockCmdableACLCatCall{Call: call}
+}
+
+// MockCmdableACLCatCall wrap *gomock.Call
+type MockCmdableACLCatCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableACLCatCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableACLCatCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableACLCatCall) Do(f func(context.Context) *redis.StringSliceCmd) *MockCmdableACLCatCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableACLCatCall) DoAndReturn(f func(context.Context) *redis.StringSliceCmd) *MockCmdableACLCatCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ACLCatArgs mocks base method.
+func (m *MockCmdable) ACLCatArgs(ctx context.Context, options *redis.ACLCatArgs) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ACLCatArgs", ctx, options)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// ACLCatArgs indicates an expected call of ACLCatArgs.
+func (mr *MockCmdableMockRecorder) ACLCatArgs(ctx, options any) *MockCmdableACLCatArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ACLCatArgs", reflect.TypeOf((*MockCmdable)(nil).ACLCatArgs), ctx, options)
+	return &MockCmdableACLCatArgsCall{Call: call}
+}
+
+// MockCmdableACLCatArgsCall wrap *gomock.Call
+type MockCmdableACLCatArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableACLCatArgsCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableACLCatArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableACLCatArgsCall) Do(f func(context.Context, *redis.ACLCatArgs) *redis.StringSliceCmd) *MockCmdableACLCatArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableACLCatArgsCall) DoAndReturn(f func(context.Context, *redis.ACLCatArgs) *redis.StringSliceCmd) *MockCmdableACLCatArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ACLDelUser mocks base method.
+func (m *MockCmdable) ACLDelUser(ctx context.Context, username string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ACLDelUser", ctx, username)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// ACLDelUser indicates an expected call of ACLDelUser.
+func (mr *MockCmdableMockRecorder) ACLDelUser(ctx, username any) *MockCmdableACLDelUserCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ACLDelUser", reflect.TypeOf((*MockCmdable)(nil).ACLDelUser), ctx, username)
+	return &MockCmdableACLDelUserCall{Call: call}
+}
+
+// MockCmdableACLDelUserCall wrap *gomock.Call
+type MockCmdableACLDelUserCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableACLDelUserCall) Return(arg0 *redis.IntCmd) *MockCmdableACLDelUserCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableACLDelUserCall) Do(f func(context.Context, string) *redis.IntCmd) *MockCmdableACLDelUserCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableACLDelUserCall) DoAndReturn(f func(context.Context, string) *redis.IntCmd) *MockCmdableACLDelUserCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
 }
 
 // ACLDryRun mocks base method.
@@ -81,6 +195,44 @@ func (c *MockCmdableACLDryRunCall) Do(f func(context.Context, string, ...any) *r
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableACLDryRunCall) DoAndReturn(f func(context.Context, string, ...any) *redis.StringCmd) *MockCmdableACLDryRunCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ACLList mocks base method.
+func (m *MockCmdable) ACLList(ctx context.Context) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ACLList", ctx)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// ACLList indicates an expected call of ACLList.
+func (mr *MockCmdableMockRecorder) ACLList(ctx any) *MockCmdableACLListCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ACLList", reflect.TypeOf((*MockCmdable)(nil).ACLList), ctx)
+	return &MockCmdableACLListCall{Call: call}
+}
+
+// MockCmdableACLListCall wrap *gomock.Call
+type MockCmdableACLListCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableACLListCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableACLListCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableACLListCall) Do(f func(context.Context) *redis.StringSliceCmd) *MockCmdableACLListCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableACLListCall) DoAndReturn(f func(context.Context) *redis.StringSliceCmd) *MockCmdableACLListCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -157,6 +309,49 @@ func (c *MockCmdableACLLogResetCall) Do(f func(context.Context) *redis.StatusCmd
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableACLLogResetCall) DoAndReturn(f func(context.Context) *redis.StatusCmd) *MockCmdableACLLogResetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ACLSetUser mocks base method.
+func (m *MockCmdable) ACLSetUser(ctx context.Context, username string, rules ...string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, username}
+	for _, a := range rules {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ACLSetUser", varargs...)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// ACLSetUser indicates an expected call of ACLSetUser.
+func (mr *MockCmdableMockRecorder) ACLSetUser(ctx, username any, rules ...any) *MockCmdableACLSetUserCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, username}, rules...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ACLSetUser", reflect.TypeOf((*MockCmdable)(nil).ACLSetUser), varargs...)
+	return &MockCmdableACLSetUserCall{Call: call}
+}
+
+// MockCmdableACLSetUserCall wrap *gomock.Call
+type MockCmdableACLSetUserCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableACLSetUserCall) Return(arg0 *redis.StatusCmd) *MockCmdableACLSetUserCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableACLSetUserCall) Do(f func(context.Context, string, ...string) *redis.StatusCmd) *MockCmdableACLSetUserCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableACLSetUserCall) DoAndReturn(f func(context.Context, string, ...string) *redis.StatusCmd) *MockCmdableACLSetUserCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -784,44 +979,6 @@ func (c *MockCmdableBFReserveCall) DoAndReturn(f func(context.Context, string, f
 	return c
 }
 
-// BFReserveArgs mocks base method.
-func (m *MockCmdable) BFReserveArgs(ctx context.Context, key string, options *redis.BFReserveOptions) *redis.StatusCmd {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BFReserveArgs", ctx, key, options)
-	ret0, _ := ret[0].(*redis.StatusCmd)
-	return ret0
-}
-
-// BFReserveArgs indicates an expected call of BFReserveArgs.
-func (mr *MockCmdableMockRecorder) BFReserveArgs(ctx, key, options any) *MockCmdableBFReserveArgsCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BFReserveArgs", reflect.TypeOf((*MockCmdable)(nil).BFReserveArgs), ctx, key, options)
-	return &MockCmdableBFReserveArgsCall{Call: call}
-}
-
-// MockCmdableBFReserveArgsCall wrap *gomock.Call
-type MockCmdableBFReserveArgsCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockCmdableBFReserveArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableBFReserveArgsCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockCmdableBFReserveArgsCall) Do(f func(context.Context, string, *redis.BFReserveOptions) *redis.StatusCmd) *MockCmdableBFReserveArgsCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableBFReserveArgsCall) DoAndReturn(f func(context.Context, string, *redis.BFReserveOptions) *redis.StatusCmd) *MockCmdableBFReserveArgsCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
 // BFReserveExpansion mocks base method.
 func (m *MockCmdable) BFReserveExpansion(ctx context.Context, key string, errorRate float64, capacity, expansion int64) *redis.StatusCmd {
 	m.ctrl.T.Helper()
@@ -894,6 +1051,44 @@ func (c *MockCmdableBFReserveNonScalingCall) Do(f func(context.Context, string, 
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableBFReserveNonScalingCall) DoAndReturn(f func(context.Context, string, float64, int64) *redis.StatusCmd) *MockCmdableBFReserveNonScalingCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// BFReserveWithArgs mocks base method.
+func (m *MockCmdable) BFReserveWithArgs(ctx context.Context, key string, options *redis.BFReserveOptions) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BFReserveWithArgs", ctx, key, options)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// BFReserveWithArgs indicates an expected call of BFReserveWithArgs.
+func (mr *MockCmdableMockRecorder) BFReserveWithArgs(ctx, key, options any) *MockCmdableBFReserveWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BFReserveWithArgs", reflect.TypeOf((*MockCmdable)(nil).BFReserveWithArgs), ctx, key, options)
+	return &MockCmdableBFReserveWithArgsCall{Call: call}
+}
+
+// MockCmdableBFReserveWithArgsCall wrap *gomock.Call
+type MockCmdableBFReserveWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableBFReserveWithArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableBFReserveWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableBFReserveWithArgsCall) Do(f func(context.Context, string, *redis.BFReserveOptions) *redis.StatusCmd) *MockCmdableBFReserveWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableBFReserveWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.BFReserveOptions) *redis.StatusCmd) *MockCmdableBFReserveWithArgsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1385,10 +1580,10 @@ func (c *MockCmdableBitCountCall) DoAndReturn(f func(context.Context, string, *r
 }
 
 // BitField mocks base method.
-func (m *MockCmdable) BitField(ctx context.Context, key string, args ...any) *redis.IntSliceCmd {
+func (m *MockCmdable) BitField(ctx context.Context, key string, values ...any) *redis.IntSliceCmd {
 	m.ctrl.T.Helper()
 	varargs := []any{ctx, key}
-	for _, a := range args {
+	for _, a := range values {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "BitField", varargs...)
@@ -1397,9 +1592,9 @@ func (m *MockCmdable) BitField(ctx context.Context, key string, args ...any) *re
 }
 
 // BitField indicates an expected call of BitField.
-func (mr *MockCmdableMockRecorder) BitField(ctx, key any, args ...any) *MockCmdableBitFieldCall {
+func (mr *MockCmdableMockRecorder) BitField(ctx, key any, values ...any) *MockCmdableBitFieldCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, key}, args...)
+	varargs := append([]any{ctx, key}, values...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BitField", reflect.TypeOf((*MockCmdable)(nil).BitField), varargs...)
 	return &MockCmdableBitFieldCall{Call: call}
 }
@@ -1423,6 +1618,49 @@ func (c *MockCmdableBitFieldCall) Do(f func(context.Context, string, ...any) *re
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableBitFieldCall) DoAndReturn(f func(context.Context, string, ...any) *redis.IntSliceCmd) *MockCmdableBitFieldCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// BitFieldRO mocks base method.
+func (m *MockCmdable) BitFieldRO(ctx context.Context, key string, values ...any) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range values {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "BitFieldRO", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// BitFieldRO indicates an expected call of BitFieldRO.
+func (mr *MockCmdableMockRecorder) BitFieldRO(ctx, key any, values ...any) *MockCmdableBitFieldROCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, values...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BitFieldRO", reflect.TypeOf((*MockCmdable)(nil).BitFieldRO), varargs...)
+	return &MockCmdableBitFieldROCall{Call: call}
+}
+
+// MockCmdableBitFieldROCall wrap *gomock.Call
+type MockCmdableBitFieldROCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableBitFieldROCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableBitFieldROCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableBitFieldROCall) Do(f func(context.Context, string, ...any) *redis.IntSliceCmd) *MockCmdableBitFieldROCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableBitFieldROCall) DoAndReturn(f func(context.Context, string, ...any) *redis.IntSliceCmd) *MockCmdableBitFieldROCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -2108,44 +2346,6 @@ func (c *MockCmdableCFReserveCall) DoAndReturn(f func(context.Context, string, i
 	return c
 }
 
-// CFReserveArgs mocks base method.
-func (m *MockCmdable) CFReserveArgs(ctx context.Context, key string, options *redis.CFReserveOptions) *redis.StatusCmd {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CFReserveArgs", ctx, key, options)
-	ret0, _ := ret[0].(*redis.StatusCmd)
-	return ret0
-}
-
-// CFReserveArgs indicates an expected call of CFReserveArgs.
-func (mr *MockCmdableMockRecorder) CFReserveArgs(ctx, key, options any) *MockCmdableCFReserveArgsCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CFReserveArgs", reflect.TypeOf((*MockCmdable)(nil).CFReserveArgs), ctx, key, options)
-	return &MockCmdableCFReserveArgsCall{Call: call}
-}
-
-// MockCmdableCFReserveArgsCall wrap *gomock.Call
-type MockCmdableCFReserveArgsCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockCmdableCFReserveArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableCFReserveArgsCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockCmdableCFReserveArgsCall) Do(f func(context.Context, string, *redis.CFReserveOptions) *redis.StatusCmd) *MockCmdableCFReserveArgsCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableCFReserveArgsCall) DoAndReturn(f func(context.Context, string, *redis.CFReserveOptions) *redis.StatusCmd) *MockCmdableCFReserveArgsCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
 // CFReserveBucketSize mocks base method.
 func (m *MockCmdable) CFReserveBucketSize(ctx context.Context, key string, capacity, bucketsize int64) *redis.StatusCmd {
 	m.ctrl.T.Helper()
@@ -2256,6 +2456,44 @@ func (c *MockCmdableCFReserveMaxIterationsCall) Do(f func(context.Context, strin
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableCFReserveMaxIterationsCall) DoAndReturn(f func(context.Context, string, int64, int64) *redis.StatusCmd) *MockCmdableCFReserveMaxIterationsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// CFReserveWithArgs mocks base method.
+func (m *MockCmdable) CFReserveWithArgs(ctx context.Context, key string, options *redis.CFReserveOptions) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CFReserveWithArgs", ctx, key, options)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// CFReserveWithArgs indicates an expected call of CFReserveWithArgs.
+func (mr *MockCmdableMockRecorder) CFReserveWithArgs(ctx, key, options any) *MockCmdableCFReserveWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CFReserveWithArgs", reflect.TypeOf((*MockCmdable)(nil).CFReserveWithArgs), ctx, key, options)
+	return &MockCmdableCFReserveWithArgsCall{Call: call}
+}
+
+// MockCmdableCFReserveWithArgsCall wrap *gomock.Call
+type MockCmdableCFReserveWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableCFReserveWithArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableCFReserveWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableCFReserveWithArgsCall) Do(f func(context.Context, string, *redis.CFReserveOptions) *redis.StatusCmd) *MockCmdableCFReserveWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableCFReserveWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.CFReserveOptions) *redis.StatusCmd) *MockCmdableCFReserveWithArgsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -3464,6 +3702,44 @@ func (c *MockCmdableClusterMeetCall) Do(f func(context.Context, string, string) 
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableClusterMeetCall) DoAndReturn(f func(context.Context, string, string) *redis.StatusCmd) *MockCmdableClusterMeetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ClusterMyID mocks base method.
+func (m *MockCmdable) ClusterMyID(ctx context.Context) *redis.StringCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ClusterMyID", ctx)
+	ret0, _ := ret[0].(*redis.StringCmd)
+	return ret0
+}
+
+// ClusterMyID indicates an expected call of ClusterMyID.
+func (mr *MockCmdableMockRecorder) ClusterMyID(ctx any) *MockCmdableClusterMyIDCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterMyID", reflect.TypeOf((*MockCmdable)(nil).ClusterMyID), ctx)
+	return &MockCmdableClusterMyIDCall{Call: call}
+}
+
+// MockCmdableClusterMyIDCall wrap *gomock.Call
+type MockCmdableClusterMyIDCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableClusterMyIDCall) Return(arg0 *redis.StringCmd) *MockCmdableClusterMyIDCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableClusterMyIDCall) Do(f func(context.Context) *redis.StringCmd) *MockCmdableClusterMyIDCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableClusterMyIDCall) DoAndReturn(f func(context.Context) *redis.StringCmd) *MockCmdableClusterMyIDCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -5043,6 +5319,1085 @@ func (c *MockCmdableFCallRoCall) DoAndReturn(f func(context.Context, string, []s
 	return c
 }
 
+// FTAggregate mocks base method.
+func (m *MockCmdable) FTAggregate(ctx context.Context, index, query string) *redis.MapStringInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTAggregate", ctx, index, query)
+	ret0, _ := ret[0].(*redis.MapStringInterfaceCmd)
+	return ret0
+}
+
+// FTAggregate indicates an expected call of FTAggregate.
+func (mr *MockCmdableMockRecorder) FTAggregate(ctx, index, query any) *MockCmdableFTAggregateCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTAggregate", reflect.TypeOf((*MockCmdable)(nil).FTAggregate), ctx, index, query)
+	return &MockCmdableFTAggregateCall{Call: call}
+}
+
+// MockCmdableFTAggregateCall wrap *gomock.Call
+type MockCmdableFTAggregateCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTAggregateCall) Return(arg0 *redis.MapStringInterfaceCmd) *MockCmdableFTAggregateCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTAggregateCall) Do(f func(context.Context, string, string) *redis.MapStringInterfaceCmd) *MockCmdableFTAggregateCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTAggregateCall) DoAndReturn(f func(context.Context, string, string) *redis.MapStringInterfaceCmd) *MockCmdableFTAggregateCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTAggregateWithArgs mocks base method.
+func (m *MockCmdable) FTAggregateWithArgs(ctx context.Context, index, query string, options *redis.FTAggregateOptions) *redis.AggregateCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTAggregateWithArgs", ctx, index, query, options)
+	ret0, _ := ret[0].(*redis.AggregateCmd)
+	return ret0
+}
+
+// FTAggregateWithArgs indicates an expected call of FTAggregateWithArgs.
+func (mr *MockCmdableMockRecorder) FTAggregateWithArgs(ctx, index, query, options any) *MockCmdableFTAggregateWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTAggregateWithArgs", reflect.TypeOf((*MockCmdable)(nil).FTAggregateWithArgs), ctx, index, query, options)
+	return &MockCmdableFTAggregateWithArgsCall{Call: call}
+}
+
+// MockCmdableFTAggregateWithArgsCall wrap *gomock.Call
+type MockCmdableFTAggregateWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTAggregateWithArgsCall) Return(arg0 *redis.AggregateCmd) *MockCmdableFTAggregateWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTAggregateWithArgsCall) Do(f func(context.Context, string, string, *redis.FTAggregateOptions) *redis.AggregateCmd) *MockCmdableFTAggregateWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTAggregateWithArgsCall) DoAndReturn(f func(context.Context, string, string, *redis.FTAggregateOptions) *redis.AggregateCmd) *MockCmdableFTAggregateWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTAliasAdd mocks base method.
+func (m *MockCmdable) FTAliasAdd(ctx context.Context, index, alias string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTAliasAdd", ctx, index, alias)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTAliasAdd indicates an expected call of FTAliasAdd.
+func (mr *MockCmdableMockRecorder) FTAliasAdd(ctx, index, alias any) *MockCmdableFTAliasAddCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTAliasAdd", reflect.TypeOf((*MockCmdable)(nil).FTAliasAdd), ctx, index, alias)
+	return &MockCmdableFTAliasAddCall{Call: call}
+}
+
+// MockCmdableFTAliasAddCall wrap *gomock.Call
+type MockCmdableFTAliasAddCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTAliasAddCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTAliasAddCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTAliasAddCall) Do(f func(context.Context, string, string) *redis.StatusCmd) *MockCmdableFTAliasAddCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTAliasAddCall) DoAndReturn(f func(context.Context, string, string) *redis.StatusCmd) *MockCmdableFTAliasAddCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTAliasDel mocks base method.
+func (m *MockCmdable) FTAliasDel(ctx context.Context, alias string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTAliasDel", ctx, alias)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTAliasDel indicates an expected call of FTAliasDel.
+func (mr *MockCmdableMockRecorder) FTAliasDel(ctx, alias any) *MockCmdableFTAliasDelCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTAliasDel", reflect.TypeOf((*MockCmdable)(nil).FTAliasDel), ctx, alias)
+	return &MockCmdableFTAliasDelCall{Call: call}
+}
+
+// MockCmdableFTAliasDelCall wrap *gomock.Call
+type MockCmdableFTAliasDelCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTAliasDelCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTAliasDelCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTAliasDelCall) Do(f func(context.Context, string) *redis.StatusCmd) *MockCmdableFTAliasDelCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTAliasDelCall) DoAndReturn(f func(context.Context, string) *redis.StatusCmd) *MockCmdableFTAliasDelCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTAliasUpdate mocks base method.
+func (m *MockCmdable) FTAliasUpdate(ctx context.Context, index, alias string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTAliasUpdate", ctx, index, alias)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTAliasUpdate indicates an expected call of FTAliasUpdate.
+func (mr *MockCmdableMockRecorder) FTAliasUpdate(ctx, index, alias any) *MockCmdableFTAliasUpdateCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTAliasUpdate", reflect.TypeOf((*MockCmdable)(nil).FTAliasUpdate), ctx, index, alias)
+	return &MockCmdableFTAliasUpdateCall{Call: call}
+}
+
+// MockCmdableFTAliasUpdateCall wrap *gomock.Call
+type MockCmdableFTAliasUpdateCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTAliasUpdateCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTAliasUpdateCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTAliasUpdateCall) Do(f func(context.Context, string, string) *redis.StatusCmd) *MockCmdableFTAliasUpdateCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTAliasUpdateCall) DoAndReturn(f func(context.Context, string, string) *redis.StatusCmd) *MockCmdableFTAliasUpdateCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTAlter mocks base method.
+func (m *MockCmdable) FTAlter(ctx context.Context, index string, skipInitialScan bool, definition []any) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTAlter", ctx, index, skipInitialScan, definition)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTAlter indicates an expected call of FTAlter.
+func (mr *MockCmdableMockRecorder) FTAlter(ctx, index, skipInitialScan, definition any) *MockCmdableFTAlterCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTAlter", reflect.TypeOf((*MockCmdable)(nil).FTAlter), ctx, index, skipInitialScan, definition)
+	return &MockCmdableFTAlterCall{Call: call}
+}
+
+// MockCmdableFTAlterCall wrap *gomock.Call
+type MockCmdableFTAlterCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTAlterCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTAlterCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTAlterCall) Do(f func(context.Context, string, bool, []any) *redis.StatusCmd) *MockCmdableFTAlterCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTAlterCall) DoAndReturn(f func(context.Context, string, bool, []any) *redis.StatusCmd) *MockCmdableFTAlterCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTConfigGet mocks base method.
+func (m *MockCmdable) FTConfigGet(ctx context.Context, option string) *redis.MapMapStringInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTConfigGet", ctx, option)
+	ret0, _ := ret[0].(*redis.MapMapStringInterfaceCmd)
+	return ret0
+}
+
+// FTConfigGet indicates an expected call of FTConfigGet.
+func (mr *MockCmdableMockRecorder) FTConfigGet(ctx, option any) *MockCmdableFTConfigGetCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTConfigGet", reflect.TypeOf((*MockCmdable)(nil).FTConfigGet), ctx, option)
+	return &MockCmdableFTConfigGetCall{Call: call}
+}
+
+// MockCmdableFTConfigGetCall wrap *gomock.Call
+type MockCmdableFTConfigGetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTConfigGetCall) Return(arg0 *redis.MapMapStringInterfaceCmd) *MockCmdableFTConfigGetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTConfigGetCall) Do(f func(context.Context, string) *redis.MapMapStringInterfaceCmd) *MockCmdableFTConfigGetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTConfigGetCall) DoAndReturn(f func(context.Context, string) *redis.MapMapStringInterfaceCmd) *MockCmdableFTConfigGetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTConfigSet mocks base method.
+func (m *MockCmdable) FTConfigSet(ctx context.Context, option string, value any) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTConfigSet", ctx, option, value)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTConfigSet indicates an expected call of FTConfigSet.
+func (mr *MockCmdableMockRecorder) FTConfigSet(ctx, option, value any) *MockCmdableFTConfigSetCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTConfigSet", reflect.TypeOf((*MockCmdable)(nil).FTConfigSet), ctx, option, value)
+	return &MockCmdableFTConfigSetCall{Call: call}
+}
+
+// MockCmdableFTConfigSetCall wrap *gomock.Call
+type MockCmdableFTConfigSetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTConfigSetCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTConfigSetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTConfigSetCall) Do(f func(context.Context, string, any) *redis.StatusCmd) *MockCmdableFTConfigSetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTConfigSetCall) DoAndReturn(f func(context.Context, string, any) *redis.StatusCmd) *MockCmdableFTConfigSetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTCreate mocks base method.
+func (m *MockCmdable) FTCreate(ctx context.Context, index string, options *redis.FTCreateOptions, schema ...*redis.FieldSchema) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, index, options}
+	for _, a := range schema {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FTCreate", varargs...)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTCreate indicates an expected call of FTCreate.
+func (mr *MockCmdableMockRecorder) FTCreate(ctx, index, options any, schema ...any) *MockCmdableFTCreateCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, index, options}, schema...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTCreate", reflect.TypeOf((*MockCmdable)(nil).FTCreate), varargs...)
+	return &MockCmdableFTCreateCall{Call: call}
+}
+
+// MockCmdableFTCreateCall wrap *gomock.Call
+type MockCmdableFTCreateCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTCreateCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTCreateCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTCreateCall) Do(f func(context.Context, string, *redis.FTCreateOptions, ...*redis.FieldSchema) *redis.StatusCmd) *MockCmdableFTCreateCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTCreateCall) DoAndReturn(f func(context.Context, string, *redis.FTCreateOptions, ...*redis.FieldSchema) *redis.StatusCmd) *MockCmdableFTCreateCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTCursorDel mocks base method.
+func (m *MockCmdable) FTCursorDel(ctx context.Context, index string, cursorId int) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTCursorDel", ctx, index, cursorId)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTCursorDel indicates an expected call of FTCursorDel.
+func (mr *MockCmdableMockRecorder) FTCursorDel(ctx, index, cursorId any) *MockCmdableFTCursorDelCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTCursorDel", reflect.TypeOf((*MockCmdable)(nil).FTCursorDel), ctx, index, cursorId)
+	return &MockCmdableFTCursorDelCall{Call: call}
+}
+
+// MockCmdableFTCursorDelCall wrap *gomock.Call
+type MockCmdableFTCursorDelCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTCursorDelCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTCursorDelCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTCursorDelCall) Do(f func(context.Context, string, int) *redis.StatusCmd) *MockCmdableFTCursorDelCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTCursorDelCall) DoAndReturn(f func(context.Context, string, int) *redis.StatusCmd) *MockCmdableFTCursorDelCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTCursorRead mocks base method.
+func (m *MockCmdable) FTCursorRead(ctx context.Context, index string, cursorId, count int) *redis.MapStringInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTCursorRead", ctx, index, cursorId, count)
+	ret0, _ := ret[0].(*redis.MapStringInterfaceCmd)
+	return ret0
+}
+
+// FTCursorRead indicates an expected call of FTCursorRead.
+func (mr *MockCmdableMockRecorder) FTCursorRead(ctx, index, cursorId, count any) *MockCmdableFTCursorReadCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTCursorRead", reflect.TypeOf((*MockCmdable)(nil).FTCursorRead), ctx, index, cursorId, count)
+	return &MockCmdableFTCursorReadCall{Call: call}
+}
+
+// MockCmdableFTCursorReadCall wrap *gomock.Call
+type MockCmdableFTCursorReadCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTCursorReadCall) Return(arg0 *redis.MapStringInterfaceCmd) *MockCmdableFTCursorReadCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTCursorReadCall) Do(f func(context.Context, string, int, int) *redis.MapStringInterfaceCmd) *MockCmdableFTCursorReadCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTCursorReadCall) DoAndReturn(f func(context.Context, string, int, int) *redis.MapStringInterfaceCmd) *MockCmdableFTCursorReadCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTDictAdd mocks base method.
+func (m *MockCmdable) FTDictAdd(ctx context.Context, dict string, term ...any) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, dict}
+	for _, a := range term {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FTDictAdd", varargs...)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// FTDictAdd indicates an expected call of FTDictAdd.
+func (mr *MockCmdableMockRecorder) FTDictAdd(ctx, dict any, term ...any) *MockCmdableFTDictAddCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, dict}, term...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTDictAdd", reflect.TypeOf((*MockCmdable)(nil).FTDictAdd), varargs...)
+	return &MockCmdableFTDictAddCall{Call: call}
+}
+
+// MockCmdableFTDictAddCall wrap *gomock.Call
+type MockCmdableFTDictAddCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTDictAddCall) Return(arg0 *redis.IntCmd) *MockCmdableFTDictAddCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTDictAddCall) Do(f func(context.Context, string, ...any) *redis.IntCmd) *MockCmdableFTDictAddCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTDictAddCall) DoAndReturn(f func(context.Context, string, ...any) *redis.IntCmd) *MockCmdableFTDictAddCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTDictDel mocks base method.
+func (m *MockCmdable) FTDictDel(ctx context.Context, dict string, term ...any) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, dict}
+	for _, a := range term {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FTDictDel", varargs...)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// FTDictDel indicates an expected call of FTDictDel.
+func (mr *MockCmdableMockRecorder) FTDictDel(ctx, dict any, term ...any) *MockCmdableFTDictDelCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, dict}, term...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTDictDel", reflect.TypeOf((*MockCmdable)(nil).FTDictDel), varargs...)
+	return &MockCmdableFTDictDelCall{Call: call}
+}
+
+// MockCmdableFTDictDelCall wrap *gomock.Call
+type MockCmdableFTDictDelCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTDictDelCall) Return(arg0 *redis.IntCmd) *MockCmdableFTDictDelCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTDictDelCall) Do(f func(context.Context, string, ...any) *redis.IntCmd) *MockCmdableFTDictDelCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTDictDelCall) DoAndReturn(f func(context.Context, string, ...any) *redis.IntCmd) *MockCmdableFTDictDelCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTDictDump mocks base method.
+func (m *MockCmdable) FTDictDump(ctx context.Context, dict string) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTDictDump", ctx, dict)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// FTDictDump indicates an expected call of FTDictDump.
+func (mr *MockCmdableMockRecorder) FTDictDump(ctx, dict any) *MockCmdableFTDictDumpCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTDictDump", reflect.TypeOf((*MockCmdable)(nil).FTDictDump), ctx, dict)
+	return &MockCmdableFTDictDumpCall{Call: call}
+}
+
+// MockCmdableFTDictDumpCall wrap *gomock.Call
+type MockCmdableFTDictDumpCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTDictDumpCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableFTDictDumpCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTDictDumpCall) Do(f func(context.Context, string) *redis.StringSliceCmd) *MockCmdableFTDictDumpCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTDictDumpCall) DoAndReturn(f func(context.Context, string) *redis.StringSliceCmd) *MockCmdableFTDictDumpCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTDropIndex mocks base method.
+func (m *MockCmdable) FTDropIndex(ctx context.Context, index string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTDropIndex", ctx, index)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTDropIndex indicates an expected call of FTDropIndex.
+func (mr *MockCmdableMockRecorder) FTDropIndex(ctx, index any) *MockCmdableFTDropIndexCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTDropIndex", reflect.TypeOf((*MockCmdable)(nil).FTDropIndex), ctx, index)
+	return &MockCmdableFTDropIndexCall{Call: call}
+}
+
+// MockCmdableFTDropIndexCall wrap *gomock.Call
+type MockCmdableFTDropIndexCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTDropIndexCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTDropIndexCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTDropIndexCall) Do(f func(context.Context, string) *redis.StatusCmd) *MockCmdableFTDropIndexCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTDropIndexCall) DoAndReturn(f func(context.Context, string) *redis.StatusCmd) *MockCmdableFTDropIndexCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTDropIndexWithArgs mocks base method.
+func (m *MockCmdable) FTDropIndexWithArgs(ctx context.Context, index string, options *redis.FTDropIndexOptions) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTDropIndexWithArgs", ctx, index, options)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTDropIndexWithArgs indicates an expected call of FTDropIndexWithArgs.
+func (mr *MockCmdableMockRecorder) FTDropIndexWithArgs(ctx, index, options any) *MockCmdableFTDropIndexWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTDropIndexWithArgs", reflect.TypeOf((*MockCmdable)(nil).FTDropIndexWithArgs), ctx, index, options)
+	return &MockCmdableFTDropIndexWithArgsCall{Call: call}
+}
+
+// MockCmdableFTDropIndexWithArgsCall wrap *gomock.Call
+type MockCmdableFTDropIndexWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTDropIndexWithArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTDropIndexWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTDropIndexWithArgsCall) Do(f func(context.Context, string, *redis.FTDropIndexOptions) *redis.StatusCmd) *MockCmdableFTDropIndexWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTDropIndexWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.FTDropIndexOptions) *redis.StatusCmd) *MockCmdableFTDropIndexWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTExplain mocks base method.
+func (m *MockCmdable) FTExplain(ctx context.Context, index, query string) *redis.StringCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTExplain", ctx, index, query)
+	ret0, _ := ret[0].(*redis.StringCmd)
+	return ret0
+}
+
+// FTExplain indicates an expected call of FTExplain.
+func (mr *MockCmdableMockRecorder) FTExplain(ctx, index, query any) *MockCmdableFTExplainCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTExplain", reflect.TypeOf((*MockCmdable)(nil).FTExplain), ctx, index, query)
+	return &MockCmdableFTExplainCall{Call: call}
+}
+
+// MockCmdableFTExplainCall wrap *gomock.Call
+type MockCmdableFTExplainCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTExplainCall) Return(arg0 *redis.StringCmd) *MockCmdableFTExplainCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTExplainCall) Do(f func(context.Context, string, string) *redis.StringCmd) *MockCmdableFTExplainCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTExplainCall) DoAndReturn(f func(context.Context, string, string) *redis.StringCmd) *MockCmdableFTExplainCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTExplainWithArgs mocks base method.
+func (m *MockCmdable) FTExplainWithArgs(ctx context.Context, index, query string, options *redis.FTExplainOptions) *redis.StringCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTExplainWithArgs", ctx, index, query, options)
+	ret0, _ := ret[0].(*redis.StringCmd)
+	return ret0
+}
+
+// FTExplainWithArgs indicates an expected call of FTExplainWithArgs.
+func (mr *MockCmdableMockRecorder) FTExplainWithArgs(ctx, index, query, options any) *MockCmdableFTExplainWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTExplainWithArgs", reflect.TypeOf((*MockCmdable)(nil).FTExplainWithArgs), ctx, index, query, options)
+	return &MockCmdableFTExplainWithArgsCall{Call: call}
+}
+
+// MockCmdableFTExplainWithArgsCall wrap *gomock.Call
+type MockCmdableFTExplainWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTExplainWithArgsCall) Return(arg0 *redis.StringCmd) *MockCmdableFTExplainWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTExplainWithArgsCall) Do(f func(context.Context, string, string, *redis.FTExplainOptions) *redis.StringCmd) *MockCmdableFTExplainWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTExplainWithArgsCall) DoAndReturn(f func(context.Context, string, string, *redis.FTExplainOptions) *redis.StringCmd) *MockCmdableFTExplainWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTInfo mocks base method.
+func (m *MockCmdable) FTInfo(ctx context.Context, index string) *redis.FTInfoCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTInfo", ctx, index)
+	ret0, _ := ret[0].(*redis.FTInfoCmd)
+	return ret0
+}
+
+// FTInfo indicates an expected call of FTInfo.
+func (mr *MockCmdableMockRecorder) FTInfo(ctx, index any) *MockCmdableFTInfoCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTInfo", reflect.TypeOf((*MockCmdable)(nil).FTInfo), ctx, index)
+	return &MockCmdableFTInfoCall{Call: call}
+}
+
+// MockCmdableFTInfoCall wrap *gomock.Call
+type MockCmdableFTInfoCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTInfoCall) Return(arg0 *redis.FTInfoCmd) *MockCmdableFTInfoCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTInfoCall) Do(f func(context.Context, string) *redis.FTInfoCmd) *MockCmdableFTInfoCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTInfoCall) DoAndReturn(f func(context.Context, string) *redis.FTInfoCmd) *MockCmdableFTInfoCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTSearch mocks base method.
+func (m *MockCmdable) FTSearch(ctx context.Context, index, query string) *redis.FTSearchCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTSearch", ctx, index, query)
+	ret0, _ := ret[0].(*redis.FTSearchCmd)
+	return ret0
+}
+
+// FTSearch indicates an expected call of FTSearch.
+func (mr *MockCmdableMockRecorder) FTSearch(ctx, index, query any) *MockCmdableFTSearchCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTSearch", reflect.TypeOf((*MockCmdable)(nil).FTSearch), ctx, index, query)
+	return &MockCmdableFTSearchCall{Call: call}
+}
+
+// MockCmdableFTSearchCall wrap *gomock.Call
+type MockCmdableFTSearchCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTSearchCall) Return(arg0 *redis.FTSearchCmd) *MockCmdableFTSearchCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTSearchCall) Do(f func(context.Context, string, string) *redis.FTSearchCmd) *MockCmdableFTSearchCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTSearchCall) DoAndReturn(f func(context.Context, string, string) *redis.FTSearchCmd) *MockCmdableFTSearchCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTSearchWithArgs mocks base method.
+func (m *MockCmdable) FTSearchWithArgs(ctx context.Context, index, query string, options *redis.FTSearchOptions) *redis.FTSearchCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTSearchWithArgs", ctx, index, query, options)
+	ret0, _ := ret[0].(*redis.FTSearchCmd)
+	return ret0
+}
+
+// FTSearchWithArgs indicates an expected call of FTSearchWithArgs.
+func (mr *MockCmdableMockRecorder) FTSearchWithArgs(ctx, index, query, options any) *MockCmdableFTSearchWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTSearchWithArgs", reflect.TypeOf((*MockCmdable)(nil).FTSearchWithArgs), ctx, index, query, options)
+	return &MockCmdableFTSearchWithArgsCall{Call: call}
+}
+
+// MockCmdableFTSearchWithArgsCall wrap *gomock.Call
+type MockCmdableFTSearchWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTSearchWithArgsCall) Return(arg0 *redis.FTSearchCmd) *MockCmdableFTSearchWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTSearchWithArgsCall) Do(f func(context.Context, string, string, *redis.FTSearchOptions) *redis.FTSearchCmd) *MockCmdableFTSearchWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTSearchWithArgsCall) DoAndReturn(f func(context.Context, string, string, *redis.FTSearchOptions) *redis.FTSearchCmd) *MockCmdableFTSearchWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTSpellCheck mocks base method.
+func (m *MockCmdable) FTSpellCheck(ctx context.Context, index, query string) *redis.FTSpellCheckCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTSpellCheck", ctx, index, query)
+	ret0, _ := ret[0].(*redis.FTSpellCheckCmd)
+	return ret0
+}
+
+// FTSpellCheck indicates an expected call of FTSpellCheck.
+func (mr *MockCmdableMockRecorder) FTSpellCheck(ctx, index, query any) *MockCmdableFTSpellCheckCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTSpellCheck", reflect.TypeOf((*MockCmdable)(nil).FTSpellCheck), ctx, index, query)
+	return &MockCmdableFTSpellCheckCall{Call: call}
+}
+
+// MockCmdableFTSpellCheckCall wrap *gomock.Call
+type MockCmdableFTSpellCheckCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTSpellCheckCall) Return(arg0 *redis.FTSpellCheckCmd) *MockCmdableFTSpellCheckCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTSpellCheckCall) Do(f func(context.Context, string, string) *redis.FTSpellCheckCmd) *MockCmdableFTSpellCheckCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTSpellCheckCall) DoAndReturn(f func(context.Context, string, string) *redis.FTSpellCheckCmd) *MockCmdableFTSpellCheckCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTSpellCheckWithArgs mocks base method.
+func (m *MockCmdable) FTSpellCheckWithArgs(ctx context.Context, index, query string, options *redis.FTSpellCheckOptions) *redis.FTSpellCheckCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTSpellCheckWithArgs", ctx, index, query, options)
+	ret0, _ := ret[0].(*redis.FTSpellCheckCmd)
+	return ret0
+}
+
+// FTSpellCheckWithArgs indicates an expected call of FTSpellCheckWithArgs.
+func (mr *MockCmdableMockRecorder) FTSpellCheckWithArgs(ctx, index, query, options any) *MockCmdableFTSpellCheckWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTSpellCheckWithArgs", reflect.TypeOf((*MockCmdable)(nil).FTSpellCheckWithArgs), ctx, index, query, options)
+	return &MockCmdableFTSpellCheckWithArgsCall{Call: call}
+}
+
+// MockCmdableFTSpellCheckWithArgsCall wrap *gomock.Call
+type MockCmdableFTSpellCheckWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTSpellCheckWithArgsCall) Return(arg0 *redis.FTSpellCheckCmd) *MockCmdableFTSpellCheckWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTSpellCheckWithArgsCall) Do(f func(context.Context, string, string, *redis.FTSpellCheckOptions) *redis.FTSpellCheckCmd) *MockCmdableFTSpellCheckWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTSpellCheckWithArgsCall) DoAndReturn(f func(context.Context, string, string, *redis.FTSpellCheckOptions) *redis.FTSpellCheckCmd) *MockCmdableFTSpellCheckWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTSynDump mocks base method.
+func (m *MockCmdable) FTSynDump(ctx context.Context, index string) *redis.FTSynDumpCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTSynDump", ctx, index)
+	ret0, _ := ret[0].(*redis.FTSynDumpCmd)
+	return ret0
+}
+
+// FTSynDump indicates an expected call of FTSynDump.
+func (mr *MockCmdableMockRecorder) FTSynDump(ctx, index any) *MockCmdableFTSynDumpCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTSynDump", reflect.TypeOf((*MockCmdable)(nil).FTSynDump), ctx, index)
+	return &MockCmdableFTSynDumpCall{Call: call}
+}
+
+// MockCmdableFTSynDumpCall wrap *gomock.Call
+type MockCmdableFTSynDumpCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTSynDumpCall) Return(arg0 *redis.FTSynDumpCmd) *MockCmdableFTSynDumpCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTSynDumpCall) Do(f func(context.Context, string) *redis.FTSynDumpCmd) *MockCmdableFTSynDumpCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTSynDumpCall) DoAndReturn(f func(context.Context, string) *redis.FTSynDumpCmd) *MockCmdableFTSynDumpCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTSynUpdate mocks base method.
+func (m *MockCmdable) FTSynUpdate(ctx context.Context, index string, synGroupId any, terms []any) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTSynUpdate", ctx, index, synGroupId, terms)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTSynUpdate indicates an expected call of FTSynUpdate.
+func (mr *MockCmdableMockRecorder) FTSynUpdate(ctx, index, synGroupId, terms any) *MockCmdableFTSynUpdateCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTSynUpdate", reflect.TypeOf((*MockCmdable)(nil).FTSynUpdate), ctx, index, synGroupId, terms)
+	return &MockCmdableFTSynUpdateCall{Call: call}
+}
+
+// MockCmdableFTSynUpdateCall wrap *gomock.Call
+type MockCmdableFTSynUpdateCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTSynUpdateCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTSynUpdateCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTSynUpdateCall) Do(f func(context.Context, string, any, []any) *redis.StatusCmd) *MockCmdableFTSynUpdateCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTSynUpdateCall) DoAndReturn(f func(context.Context, string, any, []any) *redis.StatusCmd) *MockCmdableFTSynUpdateCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTSynUpdateWithArgs mocks base method.
+func (m *MockCmdable) FTSynUpdateWithArgs(ctx context.Context, index string, synGroupId any, options *redis.FTSynUpdateOptions, terms []any) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTSynUpdateWithArgs", ctx, index, synGroupId, options, terms)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// FTSynUpdateWithArgs indicates an expected call of FTSynUpdateWithArgs.
+func (mr *MockCmdableMockRecorder) FTSynUpdateWithArgs(ctx, index, synGroupId, options, terms any) *MockCmdableFTSynUpdateWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTSynUpdateWithArgs", reflect.TypeOf((*MockCmdable)(nil).FTSynUpdateWithArgs), ctx, index, synGroupId, options, terms)
+	return &MockCmdableFTSynUpdateWithArgsCall{Call: call}
+}
+
+// MockCmdableFTSynUpdateWithArgsCall wrap *gomock.Call
+type MockCmdableFTSynUpdateWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTSynUpdateWithArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableFTSynUpdateWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTSynUpdateWithArgsCall) Do(f func(context.Context, string, any, *redis.FTSynUpdateOptions, []any) *redis.StatusCmd) *MockCmdableFTSynUpdateWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTSynUpdateWithArgsCall) DoAndReturn(f func(context.Context, string, any, *redis.FTSynUpdateOptions, []any) *redis.StatusCmd) *MockCmdableFTSynUpdateWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FTTagVals mocks base method.
+func (m *MockCmdable) FTTagVals(ctx context.Context, index, field string) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FTTagVals", ctx, index, field)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// FTTagVals indicates an expected call of FTTagVals.
+func (mr *MockCmdableMockRecorder) FTTagVals(ctx, index, field any) *MockCmdableFTTagValsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FTTagVals", reflect.TypeOf((*MockCmdable)(nil).FTTagVals), ctx, index, field)
+	return &MockCmdableFTTagValsCall{Call: call}
+}
+
+// MockCmdableFTTagValsCall wrap *gomock.Call
+type MockCmdableFTTagValsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFTTagValsCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableFTTagValsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFTTagValsCall) Do(f func(context.Context, string, string) *redis.StringSliceCmd) *MockCmdableFTTagValsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFTTagValsCall) DoAndReturn(f func(context.Context, string, string) *redis.StringSliceCmd) *MockCmdableFTTagValsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FT_List mocks base method.
+func (m *MockCmdable) FT_List(ctx context.Context) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FT_List", ctx)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// FT_List indicates an expected call of FT_List.
+func (mr *MockCmdableMockRecorder) FT_List(ctx any) *MockCmdableFT_ListCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FT_List", reflect.TypeOf((*MockCmdable)(nil).FT_List), ctx)
+	return &MockCmdableFT_ListCall{Call: call}
+}
+
+// MockCmdableFT_ListCall wrap *gomock.Call
+type MockCmdableFT_ListCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableFT_ListCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableFT_ListCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableFT_ListCall) Do(f func(context.Context) *redis.StringSliceCmd) *MockCmdableFT_ListCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableFT_ListCall) DoAndReturn(f func(context.Context) *redis.StringSliceCmd) *MockCmdableFT_ListCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // FlushAll mocks base method.
 func (m *MockCmdable) FlushAll(ctx context.Context) *redis.StatusCmd {
 	m.ctrl.T.Helper()
@@ -6317,6 +7672,221 @@ func (c *MockCmdableHExistsCall) DoAndReturn(f func(context.Context, string, str
 	return c
 }
 
+// HExpire mocks base method.
+func (m *MockCmdable) HExpire(ctx context.Context, key string, expiration time.Duration, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, expiration}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HExpire", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HExpire indicates an expected call of HExpire.
+func (mr *MockCmdableMockRecorder) HExpire(ctx, key, expiration any, fields ...any) *MockCmdableHExpireCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, expiration}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HExpire", reflect.TypeOf((*MockCmdable)(nil).HExpire), varargs...)
+	return &MockCmdableHExpireCall{Call: call}
+}
+
+// MockCmdableHExpireCall wrap *gomock.Call
+type MockCmdableHExpireCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHExpireCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHExpireCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHExpireCall) Do(f func(context.Context, string, time.Duration, ...string) *redis.IntSliceCmd) *MockCmdableHExpireCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHExpireCall) DoAndReturn(f func(context.Context, string, time.Duration, ...string) *redis.IntSliceCmd) *MockCmdableHExpireCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HExpireAt mocks base method.
+func (m *MockCmdable) HExpireAt(ctx context.Context, key string, tm time.Time, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, tm}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HExpireAt", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HExpireAt indicates an expected call of HExpireAt.
+func (mr *MockCmdableMockRecorder) HExpireAt(ctx, key, tm any, fields ...any) *MockCmdableHExpireAtCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, tm}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HExpireAt", reflect.TypeOf((*MockCmdable)(nil).HExpireAt), varargs...)
+	return &MockCmdableHExpireAtCall{Call: call}
+}
+
+// MockCmdableHExpireAtCall wrap *gomock.Call
+type MockCmdableHExpireAtCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHExpireAtCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHExpireAtCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHExpireAtCall) Do(f func(context.Context, string, time.Time, ...string) *redis.IntSliceCmd) *MockCmdableHExpireAtCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHExpireAtCall) DoAndReturn(f func(context.Context, string, time.Time, ...string) *redis.IntSliceCmd) *MockCmdableHExpireAtCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HExpireAtWithArgs mocks base method.
+func (m *MockCmdable) HExpireAtWithArgs(ctx context.Context, key string, tm time.Time, expirationArgs redis.HExpireArgs, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, tm, expirationArgs}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HExpireAtWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HExpireAtWithArgs indicates an expected call of HExpireAtWithArgs.
+func (mr *MockCmdableMockRecorder) HExpireAtWithArgs(ctx, key, tm, expirationArgs any, fields ...any) *MockCmdableHExpireAtWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, tm, expirationArgs}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HExpireAtWithArgs", reflect.TypeOf((*MockCmdable)(nil).HExpireAtWithArgs), varargs...)
+	return &MockCmdableHExpireAtWithArgsCall{Call: call}
+}
+
+// MockCmdableHExpireAtWithArgsCall wrap *gomock.Call
+type MockCmdableHExpireAtWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHExpireAtWithArgsCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHExpireAtWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHExpireAtWithArgsCall) Do(f func(context.Context, string, time.Time, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHExpireAtWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHExpireAtWithArgsCall) DoAndReturn(f func(context.Context, string, time.Time, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHExpireAtWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HExpireTime mocks base method.
+func (m *MockCmdable) HExpireTime(ctx context.Context, key string, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HExpireTime", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HExpireTime indicates an expected call of HExpireTime.
+func (mr *MockCmdableMockRecorder) HExpireTime(ctx, key any, fields ...any) *MockCmdableHExpireTimeCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HExpireTime", reflect.TypeOf((*MockCmdable)(nil).HExpireTime), varargs...)
+	return &MockCmdableHExpireTimeCall{Call: call}
+}
+
+// MockCmdableHExpireTimeCall wrap *gomock.Call
+type MockCmdableHExpireTimeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHExpireTimeCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHExpireTimeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHExpireTimeCall) Do(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHExpireTimeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHExpireTimeCall) DoAndReturn(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHExpireTimeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HExpireWithArgs mocks base method.
+func (m *MockCmdable) HExpireWithArgs(ctx context.Context, key string, expiration time.Duration, expirationArgs redis.HExpireArgs, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, expiration, expirationArgs}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HExpireWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HExpireWithArgs indicates an expected call of HExpireWithArgs.
+func (mr *MockCmdableMockRecorder) HExpireWithArgs(ctx, key, expiration, expirationArgs any, fields ...any) *MockCmdableHExpireWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, expiration, expirationArgs}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HExpireWithArgs", reflect.TypeOf((*MockCmdable)(nil).HExpireWithArgs), varargs...)
+	return &MockCmdableHExpireWithArgsCall{Call: call}
+}
+
+// MockCmdableHExpireWithArgsCall wrap *gomock.Call
+type MockCmdableHExpireWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHExpireWithArgsCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHExpireWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHExpireWithArgsCall) Do(f func(context.Context, string, time.Duration, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHExpireWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHExpireWithArgsCall) DoAndReturn(f func(context.Context, string, time.Duration, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHExpireWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // HGet mocks base method.
 func (m *MockCmdable) HGet(ctx context.Context, key, field string) *redis.StringCmd {
 	m.ctrl.T.Helper()
@@ -6389,6 +7959,135 @@ func (c *MockCmdableHGetAllCall) Do(f func(context.Context, string) *redis.MapSt
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableHGetAllCall) DoAndReturn(f func(context.Context, string) *redis.MapStringStringCmd) *MockCmdableHGetAllCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HGetDel mocks base method.
+func (m *MockCmdable) HGetDel(ctx context.Context, key string, fields ...string) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HGetDel", varargs...)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// HGetDel indicates an expected call of HGetDel.
+func (mr *MockCmdableMockRecorder) HGetDel(ctx, key any, fields ...any) *MockCmdableHGetDelCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HGetDel", reflect.TypeOf((*MockCmdable)(nil).HGetDel), varargs...)
+	return &MockCmdableHGetDelCall{Call: call}
+}
+
+// MockCmdableHGetDelCall wrap *gomock.Call
+type MockCmdableHGetDelCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHGetDelCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableHGetDelCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHGetDelCall) Do(f func(context.Context, string, ...string) *redis.StringSliceCmd) *MockCmdableHGetDelCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHGetDelCall) DoAndReturn(f func(context.Context, string, ...string) *redis.StringSliceCmd) *MockCmdableHGetDelCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HGetEX mocks base method.
+func (m *MockCmdable) HGetEX(ctx context.Context, key string, fields ...string) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HGetEX", varargs...)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// HGetEX indicates an expected call of HGetEX.
+func (mr *MockCmdableMockRecorder) HGetEX(ctx, key any, fields ...any) *MockCmdableHGetEXCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HGetEX", reflect.TypeOf((*MockCmdable)(nil).HGetEX), varargs...)
+	return &MockCmdableHGetEXCall{Call: call}
+}
+
+// MockCmdableHGetEXCall wrap *gomock.Call
+type MockCmdableHGetEXCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHGetEXCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableHGetEXCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHGetEXCall) Do(f func(context.Context, string, ...string) *redis.StringSliceCmd) *MockCmdableHGetEXCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHGetEXCall) DoAndReturn(f func(context.Context, string, ...string) *redis.StringSliceCmd) *MockCmdableHGetEXCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HGetEXWithArgs mocks base method.
+func (m *MockCmdable) HGetEXWithArgs(ctx context.Context, key string, options *redis.HGetEXOptions, fields ...string) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, options}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HGetEXWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// HGetEXWithArgs indicates an expected call of HGetEXWithArgs.
+func (mr *MockCmdableMockRecorder) HGetEXWithArgs(ctx, key, options any, fields ...any) *MockCmdableHGetEXWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, options}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HGetEXWithArgs", reflect.TypeOf((*MockCmdable)(nil).HGetEXWithArgs), varargs...)
+	return &MockCmdableHGetEXWithArgsCall{Call: call}
+}
+
+// MockCmdableHGetEXWithArgsCall wrap *gomock.Call
+type MockCmdableHGetEXWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHGetEXWithArgsCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableHGetEXWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHGetEXWithArgsCall) Do(f func(context.Context, string, *redis.HGetEXOptions, ...string) *redis.StringSliceCmd) *MockCmdableHGetEXWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHGetEXWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.HGetEXOptions, ...string) *redis.StringSliceCmd) *MockCmdableHGetEXWithArgsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -6631,6 +8330,307 @@ func (c *MockCmdableHMSetCall) DoAndReturn(f func(context.Context, string, ...an
 	return c
 }
 
+// HPExpire mocks base method.
+func (m *MockCmdable) HPExpire(ctx context.Context, key string, expiration time.Duration, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, expiration}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HPExpire", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HPExpire indicates an expected call of HPExpire.
+func (mr *MockCmdableMockRecorder) HPExpire(ctx, key, expiration any, fields ...any) *MockCmdableHPExpireCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, expiration}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HPExpire", reflect.TypeOf((*MockCmdable)(nil).HPExpire), varargs...)
+	return &MockCmdableHPExpireCall{Call: call}
+}
+
+// MockCmdableHPExpireCall wrap *gomock.Call
+type MockCmdableHPExpireCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHPExpireCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHPExpireCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHPExpireCall) Do(f func(context.Context, string, time.Duration, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHPExpireCall) DoAndReturn(f func(context.Context, string, time.Duration, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HPExpireAt mocks base method.
+func (m *MockCmdable) HPExpireAt(ctx context.Context, key string, tm time.Time, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, tm}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HPExpireAt", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HPExpireAt indicates an expected call of HPExpireAt.
+func (mr *MockCmdableMockRecorder) HPExpireAt(ctx, key, tm any, fields ...any) *MockCmdableHPExpireAtCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, tm}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HPExpireAt", reflect.TypeOf((*MockCmdable)(nil).HPExpireAt), varargs...)
+	return &MockCmdableHPExpireAtCall{Call: call}
+}
+
+// MockCmdableHPExpireAtCall wrap *gomock.Call
+type MockCmdableHPExpireAtCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHPExpireAtCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHPExpireAtCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHPExpireAtCall) Do(f func(context.Context, string, time.Time, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireAtCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHPExpireAtCall) DoAndReturn(f func(context.Context, string, time.Time, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireAtCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HPExpireAtWithArgs mocks base method.
+func (m *MockCmdable) HPExpireAtWithArgs(ctx context.Context, key string, tm time.Time, expirationArgs redis.HExpireArgs, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, tm, expirationArgs}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HPExpireAtWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HPExpireAtWithArgs indicates an expected call of HPExpireAtWithArgs.
+func (mr *MockCmdableMockRecorder) HPExpireAtWithArgs(ctx, key, tm, expirationArgs any, fields ...any) *MockCmdableHPExpireAtWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, tm, expirationArgs}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HPExpireAtWithArgs", reflect.TypeOf((*MockCmdable)(nil).HPExpireAtWithArgs), varargs...)
+	return &MockCmdableHPExpireAtWithArgsCall{Call: call}
+}
+
+// MockCmdableHPExpireAtWithArgsCall wrap *gomock.Call
+type MockCmdableHPExpireAtWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHPExpireAtWithArgsCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHPExpireAtWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHPExpireAtWithArgsCall) Do(f func(context.Context, string, time.Time, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireAtWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHPExpireAtWithArgsCall) DoAndReturn(f func(context.Context, string, time.Time, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireAtWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HPExpireTime mocks base method.
+func (m *MockCmdable) HPExpireTime(ctx context.Context, key string, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HPExpireTime", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HPExpireTime indicates an expected call of HPExpireTime.
+func (mr *MockCmdableMockRecorder) HPExpireTime(ctx, key any, fields ...any) *MockCmdableHPExpireTimeCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HPExpireTime", reflect.TypeOf((*MockCmdable)(nil).HPExpireTime), varargs...)
+	return &MockCmdableHPExpireTimeCall{Call: call}
+}
+
+// MockCmdableHPExpireTimeCall wrap *gomock.Call
+type MockCmdableHPExpireTimeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHPExpireTimeCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHPExpireTimeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHPExpireTimeCall) Do(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireTimeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHPExpireTimeCall) DoAndReturn(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireTimeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HPExpireWithArgs mocks base method.
+func (m *MockCmdable) HPExpireWithArgs(ctx context.Context, key string, expiration time.Duration, expirationArgs redis.HExpireArgs, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, expiration, expirationArgs}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HPExpireWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HPExpireWithArgs indicates an expected call of HPExpireWithArgs.
+func (mr *MockCmdableMockRecorder) HPExpireWithArgs(ctx, key, expiration, expirationArgs any, fields ...any) *MockCmdableHPExpireWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, expiration, expirationArgs}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HPExpireWithArgs", reflect.TypeOf((*MockCmdable)(nil).HPExpireWithArgs), varargs...)
+	return &MockCmdableHPExpireWithArgsCall{Call: call}
+}
+
+// MockCmdableHPExpireWithArgsCall wrap *gomock.Call
+type MockCmdableHPExpireWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHPExpireWithArgsCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHPExpireWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHPExpireWithArgsCall) Do(f func(context.Context, string, time.Duration, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHPExpireWithArgsCall) DoAndReturn(f func(context.Context, string, time.Duration, redis.HExpireArgs, ...string) *redis.IntSliceCmd) *MockCmdableHPExpireWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HPTTL mocks base method.
+func (m *MockCmdable) HPTTL(ctx context.Context, key string, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HPTTL", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HPTTL indicates an expected call of HPTTL.
+func (mr *MockCmdableMockRecorder) HPTTL(ctx, key any, fields ...any) *MockCmdableHPTTLCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HPTTL", reflect.TypeOf((*MockCmdable)(nil).HPTTL), varargs...)
+	return &MockCmdableHPTTLCall{Call: call}
+}
+
+// MockCmdableHPTTLCall wrap *gomock.Call
+type MockCmdableHPTTLCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHPTTLCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHPTTLCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHPTTLCall) Do(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHPTTLCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHPTTLCall) DoAndReturn(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHPTTLCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HPersist mocks base method.
+func (m *MockCmdable) HPersist(ctx context.Context, key string, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HPersist", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HPersist indicates an expected call of HPersist.
+func (mr *MockCmdableMockRecorder) HPersist(ctx, key any, fields ...any) *MockCmdableHPersistCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HPersist", reflect.TypeOf((*MockCmdable)(nil).HPersist), varargs...)
+	return &MockCmdableHPersistCall{Call: call}
+}
+
+// MockCmdableHPersistCall wrap *gomock.Call
+type MockCmdableHPersistCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHPersistCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHPersistCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHPersistCall) Do(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHPersistCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHPersistCall) DoAndReturn(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHPersistCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // HRandField mocks base method.
 func (m *MockCmdable) HRandField(ctx context.Context, key string, count int) *redis.StringSliceCmd {
 	m.ctrl.T.Helper()
@@ -6745,6 +8745,44 @@ func (c *MockCmdableHScanCall) DoAndReturn(f func(context.Context, string, uint6
 	return c
 }
 
+// HScanNoValues mocks base method.
+func (m *MockCmdable) HScanNoValues(ctx context.Context, key string, cursor uint64, match string, count int64) *redis.ScanCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HScanNoValues", ctx, key, cursor, match, count)
+	ret0, _ := ret[0].(*redis.ScanCmd)
+	return ret0
+}
+
+// HScanNoValues indicates an expected call of HScanNoValues.
+func (mr *MockCmdableMockRecorder) HScanNoValues(ctx, key, cursor, match, count any) *MockCmdableHScanNoValuesCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HScanNoValues", reflect.TypeOf((*MockCmdable)(nil).HScanNoValues), ctx, key, cursor, match, count)
+	return &MockCmdableHScanNoValuesCall{Call: call}
+}
+
+// MockCmdableHScanNoValuesCall wrap *gomock.Call
+type MockCmdableHScanNoValuesCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHScanNoValuesCall) Return(arg0 *redis.ScanCmd) *MockCmdableHScanNoValuesCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHScanNoValuesCall) Do(f func(context.Context, string, uint64, string, int64) *redis.ScanCmd) *MockCmdableHScanNoValuesCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHScanNoValuesCall) DoAndReturn(f func(context.Context, string, uint64, string, int64) *redis.ScanCmd) *MockCmdableHScanNoValuesCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // HSet mocks base method.
 func (m *MockCmdable) HSet(ctx context.Context, key string, values ...any) *redis.IntCmd {
 	m.ctrl.T.Helper()
@@ -6788,6 +8826,92 @@ func (c *MockCmdableHSetCall) DoAndReturn(f func(context.Context, string, ...any
 	return c
 }
 
+// HSetEX mocks base method.
+func (m *MockCmdable) HSetEX(ctx context.Context, key string, fieldsAndValues ...string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fieldsAndValues {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HSetEX", varargs...)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// HSetEX indicates an expected call of HSetEX.
+func (mr *MockCmdableMockRecorder) HSetEX(ctx, key any, fieldsAndValues ...any) *MockCmdableHSetEXCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fieldsAndValues...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HSetEX", reflect.TypeOf((*MockCmdable)(nil).HSetEX), varargs...)
+	return &MockCmdableHSetEXCall{Call: call}
+}
+
+// MockCmdableHSetEXCall wrap *gomock.Call
+type MockCmdableHSetEXCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHSetEXCall) Return(arg0 *redis.IntCmd) *MockCmdableHSetEXCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHSetEXCall) Do(f func(context.Context, string, ...string) *redis.IntCmd) *MockCmdableHSetEXCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHSetEXCall) DoAndReturn(f func(context.Context, string, ...string) *redis.IntCmd) *MockCmdableHSetEXCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HSetEXWithArgs mocks base method.
+func (m *MockCmdable) HSetEXWithArgs(ctx context.Context, key string, options *redis.HSetEXOptions, fieldsAndValues ...string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, options}
+	for _, a := range fieldsAndValues {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HSetEXWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// HSetEXWithArgs indicates an expected call of HSetEXWithArgs.
+func (mr *MockCmdableMockRecorder) HSetEXWithArgs(ctx, key, options any, fieldsAndValues ...any) *MockCmdableHSetEXWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, options}, fieldsAndValues...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HSetEXWithArgs", reflect.TypeOf((*MockCmdable)(nil).HSetEXWithArgs), varargs...)
+	return &MockCmdableHSetEXWithArgsCall{Call: call}
+}
+
+// MockCmdableHSetEXWithArgsCall wrap *gomock.Call
+type MockCmdableHSetEXWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHSetEXWithArgsCall) Return(arg0 *redis.IntCmd) *MockCmdableHSetEXWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHSetEXWithArgsCall) Do(f func(context.Context, string, *redis.HSetEXOptions, ...string) *redis.IntCmd) *MockCmdableHSetEXWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHSetEXWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.HSetEXOptions, ...string) *redis.IntCmd) *MockCmdableHSetEXWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // HSetNX mocks base method.
 func (m *MockCmdable) HSetNX(ctx context.Context, key, field string, value any) *redis.BoolCmd {
 	m.ctrl.T.Helper()
@@ -6822,6 +8946,87 @@ func (c *MockCmdableHSetNXCall) Do(f func(context.Context, string, string, any) 
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableHSetNXCall) DoAndReturn(f func(context.Context, string, string, any) *redis.BoolCmd) *MockCmdableHSetNXCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HStrLen mocks base method.
+func (m *MockCmdable) HStrLen(ctx context.Context, key, field string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HStrLen", ctx, key, field)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// HStrLen indicates an expected call of HStrLen.
+func (mr *MockCmdableMockRecorder) HStrLen(ctx, key, field any) *MockCmdableHStrLenCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HStrLen", reflect.TypeOf((*MockCmdable)(nil).HStrLen), ctx, key, field)
+	return &MockCmdableHStrLenCall{Call: call}
+}
+
+// MockCmdableHStrLenCall wrap *gomock.Call
+type MockCmdableHStrLenCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHStrLenCall) Return(arg0 *redis.IntCmd) *MockCmdableHStrLenCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHStrLenCall) Do(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableHStrLenCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHStrLenCall) DoAndReturn(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableHStrLenCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// HTTL mocks base method.
+func (m *MockCmdable) HTTL(ctx context.Context, key string, fields ...string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "HTTL", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// HTTL indicates an expected call of HTTL.
+func (mr *MockCmdableMockRecorder) HTTL(ctx, key any, fields ...any) *MockCmdableHTTLCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, fields...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HTTL", reflect.TypeOf((*MockCmdable)(nil).HTTL), varargs...)
+	return &MockCmdableHTTLCall{Call: call}
+}
+
+// MockCmdableHTTLCall wrap *gomock.Call
+type MockCmdableHTTLCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableHTTLCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableHTTLCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableHTTLCall) Do(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHTTLCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableHTTLCall) DoAndReturn(f func(context.Context, string, ...string) *redis.IntSliceCmd) *MockCmdableHTTLCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -7017,6 +9222,1072 @@ func (c *MockCmdableInfoCall) Do(f func(context.Context, ...string) *redis.Strin
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableInfoCall) DoAndReturn(f func(context.Context, ...string) *redis.StringCmd) *MockCmdableInfoCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrAppend mocks base method.
+func (m *MockCmdable) JSONArrAppend(ctx context.Context, key, path string, values ...any) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, path}
+	for _, a := range values {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONArrAppend", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// JSONArrAppend indicates an expected call of JSONArrAppend.
+func (mr *MockCmdableMockRecorder) JSONArrAppend(ctx, key, path any, values ...any) *MockCmdableJSONArrAppendCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, path}, values...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrAppend", reflect.TypeOf((*MockCmdable)(nil).JSONArrAppend), varargs...)
+	return &MockCmdableJSONArrAppendCall{Call: call}
+}
+
+// MockCmdableJSONArrAppendCall wrap *gomock.Call
+type MockCmdableJSONArrAppendCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrAppendCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableJSONArrAppendCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrAppendCall) Do(f func(context.Context, string, string, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrAppendCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrAppendCall) DoAndReturn(f func(context.Context, string, string, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrAppendCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrIndex mocks base method.
+func (m *MockCmdable) JSONArrIndex(ctx context.Context, key, path string, value ...any) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, path}
+	for _, a := range value {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONArrIndex", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// JSONArrIndex indicates an expected call of JSONArrIndex.
+func (mr *MockCmdableMockRecorder) JSONArrIndex(ctx, key, path any, value ...any) *MockCmdableJSONArrIndexCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, path}, value...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrIndex", reflect.TypeOf((*MockCmdable)(nil).JSONArrIndex), varargs...)
+	return &MockCmdableJSONArrIndexCall{Call: call}
+}
+
+// MockCmdableJSONArrIndexCall wrap *gomock.Call
+type MockCmdableJSONArrIndexCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrIndexCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableJSONArrIndexCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrIndexCall) Do(f func(context.Context, string, string, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrIndexCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrIndexCall) DoAndReturn(f func(context.Context, string, string, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrIndexCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrIndexWithArgs mocks base method.
+func (m *MockCmdable) JSONArrIndexWithArgs(ctx context.Context, key, path string, options *redis.JSONArrIndexArgs, value ...any) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, path, options}
+	for _, a := range value {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONArrIndexWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// JSONArrIndexWithArgs indicates an expected call of JSONArrIndexWithArgs.
+func (mr *MockCmdableMockRecorder) JSONArrIndexWithArgs(ctx, key, path, options any, value ...any) *MockCmdableJSONArrIndexWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, path, options}, value...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrIndexWithArgs", reflect.TypeOf((*MockCmdable)(nil).JSONArrIndexWithArgs), varargs...)
+	return &MockCmdableJSONArrIndexWithArgsCall{Call: call}
+}
+
+// MockCmdableJSONArrIndexWithArgsCall wrap *gomock.Call
+type MockCmdableJSONArrIndexWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrIndexWithArgsCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableJSONArrIndexWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrIndexWithArgsCall) Do(f func(context.Context, string, string, *redis.JSONArrIndexArgs, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrIndexWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrIndexWithArgsCall) DoAndReturn(f func(context.Context, string, string, *redis.JSONArrIndexArgs, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrIndexWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrInsert mocks base method.
+func (m *MockCmdable) JSONArrInsert(ctx context.Context, key, path string, index int64, values ...any) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, path, index}
+	for _, a := range values {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONArrInsert", varargs...)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// JSONArrInsert indicates an expected call of JSONArrInsert.
+func (mr *MockCmdableMockRecorder) JSONArrInsert(ctx, key, path, index any, values ...any) *MockCmdableJSONArrInsertCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, path, index}, values...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrInsert", reflect.TypeOf((*MockCmdable)(nil).JSONArrInsert), varargs...)
+	return &MockCmdableJSONArrInsertCall{Call: call}
+}
+
+// MockCmdableJSONArrInsertCall wrap *gomock.Call
+type MockCmdableJSONArrInsertCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrInsertCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableJSONArrInsertCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrInsertCall) Do(f func(context.Context, string, string, int64, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrInsertCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrInsertCall) DoAndReturn(f func(context.Context, string, string, int64, ...any) *redis.IntSliceCmd) *MockCmdableJSONArrInsertCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrLen mocks base method.
+func (m *MockCmdable) JSONArrLen(ctx context.Context, key, path string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONArrLen", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// JSONArrLen indicates an expected call of JSONArrLen.
+func (mr *MockCmdableMockRecorder) JSONArrLen(ctx, key, path any) *MockCmdableJSONArrLenCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrLen", reflect.TypeOf((*MockCmdable)(nil).JSONArrLen), ctx, key, path)
+	return &MockCmdableJSONArrLenCall{Call: call}
+}
+
+// MockCmdableJSONArrLenCall wrap *gomock.Call
+type MockCmdableJSONArrLenCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrLenCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableJSONArrLenCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrLenCall) Do(f func(context.Context, string, string) *redis.IntSliceCmd) *MockCmdableJSONArrLenCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrLenCall) DoAndReturn(f func(context.Context, string, string) *redis.IntSliceCmd) *MockCmdableJSONArrLenCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrPop mocks base method.
+func (m *MockCmdable) JSONArrPop(ctx context.Context, key, path string, index int) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONArrPop", ctx, key, path, index)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// JSONArrPop indicates an expected call of JSONArrPop.
+func (mr *MockCmdableMockRecorder) JSONArrPop(ctx, key, path, index any) *MockCmdableJSONArrPopCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrPop", reflect.TypeOf((*MockCmdable)(nil).JSONArrPop), ctx, key, path, index)
+	return &MockCmdableJSONArrPopCall{Call: call}
+}
+
+// MockCmdableJSONArrPopCall wrap *gomock.Call
+type MockCmdableJSONArrPopCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrPopCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableJSONArrPopCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrPopCall) Do(f func(context.Context, string, string, int) *redis.StringSliceCmd) *MockCmdableJSONArrPopCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrPopCall) DoAndReturn(f func(context.Context, string, string, int) *redis.StringSliceCmd) *MockCmdableJSONArrPopCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrTrim mocks base method.
+func (m *MockCmdable) JSONArrTrim(ctx context.Context, key, path string) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONArrTrim", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// JSONArrTrim indicates an expected call of JSONArrTrim.
+func (mr *MockCmdableMockRecorder) JSONArrTrim(ctx, key, path any) *MockCmdableJSONArrTrimCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrTrim", reflect.TypeOf((*MockCmdable)(nil).JSONArrTrim), ctx, key, path)
+	return &MockCmdableJSONArrTrimCall{Call: call}
+}
+
+// MockCmdableJSONArrTrimCall wrap *gomock.Call
+type MockCmdableJSONArrTrimCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrTrimCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableJSONArrTrimCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrTrimCall) Do(f func(context.Context, string, string) *redis.IntSliceCmd) *MockCmdableJSONArrTrimCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrTrimCall) DoAndReturn(f func(context.Context, string, string) *redis.IntSliceCmd) *MockCmdableJSONArrTrimCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONArrTrimWithArgs mocks base method.
+func (m *MockCmdable) JSONArrTrimWithArgs(ctx context.Context, key, path string, options *redis.JSONArrTrimArgs) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONArrTrimWithArgs", ctx, key, path, options)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// JSONArrTrimWithArgs indicates an expected call of JSONArrTrimWithArgs.
+func (mr *MockCmdableMockRecorder) JSONArrTrimWithArgs(ctx, key, path, options any) *MockCmdableJSONArrTrimWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONArrTrimWithArgs", reflect.TypeOf((*MockCmdable)(nil).JSONArrTrimWithArgs), ctx, key, path, options)
+	return &MockCmdableJSONArrTrimWithArgsCall{Call: call}
+}
+
+// MockCmdableJSONArrTrimWithArgsCall wrap *gomock.Call
+type MockCmdableJSONArrTrimWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONArrTrimWithArgsCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableJSONArrTrimWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONArrTrimWithArgsCall) Do(f func(context.Context, string, string, *redis.JSONArrTrimArgs) *redis.IntSliceCmd) *MockCmdableJSONArrTrimWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONArrTrimWithArgsCall) DoAndReturn(f func(context.Context, string, string, *redis.JSONArrTrimArgs) *redis.IntSliceCmd) *MockCmdableJSONArrTrimWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONClear mocks base method.
+func (m *MockCmdable) JSONClear(ctx context.Context, key, path string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONClear", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// JSONClear indicates an expected call of JSONClear.
+func (mr *MockCmdableMockRecorder) JSONClear(ctx, key, path any) *MockCmdableJSONClearCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONClear", reflect.TypeOf((*MockCmdable)(nil).JSONClear), ctx, key, path)
+	return &MockCmdableJSONClearCall{Call: call}
+}
+
+// MockCmdableJSONClearCall wrap *gomock.Call
+type MockCmdableJSONClearCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONClearCall) Return(arg0 *redis.IntCmd) *MockCmdableJSONClearCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONClearCall) Do(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONClearCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONClearCall) DoAndReturn(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONClearCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONDebugMemory mocks base method.
+func (m *MockCmdable) JSONDebugMemory(ctx context.Context, key, path string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONDebugMemory", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// JSONDebugMemory indicates an expected call of JSONDebugMemory.
+func (mr *MockCmdableMockRecorder) JSONDebugMemory(ctx, key, path any) *MockCmdableJSONDebugMemoryCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONDebugMemory", reflect.TypeOf((*MockCmdable)(nil).JSONDebugMemory), ctx, key, path)
+	return &MockCmdableJSONDebugMemoryCall{Call: call}
+}
+
+// MockCmdableJSONDebugMemoryCall wrap *gomock.Call
+type MockCmdableJSONDebugMemoryCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONDebugMemoryCall) Return(arg0 *redis.IntCmd) *MockCmdableJSONDebugMemoryCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONDebugMemoryCall) Do(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONDebugMemoryCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONDebugMemoryCall) DoAndReturn(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONDebugMemoryCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONDel mocks base method.
+func (m *MockCmdable) JSONDel(ctx context.Context, key, path string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONDel", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// JSONDel indicates an expected call of JSONDel.
+func (mr *MockCmdableMockRecorder) JSONDel(ctx, key, path any) *MockCmdableJSONDelCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONDel", reflect.TypeOf((*MockCmdable)(nil).JSONDel), ctx, key, path)
+	return &MockCmdableJSONDelCall{Call: call}
+}
+
+// MockCmdableJSONDelCall wrap *gomock.Call
+type MockCmdableJSONDelCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONDelCall) Return(arg0 *redis.IntCmd) *MockCmdableJSONDelCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONDelCall) Do(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONDelCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONDelCall) DoAndReturn(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONDelCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONForget mocks base method.
+func (m *MockCmdable) JSONForget(ctx context.Context, key, path string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONForget", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// JSONForget indicates an expected call of JSONForget.
+func (mr *MockCmdableMockRecorder) JSONForget(ctx, key, path any) *MockCmdableJSONForgetCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONForget", reflect.TypeOf((*MockCmdable)(nil).JSONForget), ctx, key, path)
+	return &MockCmdableJSONForgetCall{Call: call}
+}
+
+// MockCmdableJSONForgetCall wrap *gomock.Call
+type MockCmdableJSONForgetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONForgetCall) Return(arg0 *redis.IntCmd) *MockCmdableJSONForgetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONForgetCall) Do(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONForgetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONForgetCall) DoAndReturn(f func(context.Context, string, string) *redis.IntCmd) *MockCmdableJSONForgetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONGet mocks base method.
+func (m *MockCmdable) JSONGet(ctx context.Context, key string, paths ...string) *redis.JSONCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range paths {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONGet", varargs...)
+	ret0, _ := ret[0].(*redis.JSONCmd)
+	return ret0
+}
+
+// JSONGet indicates an expected call of JSONGet.
+func (mr *MockCmdableMockRecorder) JSONGet(ctx, key any, paths ...any) *MockCmdableJSONGetCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, paths...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONGet", reflect.TypeOf((*MockCmdable)(nil).JSONGet), varargs...)
+	return &MockCmdableJSONGetCall{Call: call}
+}
+
+// MockCmdableJSONGetCall wrap *gomock.Call
+type MockCmdableJSONGetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONGetCall) Return(arg0 *redis.JSONCmd) *MockCmdableJSONGetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONGetCall) Do(f func(context.Context, string, ...string) *redis.JSONCmd) *MockCmdableJSONGetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONGetCall) DoAndReturn(f func(context.Context, string, ...string) *redis.JSONCmd) *MockCmdableJSONGetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONGetWithArgs mocks base method.
+func (m *MockCmdable) JSONGetWithArgs(ctx context.Context, key string, options *redis.JSONGetArgs, paths ...string) *redis.JSONCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key, options}
+	for _, a := range paths {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONGetWithArgs", varargs...)
+	ret0, _ := ret[0].(*redis.JSONCmd)
+	return ret0
+}
+
+// JSONGetWithArgs indicates an expected call of JSONGetWithArgs.
+func (mr *MockCmdableMockRecorder) JSONGetWithArgs(ctx, key, options any, paths ...any) *MockCmdableJSONGetWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key, options}, paths...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONGetWithArgs", reflect.TypeOf((*MockCmdable)(nil).JSONGetWithArgs), varargs...)
+	return &MockCmdableJSONGetWithArgsCall{Call: call}
+}
+
+// MockCmdableJSONGetWithArgsCall wrap *gomock.Call
+type MockCmdableJSONGetWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONGetWithArgsCall) Return(arg0 *redis.JSONCmd) *MockCmdableJSONGetWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONGetWithArgsCall) Do(f func(context.Context, string, *redis.JSONGetArgs, ...string) *redis.JSONCmd) *MockCmdableJSONGetWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONGetWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.JSONGetArgs, ...string) *redis.JSONCmd) *MockCmdableJSONGetWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONMGet mocks base method.
+func (m *MockCmdable) JSONMGet(ctx context.Context, path string, keys ...string) *redis.JSONSliceCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, path}
+	for _, a := range keys {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONMGet", varargs...)
+	ret0, _ := ret[0].(*redis.JSONSliceCmd)
+	return ret0
+}
+
+// JSONMGet indicates an expected call of JSONMGet.
+func (mr *MockCmdableMockRecorder) JSONMGet(ctx, path any, keys ...any) *MockCmdableJSONMGetCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, path}, keys...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONMGet", reflect.TypeOf((*MockCmdable)(nil).JSONMGet), varargs...)
+	return &MockCmdableJSONMGetCall{Call: call}
+}
+
+// MockCmdableJSONMGetCall wrap *gomock.Call
+type MockCmdableJSONMGetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONMGetCall) Return(arg0 *redis.JSONSliceCmd) *MockCmdableJSONMGetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONMGetCall) Do(f func(context.Context, string, ...string) *redis.JSONSliceCmd) *MockCmdableJSONMGetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONMGetCall) DoAndReturn(f func(context.Context, string, ...string) *redis.JSONSliceCmd) *MockCmdableJSONMGetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONMSet mocks base method.
+func (m *MockCmdable) JSONMSet(ctx context.Context, params ...any) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range params {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JSONMSet", varargs...)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// JSONMSet indicates an expected call of JSONMSet.
+func (mr *MockCmdableMockRecorder) JSONMSet(ctx any, params ...any) *MockCmdableJSONMSetCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, params...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONMSet", reflect.TypeOf((*MockCmdable)(nil).JSONMSet), varargs...)
+	return &MockCmdableJSONMSetCall{Call: call}
+}
+
+// MockCmdableJSONMSetCall wrap *gomock.Call
+type MockCmdableJSONMSetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONMSetCall) Return(arg0 *redis.StatusCmd) *MockCmdableJSONMSetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONMSetCall) Do(f func(context.Context, ...any) *redis.StatusCmd) *MockCmdableJSONMSetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONMSetCall) DoAndReturn(f func(context.Context, ...any) *redis.StatusCmd) *MockCmdableJSONMSetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONMSetArgs mocks base method.
+func (m *MockCmdable) JSONMSetArgs(ctx context.Context, docs []redis.JSONSetArgs) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONMSetArgs", ctx, docs)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// JSONMSetArgs indicates an expected call of JSONMSetArgs.
+func (mr *MockCmdableMockRecorder) JSONMSetArgs(ctx, docs any) *MockCmdableJSONMSetArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONMSetArgs", reflect.TypeOf((*MockCmdable)(nil).JSONMSetArgs), ctx, docs)
+	return &MockCmdableJSONMSetArgsCall{Call: call}
+}
+
+// MockCmdableJSONMSetArgsCall wrap *gomock.Call
+type MockCmdableJSONMSetArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONMSetArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableJSONMSetArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONMSetArgsCall) Do(f func(context.Context, []redis.JSONSetArgs) *redis.StatusCmd) *MockCmdableJSONMSetArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONMSetArgsCall) DoAndReturn(f func(context.Context, []redis.JSONSetArgs) *redis.StatusCmd) *MockCmdableJSONMSetArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONMerge mocks base method.
+func (m *MockCmdable) JSONMerge(ctx context.Context, key, path, value string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONMerge", ctx, key, path, value)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// JSONMerge indicates an expected call of JSONMerge.
+func (mr *MockCmdableMockRecorder) JSONMerge(ctx, key, path, value any) *MockCmdableJSONMergeCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONMerge", reflect.TypeOf((*MockCmdable)(nil).JSONMerge), ctx, key, path, value)
+	return &MockCmdableJSONMergeCall{Call: call}
+}
+
+// MockCmdableJSONMergeCall wrap *gomock.Call
+type MockCmdableJSONMergeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONMergeCall) Return(arg0 *redis.StatusCmd) *MockCmdableJSONMergeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONMergeCall) Do(f func(context.Context, string, string, string) *redis.StatusCmd) *MockCmdableJSONMergeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONMergeCall) DoAndReturn(f func(context.Context, string, string, string) *redis.StatusCmd) *MockCmdableJSONMergeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONNumIncrBy mocks base method.
+func (m *MockCmdable) JSONNumIncrBy(ctx context.Context, key, path string, value float64) *redis.JSONCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONNumIncrBy", ctx, key, path, value)
+	ret0, _ := ret[0].(*redis.JSONCmd)
+	return ret0
+}
+
+// JSONNumIncrBy indicates an expected call of JSONNumIncrBy.
+func (mr *MockCmdableMockRecorder) JSONNumIncrBy(ctx, key, path, value any) *MockCmdableJSONNumIncrByCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONNumIncrBy", reflect.TypeOf((*MockCmdable)(nil).JSONNumIncrBy), ctx, key, path, value)
+	return &MockCmdableJSONNumIncrByCall{Call: call}
+}
+
+// MockCmdableJSONNumIncrByCall wrap *gomock.Call
+type MockCmdableJSONNumIncrByCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONNumIncrByCall) Return(arg0 *redis.JSONCmd) *MockCmdableJSONNumIncrByCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONNumIncrByCall) Do(f func(context.Context, string, string, float64) *redis.JSONCmd) *MockCmdableJSONNumIncrByCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONNumIncrByCall) DoAndReturn(f func(context.Context, string, string, float64) *redis.JSONCmd) *MockCmdableJSONNumIncrByCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONObjKeys mocks base method.
+func (m *MockCmdable) JSONObjKeys(ctx context.Context, key, path string) *redis.SliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONObjKeys", ctx, key, path)
+	ret0, _ := ret[0].(*redis.SliceCmd)
+	return ret0
+}
+
+// JSONObjKeys indicates an expected call of JSONObjKeys.
+func (mr *MockCmdableMockRecorder) JSONObjKeys(ctx, key, path any) *MockCmdableJSONObjKeysCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONObjKeys", reflect.TypeOf((*MockCmdable)(nil).JSONObjKeys), ctx, key, path)
+	return &MockCmdableJSONObjKeysCall{Call: call}
+}
+
+// MockCmdableJSONObjKeysCall wrap *gomock.Call
+type MockCmdableJSONObjKeysCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONObjKeysCall) Return(arg0 *redis.SliceCmd) *MockCmdableJSONObjKeysCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONObjKeysCall) Do(f func(context.Context, string, string) *redis.SliceCmd) *MockCmdableJSONObjKeysCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONObjKeysCall) DoAndReturn(f func(context.Context, string, string) *redis.SliceCmd) *MockCmdableJSONObjKeysCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONObjLen mocks base method.
+func (m *MockCmdable) JSONObjLen(ctx context.Context, key, path string) *redis.IntPointerSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONObjLen", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntPointerSliceCmd)
+	return ret0
+}
+
+// JSONObjLen indicates an expected call of JSONObjLen.
+func (mr *MockCmdableMockRecorder) JSONObjLen(ctx, key, path any) *MockCmdableJSONObjLenCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONObjLen", reflect.TypeOf((*MockCmdable)(nil).JSONObjLen), ctx, key, path)
+	return &MockCmdableJSONObjLenCall{Call: call}
+}
+
+// MockCmdableJSONObjLenCall wrap *gomock.Call
+type MockCmdableJSONObjLenCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONObjLenCall) Return(arg0 *redis.IntPointerSliceCmd) *MockCmdableJSONObjLenCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONObjLenCall) Do(f func(context.Context, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONObjLenCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONObjLenCall) DoAndReturn(f func(context.Context, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONObjLenCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONSet mocks base method.
+func (m *MockCmdable) JSONSet(ctx context.Context, key, path string, value any) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONSet", ctx, key, path, value)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// JSONSet indicates an expected call of JSONSet.
+func (mr *MockCmdableMockRecorder) JSONSet(ctx, key, path, value any) *MockCmdableJSONSetCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONSet", reflect.TypeOf((*MockCmdable)(nil).JSONSet), ctx, key, path, value)
+	return &MockCmdableJSONSetCall{Call: call}
+}
+
+// MockCmdableJSONSetCall wrap *gomock.Call
+type MockCmdableJSONSetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONSetCall) Return(arg0 *redis.StatusCmd) *MockCmdableJSONSetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONSetCall) Do(f func(context.Context, string, string, any) *redis.StatusCmd) *MockCmdableJSONSetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONSetCall) DoAndReturn(f func(context.Context, string, string, any) *redis.StatusCmd) *MockCmdableJSONSetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONSetMode mocks base method.
+func (m *MockCmdable) JSONSetMode(ctx context.Context, key, path string, value any, mode string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONSetMode", ctx, key, path, value, mode)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// JSONSetMode indicates an expected call of JSONSetMode.
+func (mr *MockCmdableMockRecorder) JSONSetMode(ctx, key, path, value, mode any) *MockCmdableJSONSetModeCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONSetMode", reflect.TypeOf((*MockCmdable)(nil).JSONSetMode), ctx, key, path, value, mode)
+	return &MockCmdableJSONSetModeCall{Call: call}
+}
+
+// MockCmdableJSONSetModeCall wrap *gomock.Call
+type MockCmdableJSONSetModeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONSetModeCall) Return(arg0 *redis.StatusCmd) *MockCmdableJSONSetModeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONSetModeCall) Do(f func(context.Context, string, string, any, string) *redis.StatusCmd) *MockCmdableJSONSetModeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONSetModeCall) DoAndReturn(f func(context.Context, string, string, any, string) *redis.StatusCmd) *MockCmdableJSONSetModeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONStrAppend mocks base method.
+func (m *MockCmdable) JSONStrAppend(ctx context.Context, key, path, value string) *redis.IntPointerSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONStrAppend", ctx, key, path, value)
+	ret0, _ := ret[0].(*redis.IntPointerSliceCmd)
+	return ret0
+}
+
+// JSONStrAppend indicates an expected call of JSONStrAppend.
+func (mr *MockCmdableMockRecorder) JSONStrAppend(ctx, key, path, value any) *MockCmdableJSONStrAppendCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONStrAppend", reflect.TypeOf((*MockCmdable)(nil).JSONStrAppend), ctx, key, path, value)
+	return &MockCmdableJSONStrAppendCall{Call: call}
+}
+
+// MockCmdableJSONStrAppendCall wrap *gomock.Call
+type MockCmdableJSONStrAppendCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONStrAppendCall) Return(arg0 *redis.IntPointerSliceCmd) *MockCmdableJSONStrAppendCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONStrAppendCall) Do(f func(context.Context, string, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONStrAppendCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONStrAppendCall) DoAndReturn(f func(context.Context, string, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONStrAppendCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONStrLen mocks base method.
+func (m *MockCmdable) JSONStrLen(ctx context.Context, key, path string) *redis.IntPointerSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONStrLen", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntPointerSliceCmd)
+	return ret0
+}
+
+// JSONStrLen indicates an expected call of JSONStrLen.
+func (mr *MockCmdableMockRecorder) JSONStrLen(ctx, key, path any) *MockCmdableJSONStrLenCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONStrLen", reflect.TypeOf((*MockCmdable)(nil).JSONStrLen), ctx, key, path)
+	return &MockCmdableJSONStrLenCall{Call: call}
+}
+
+// MockCmdableJSONStrLenCall wrap *gomock.Call
+type MockCmdableJSONStrLenCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONStrLenCall) Return(arg0 *redis.IntPointerSliceCmd) *MockCmdableJSONStrLenCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONStrLenCall) Do(f func(context.Context, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONStrLenCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONStrLenCall) DoAndReturn(f func(context.Context, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONStrLenCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONToggle mocks base method.
+func (m *MockCmdable) JSONToggle(ctx context.Context, key, path string) *redis.IntPointerSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONToggle", ctx, key, path)
+	ret0, _ := ret[0].(*redis.IntPointerSliceCmd)
+	return ret0
+}
+
+// JSONToggle indicates an expected call of JSONToggle.
+func (mr *MockCmdableMockRecorder) JSONToggle(ctx, key, path any) *MockCmdableJSONToggleCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONToggle", reflect.TypeOf((*MockCmdable)(nil).JSONToggle), ctx, key, path)
+	return &MockCmdableJSONToggleCall{Call: call}
+}
+
+// MockCmdableJSONToggleCall wrap *gomock.Call
+type MockCmdableJSONToggleCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONToggleCall) Return(arg0 *redis.IntPointerSliceCmd) *MockCmdableJSONToggleCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONToggleCall) Do(f func(context.Context, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONToggleCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONToggleCall) DoAndReturn(f func(context.Context, string, string) *redis.IntPointerSliceCmd) *MockCmdableJSONToggleCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// JSONType mocks base method.
+func (m *MockCmdable) JSONType(ctx context.Context, key, path string) *redis.JSONSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "JSONType", ctx, key, path)
+	ret0, _ := ret[0].(*redis.JSONSliceCmd)
+	return ret0
+}
+
+// JSONType indicates an expected call of JSONType.
+func (mr *MockCmdableMockRecorder) JSONType(ctx, key, path any) *MockCmdableJSONTypeCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JSONType", reflect.TypeOf((*MockCmdable)(nil).JSONType), ctx, key, path)
+	return &MockCmdableJSONTypeCall{Call: call}
+}
+
+// MockCmdableJSONTypeCall wrap *gomock.Call
+type MockCmdableJSONTypeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableJSONTypeCall) Return(arg0 *redis.JSONSliceCmd) *MockCmdableJSONTypeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableJSONTypeCall) Do(f func(context.Context, string, string) *redis.JSONSliceCmd) *MockCmdableJSONTypeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableJSONTypeCall) DoAndReturn(f func(context.Context, string, string) *redis.JSONSliceCmd) *MockCmdableJSONTypeCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -8116,6 +11387,44 @@ func (c *MockCmdableObjectEncodingCall) Do(f func(context.Context, string) *redi
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableObjectEncodingCall) DoAndReturn(f func(context.Context, string) *redis.StringCmd) *MockCmdableObjectEncodingCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ObjectFreq mocks base method.
+func (m *MockCmdable) ObjectFreq(ctx context.Context, key string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ObjectFreq", ctx, key)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// ObjectFreq indicates an expected call of ObjectFreq.
+func (mr *MockCmdableMockRecorder) ObjectFreq(ctx, key any) *MockCmdableObjectFreqCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObjectFreq", reflect.TypeOf((*MockCmdable)(nil).ObjectFreq), ctx, key)
+	return &MockCmdableObjectFreqCall{Call: call}
+}
+
+// MockCmdableObjectFreqCall wrap *gomock.Call
+type MockCmdableObjectFreqCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableObjectFreqCall) Return(arg0 *redis.IntCmd) *MockCmdableObjectFreqCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableObjectFreqCall) Do(f func(context.Context, string) *redis.IntCmd) *MockCmdableObjectFreqCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableObjectFreqCall) DoAndReturn(f func(context.Context, string) *redis.IntCmd) *MockCmdableObjectFreqCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -11747,344 +15056,1104 @@ func (c *MockCmdableTDigestTrimmedMeanCall) DoAndReturn(f func(context.Context, 
 	return c
 }
 
-// TFCall mocks base method.
-func (m *MockCmdable) TFCall(ctx context.Context, libName, funcName string, numKeys int) *redis.Cmd {
+// TSAdd mocks base method.
+func (m *MockCmdable) TSAdd(ctx context.Context, key string, timestamp any, value float64) *redis.IntCmd {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFCall", ctx, libName, funcName, numKeys)
-	ret0, _ := ret[0].(*redis.Cmd)
+	ret := m.ctrl.Call(m, "TSAdd", ctx, key, timestamp, value)
+	ret0, _ := ret[0].(*redis.IntCmd)
 	return ret0
 }
 
-// TFCall indicates an expected call of TFCall.
-func (mr *MockCmdableMockRecorder) TFCall(ctx, libName, funcName, numKeys any) *MockCmdableTFCallCall {
+// TSAdd indicates an expected call of TSAdd.
+func (mr *MockCmdableMockRecorder) TSAdd(ctx, key, timestamp, value any) *MockCmdableTSAddCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFCall", reflect.TypeOf((*MockCmdable)(nil).TFCall), ctx, libName, funcName, numKeys)
-	return &MockCmdableTFCallCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSAdd", reflect.TypeOf((*MockCmdable)(nil).TSAdd), ctx, key, timestamp, value)
+	return &MockCmdableTSAddCall{Call: call}
 }
 
-// MockCmdableTFCallCall wrap *gomock.Call
-type MockCmdableTFCallCall struct {
+// MockCmdableTSAddCall wrap *gomock.Call
+type MockCmdableTSAddCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFCallCall) Return(arg0 *redis.Cmd) *MockCmdableTFCallCall {
+func (c *MockCmdableTSAddCall) Return(arg0 *redis.IntCmd) *MockCmdableTSAddCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFCallCall) Do(f func(context.Context, string, string, int) *redis.Cmd) *MockCmdableTFCallCall {
+func (c *MockCmdableTSAddCall) Do(f func(context.Context, string, any, float64) *redis.IntCmd) *MockCmdableTSAddCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFCallCall) DoAndReturn(f func(context.Context, string, string, int) *redis.Cmd) *MockCmdableTFCallCall {
+func (c *MockCmdableTSAddCall) DoAndReturn(f func(context.Context, string, any, float64) *redis.IntCmd) *MockCmdableTSAddCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
-// TFCallASYNC mocks base method.
-func (m *MockCmdable) TFCallASYNC(ctx context.Context, libName, funcName string, numKeys int) *redis.Cmd {
+// TSAddWithArgs mocks base method.
+func (m *MockCmdable) TSAddWithArgs(ctx context.Context, key string, timestamp any, value float64, options *redis.TSOptions) *redis.IntCmd {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFCallASYNC", ctx, libName, funcName, numKeys)
-	ret0, _ := ret[0].(*redis.Cmd)
+	ret := m.ctrl.Call(m, "TSAddWithArgs", ctx, key, timestamp, value, options)
+	ret0, _ := ret[0].(*redis.IntCmd)
 	return ret0
 }
 
-// TFCallASYNC indicates an expected call of TFCallASYNC.
-func (mr *MockCmdableMockRecorder) TFCallASYNC(ctx, libName, funcName, numKeys any) *MockCmdableTFCallASYNCCall {
+// TSAddWithArgs indicates an expected call of TSAddWithArgs.
+func (mr *MockCmdableMockRecorder) TSAddWithArgs(ctx, key, timestamp, value, options any) *MockCmdableTSAddWithArgsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFCallASYNC", reflect.TypeOf((*MockCmdable)(nil).TFCallASYNC), ctx, libName, funcName, numKeys)
-	return &MockCmdableTFCallASYNCCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSAddWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSAddWithArgs), ctx, key, timestamp, value, options)
+	return &MockCmdableTSAddWithArgsCall{Call: call}
 }
 
-// MockCmdableTFCallASYNCCall wrap *gomock.Call
-type MockCmdableTFCallASYNCCall struct {
+// MockCmdableTSAddWithArgsCall wrap *gomock.Call
+type MockCmdableTSAddWithArgsCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFCallASYNCCall) Return(arg0 *redis.Cmd) *MockCmdableTFCallASYNCCall {
+func (c *MockCmdableTSAddWithArgsCall) Return(arg0 *redis.IntCmd) *MockCmdableTSAddWithArgsCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFCallASYNCCall) Do(f func(context.Context, string, string, int) *redis.Cmd) *MockCmdableTFCallASYNCCall {
+func (c *MockCmdableTSAddWithArgsCall) Do(f func(context.Context, string, any, float64, *redis.TSOptions) *redis.IntCmd) *MockCmdableTSAddWithArgsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFCallASYNCCall) DoAndReturn(f func(context.Context, string, string, int) *redis.Cmd) *MockCmdableTFCallASYNCCall {
+func (c *MockCmdableTSAddWithArgsCall) DoAndReturn(f func(context.Context, string, any, float64, *redis.TSOptions) *redis.IntCmd) *MockCmdableTSAddWithArgsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
-// TFCallASYNCArgs mocks base method.
-func (m *MockCmdable) TFCallASYNCArgs(ctx context.Context, libName, funcName string, numKeys int, options *redis.TFCallOptions) *redis.Cmd {
+// TSAlter mocks base method.
+func (m *MockCmdable) TSAlter(ctx context.Context, key string, options *redis.TSAlterOptions) *redis.StatusCmd {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFCallASYNCArgs", ctx, libName, funcName, numKeys, options)
-	ret0, _ := ret[0].(*redis.Cmd)
-	return ret0
-}
-
-// TFCallASYNCArgs indicates an expected call of TFCallASYNCArgs.
-func (mr *MockCmdableMockRecorder) TFCallASYNCArgs(ctx, libName, funcName, numKeys, options any) *MockCmdableTFCallASYNCArgsCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFCallASYNCArgs", reflect.TypeOf((*MockCmdable)(nil).TFCallASYNCArgs), ctx, libName, funcName, numKeys, options)
-	return &MockCmdableTFCallASYNCArgsCall{Call: call}
-}
-
-// MockCmdableTFCallASYNCArgsCall wrap *gomock.Call
-type MockCmdableTFCallASYNCArgsCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFCallASYNCArgsCall) Return(arg0 *redis.Cmd) *MockCmdableTFCallASYNCArgsCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFCallASYNCArgsCall) Do(f func(context.Context, string, string, int, *redis.TFCallOptions) *redis.Cmd) *MockCmdableTFCallASYNCArgsCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFCallASYNCArgsCall) DoAndReturn(f func(context.Context, string, string, int, *redis.TFCallOptions) *redis.Cmd) *MockCmdableTFCallASYNCArgsCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// TFCallArgs mocks base method.
-func (m *MockCmdable) TFCallArgs(ctx context.Context, libName, funcName string, numKeys int, options *redis.TFCallOptions) *redis.Cmd {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFCallArgs", ctx, libName, funcName, numKeys, options)
-	ret0, _ := ret[0].(*redis.Cmd)
-	return ret0
-}
-
-// TFCallArgs indicates an expected call of TFCallArgs.
-func (mr *MockCmdableMockRecorder) TFCallArgs(ctx, libName, funcName, numKeys, options any) *MockCmdableTFCallArgsCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFCallArgs", reflect.TypeOf((*MockCmdable)(nil).TFCallArgs), ctx, libName, funcName, numKeys, options)
-	return &MockCmdableTFCallArgsCall{Call: call}
-}
-
-// MockCmdableTFCallArgsCall wrap *gomock.Call
-type MockCmdableTFCallArgsCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFCallArgsCall) Return(arg0 *redis.Cmd) *MockCmdableTFCallArgsCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFCallArgsCall) Do(f func(context.Context, string, string, int, *redis.TFCallOptions) *redis.Cmd) *MockCmdableTFCallArgsCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFCallArgsCall) DoAndReturn(f func(context.Context, string, string, int, *redis.TFCallOptions) *redis.Cmd) *MockCmdableTFCallArgsCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// TFunctionDelete mocks base method.
-func (m *MockCmdable) TFunctionDelete(ctx context.Context, libName string) *redis.StatusCmd {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFunctionDelete", ctx, libName)
+	ret := m.ctrl.Call(m, "TSAlter", ctx, key, options)
 	ret0, _ := ret[0].(*redis.StatusCmd)
 	return ret0
 }
 
-// TFunctionDelete indicates an expected call of TFunctionDelete.
-func (mr *MockCmdableMockRecorder) TFunctionDelete(ctx, libName any) *MockCmdableTFunctionDeleteCall {
+// TSAlter indicates an expected call of TSAlter.
+func (mr *MockCmdableMockRecorder) TSAlter(ctx, key, options any) *MockCmdableTSAlterCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFunctionDelete", reflect.TypeOf((*MockCmdable)(nil).TFunctionDelete), ctx, libName)
-	return &MockCmdableTFunctionDeleteCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSAlter", reflect.TypeOf((*MockCmdable)(nil).TSAlter), ctx, key, options)
+	return &MockCmdableTSAlterCall{Call: call}
 }
 
-// MockCmdableTFunctionDeleteCall wrap *gomock.Call
-type MockCmdableTFunctionDeleteCall struct {
+// MockCmdableTSAlterCall wrap *gomock.Call
+type MockCmdableTSAlterCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFunctionDeleteCall) Return(arg0 *redis.StatusCmd) *MockCmdableTFunctionDeleteCall {
+func (c *MockCmdableTSAlterCall) Return(arg0 *redis.StatusCmd) *MockCmdableTSAlterCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFunctionDeleteCall) Do(f func(context.Context, string) *redis.StatusCmd) *MockCmdableTFunctionDeleteCall {
+func (c *MockCmdableTSAlterCall) Do(f func(context.Context, string, *redis.TSAlterOptions) *redis.StatusCmd) *MockCmdableTSAlterCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFunctionDeleteCall) DoAndReturn(f func(context.Context, string) *redis.StatusCmd) *MockCmdableTFunctionDeleteCall {
+func (c *MockCmdableTSAlterCall) DoAndReturn(f func(context.Context, string, *redis.TSAlterOptions) *redis.StatusCmd) *MockCmdableTSAlterCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
-// TFunctionList mocks base method.
-func (m *MockCmdable) TFunctionList(ctx context.Context) *redis.MapStringInterfaceSliceCmd {
+// TSCreate mocks base method.
+func (m *MockCmdable) TSCreate(ctx context.Context, key string) *redis.StatusCmd {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFunctionList", ctx)
-	ret0, _ := ret[0].(*redis.MapStringInterfaceSliceCmd)
-	return ret0
-}
-
-// TFunctionList indicates an expected call of TFunctionList.
-func (mr *MockCmdableMockRecorder) TFunctionList(ctx any) *MockCmdableTFunctionListCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFunctionList", reflect.TypeOf((*MockCmdable)(nil).TFunctionList), ctx)
-	return &MockCmdableTFunctionListCall{Call: call}
-}
-
-// MockCmdableTFunctionListCall wrap *gomock.Call
-type MockCmdableTFunctionListCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFunctionListCall) Return(arg0 *redis.MapStringInterfaceSliceCmd) *MockCmdableTFunctionListCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFunctionListCall) Do(f func(context.Context) *redis.MapStringInterfaceSliceCmd) *MockCmdableTFunctionListCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFunctionListCall) DoAndReturn(f func(context.Context) *redis.MapStringInterfaceSliceCmd) *MockCmdableTFunctionListCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// TFunctionListArgs mocks base method.
-func (m *MockCmdable) TFunctionListArgs(ctx context.Context, options *redis.TFunctionListOptions) *redis.MapStringInterfaceSliceCmd {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFunctionListArgs", ctx, options)
-	ret0, _ := ret[0].(*redis.MapStringInterfaceSliceCmd)
-	return ret0
-}
-
-// TFunctionListArgs indicates an expected call of TFunctionListArgs.
-func (mr *MockCmdableMockRecorder) TFunctionListArgs(ctx, options any) *MockCmdableTFunctionListArgsCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFunctionListArgs", reflect.TypeOf((*MockCmdable)(nil).TFunctionListArgs), ctx, options)
-	return &MockCmdableTFunctionListArgsCall{Call: call}
-}
-
-// MockCmdableTFunctionListArgsCall wrap *gomock.Call
-type MockCmdableTFunctionListArgsCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFunctionListArgsCall) Return(arg0 *redis.MapStringInterfaceSliceCmd) *MockCmdableTFunctionListArgsCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFunctionListArgsCall) Do(f func(context.Context, *redis.TFunctionListOptions) *redis.MapStringInterfaceSliceCmd) *MockCmdableTFunctionListArgsCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFunctionListArgsCall) DoAndReturn(f func(context.Context, *redis.TFunctionListOptions) *redis.MapStringInterfaceSliceCmd) *MockCmdableTFunctionListArgsCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// TFunctionLoad mocks base method.
-func (m *MockCmdable) TFunctionLoad(ctx context.Context, lib string) *redis.StatusCmd {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFunctionLoad", ctx, lib)
+	ret := m.ctrl.Call(m, "TSCreate", ctx, key)
 	ret0, _ := ret[0].(*redis.StatusCmd)
 	return ret0
 }
 
-// TFunctionLoad indicates an expected call of TFunctionLoad.
-func (mr *MockCmdableMockRecorder) TFunctionLoad(ctx, lib any) *MockCmdableTFunctionLoadCall {
+// TSCreate indicates an expected call of TSCreate.
+func (mr *MockCmdableMockRecorder) TSCreate(ctx, key any) *MockCmdableTSCreateCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFunctionLoad", reflect.TypeOf((*MockCmdable)(nil).TFunctionLoad), ctx, lib)
-	return &MockCmdableTFunctionLoadCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSCreate", reflect.TypeOf((*MockCmdable)(nil).TSCreate), ctx, key)
+	return &MockCmdableTSCreateCall{Call: call}
 }
 
-// MockCmdableTFunctionLoadCall wrap *gomock.Call
-type MockCmdableTFunctionLoadCall struct {
+// MockCmdableTSCreateCall wrap *gomock.Call
+type MockCmdableTSCreateCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFunctionLoadCall) Return(arg0 *redis.StatusCmd) *MockCmdableTFunctionLoadCall {
+func (c *MockCmdableTSCreateCall) Return(arg0 *redis.StatusCmd) *MockCmdableTSCreateCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFunctionLoadCall) Do(f func(context.Context, string) *redis.StatusCmd) *MockCmdableTFunctionLoadCall {
+func (c *MockCmdableTSCreateCall) Do(f func(context.Context, string) *redis.StatusCmd) *MockCmdableTSCreateCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFunctionLoadCall) DoAndReturn(f func(context.Context, string) *redis.StatusCmd) *MockCmdableTFunctionLoadCall {
+func (c *MockCmdableTSCreateCall) DoAndReturn(f func(context.Context, string) *redis.StatusCmd) *MockCmdableTSCreateCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
-// TFunctionLoadArgs mocks base method.
-func (m *MockCmdable) TFunctionLoadArgs(ctx context.Context, lib string, options *redis.TFunctionLoadOptions) *redis.StatusCmd {
+// TSCreateRule mocks base method.
+func (m *MockCmdable) TSCreateRule(ctx context.Context, sourceKey, destKey string, aggregator redis.Aggregator, bucketDuration int) *redis.StatusCmd {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TFunctionLoadArgs", ctx, lib, options)
+	ret := m.ctrl.Call(m, "TSCreateRule", ctx, sourceKey, destKey, aggregator, bucketDuration)
 	ret0, _ := ret[0].(*redis.StatusCmd)
 	return ret0
 }
 
-// TFunctionLoadArgs indicates an expected call of TFunctionLoadArgs.
-func (mr *MockCmdableMockRecorder) TFunctionLoadArgs(ctx, lib, options any) *MockCmdableTFunctionLoadArgsCall {
+// TSCreateRule indicates an expected call of TSCreateRule.
+func (mr *MockCmdableMockRecorder) TSCreateRule(ctx, sourceKey, destKey, aggregator, bucketDuration any) *MockCmdableTSCreateRuleCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TFunctionLoadArgs", reflect.TypeOf((*MockCmdable)(nil).TFunctionLoadArgs), ctx, lib, options)
-	return &MockCmdableTFunctionLoadArgsCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSCreateRule", reflect.TypeOf((*MockCmdable)(nil).TSCreateRule), ctx, sourceKey, destKey, aggregator, bucketDuration)
+	return &MockCmdableTSCreateRuleCall{Call: call}
 }
 
-// MockCmdableTFunctionLoadArgsCall wrap *gomock.Call
-type MockCmdableTFunctionLoadArgsCall struct {
+// MockCmdableTSCreateRuleCall wrap *gomock.Call
+type MockCmdableTSCreateRuleCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockCmdableTFunctionLoadArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableTFunctionLoadArgsCall {
+func (c *MockCmdableTSCreateRuleCall) Return(arg0 *redis.StatusCmd) *MockCmdableTSCreateRuleCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockCmdableTFunctionLoadArgsCall) Do(f func(context.Context, string, *redis.TFunctionLoadOptions) *redis.StatusCmd) *MockCmdableTFunctionLoadArgsCall {
+func (c *MockCmdableTSCreateRuleCall) Do(f func(context.Context, string, string, redis.Aggregator, int) *redis.StatusCmd) *MockCmdableTSCreateRuleCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockCmdableTFunctionLoadArgsCall) DoAndReturn(f func(context.Context, string, *redis.TFunctionLoadOptions) *redis.StatusCmd) *MockCmdableTFunctionLoadArgsCall {
+func (c *MockCmdableTSCreateRuleCall) DoAndReturn(f func(context.Context, string, string, redis.Aggregator, int) *redis.StatusCmd) *MockCmdableTSCreateRuleCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSCreateRuleWithArgs mocks base method.
+func (m *MockCmdable) TSCreateRuleWithArgs(ctx context.Context, sourceKey, destKey string, aggregator redis.Aggregator, bucketDuration int, options *redis.TSCreateRuleOptions) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSCreateRuleWithArgs", ctx, sourceKey, destKey, aggregator, bucketDuration, options)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// TSCreateRuleWithArgs indicates an expected call of TSCreateRuleWithArgs.
+func (mr *MockCmdableMockRecorder) TSCreateRuleWithArgs(ctx, sourceKey, destKey, aggregator, bucketDuration, options any) *MockCmdableTSCreateRuleWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSCreateRuleWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSCreateRuleWithArgs), ctx, sourceKey, destKey, aggregator, bucketDuration, options)
+	return &MockCmdableTSCreateRuleWithArgsCall{Call: call}
+}
+
+// MockCmdableTSCreateRuleWithArgsCall wrap *gomock.Call
+type MockCmdableTSCreateRuleWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSCreateRuleWithArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableTSCreateRuleWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSCreateRuleWithArgsCall) Do(f func(context.Context, string, string, redis.Aggregator, int, *redis.TSCreateRuleOptions) *redis.StatusCmd) *MockCmdableTSCreateRuleWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSCreateRuleWithArgsCall) DoAndReturn(f func(context.Context, string, string, redis.Aggregator, int, *redis.TSCreateRuleOptions) *redis.StatusCmd) *MockCmdableTSCreateRuleWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSCreateWithArgs mocks base method.
+func (m *MockCmdable) TSCreateWithArgs(ctx context.Context, key string, options *redis.TSOptions) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSCreateWithArgs", ctx, key, options)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// TSCreateWithArgs indicates an expected call of TSCreateWithArgs.
+func (mr *MockCmdableMockRecorder) TSCreateWithArgs(ctx, key, options any) *MockCmdableTSCreateWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSCreateWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSCreateWithArgs), ctx, key, options)
+	return &MockCmdableTSCreateWithArgsCall{Call: call}
+}
+
+// MockCmdableTSCreateWithArgsCall wrap *gomock.Call
+type MockCmdableTSCreateWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSCreateWithArgsCall) Return(arg0 *redis.StatusCmd) *MockCmdableTSCreateWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSCreateWithArgsCall) Do(f func(context.Context, string, *redis.TSOptions) *redis.StatusCmd) *MockCmdableTSCreateWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSCreateWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.TSOptions) *redis.StatusCmd) *MockCmdableTSCreateWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSDecrBy mocks base method.
+func (m *MockCmdable) TSDecrBy(ctx context.Context, Key string, timestamp float64) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSDecrBy", ctx, Key, timestamp)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// TSDecrBy indicates an expected call of TSDecrBy.
+func (mr *MockCmdableMockRecorder) TSDecrBy(ctx, Key, timestamp any) *MockCmdableTSDecrByCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSDecrBy", reflect.TypeOf((*MockCmdable)(nil).TSDecrBy), ctx, Key, timestamp)
+	return &MockCmdableTSDecrByCall{Call: call}
+}
+
+// MockCmdableTSDecrByCall wrap *gomock.Call
+type MockCmdableTSDecrByCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSDecrByCall) Return(arg0 *redis.IntCmd) *MockCmdableTSDecrByCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSDecrByCall) Do(f func(context.Context, string, float64) *redis.IntCmd) *MockCmdableTSDecrByCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSDecrByCall) DoAndReturn(f func(context.Context, string, float64) *redis.IntCmd) *MockCmdableTSDecrByCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSDecrByWithArgs mocks base method.
+func (m *MockCmdable) TSDecrByWithArgs(ctx context.Context, key string, timestamp float64, options *redis.TSIncrDecrOptions) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSDecrByWithArgs", ctx, key, timestamp, options)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// TSDecrByWithArgs indicates an expected call of TSDecrByWithArgs.
+func (mr *MockCmdableMockRecorder) TSDecrByWithArgs(ctx, key, timestamp, options any) *MockCmdableTSDecrByWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSDecrByWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSDecrByWithArgs), ctx, key, timestamp, options)
+	return &MockCmdableTSDecrByWithArgsCall{Call: call}
+}
+
+// MockCmdableTSDecrByWithArgsCall wrap *gomock.Call
+type MockCmdableTSDecrByWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSDecrByWithArgsCall) Return(arg0 *redis.IntCmd) *MockCmdableTSDecrByWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSDecrByWithArgsCall) Do(f func(context.Context, string, float64, *redis.TSIncrDecrOptions) *redis.IntCmd) *MockCmdableTSDecrByWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSDecrByWithArgsCall) DoAndReturn(f func(context.Context, string, float64, *redis.TSIncrDecrOptions) *redis.IntCmd) *MockCmdableTSDecrByWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSDel mocks base method.
+func (m *MockCmdable) TSDel(ctx context.Context, Key string, fromTimestamp, toTimestamp int) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSDel", ctx, Key, fromTimestamp, toTimestamp)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// TSDel indicates an expected call of TSDel.
+func (mr *MockCmdableMockRecorder) TSDel(ctx, Key, fromTimestamp, toTimestamp any) *MockCmdableTSDelCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSDel", reflect.TypeOf((*MockCmdable)(nil).TSDel), ctx, Key, fromTimestamp, toTimestamp)
+	return &MockCmdableTSDelCall{Call: call}
+}
+
+// MockCmdableTSDelCall wrap *gomock.Call
+type MockCmdableTSDelCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSDelCall) Return(arg0 *redis.IntCmd) *MockCmdableTSDelCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSDelCall) Do(f func(context.Context, string, int, int) *redis.IntCmd) *MockCmdableTSDelCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSDelCall) DoAndReturn(f func(context.Context, string, int, int) *redis.IntCmd) *MockCmdableTSDelCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSDeleteRule mocks base method.
+func (m *MockCmdable) TSDeleteRule(ctx context.Context, sourceKey, destKey string) *redis.StatusCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSDeleteRule", ctx, sourceKey, destKey)
+	ret0, _ := ret[0].(*redis.StatusCmd)
+	return ret0
+}
+
+// TSDeleteRule indicates an expected call of TSDeleteRule.
+func (mr *MockCmdableMockRecorder) TSDeleteRule(ctx, sourceKey, destKey any) *MockCmdableTSDeleteRuleCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSDeleteRule", reflect.TypeOf((*MockCmdable)(nil).TSDeleteRule), ctx, sourceKey, destKey)
+	return &MockCmdableTSDeleteRuleCall{Call: call}
+}
+
+// MockCmdableTSDeleteRuleCall wrap *gomock.Call
+type MockCmdableTSDeleteRuleCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSDeleteRuleCall) Return(arg0 *redis.StatusCmd) *MockCmdableTSDeleteRuleCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSDeleteRuleCall) Do(f func(context.Context, string, string) *redis.StatusCmd) *MockCmdableTSDeleteRuleCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSDeleteRuleCall) DoAndReturn(f func(context.Context, string, string) *redis.StatusCmd) *MockCmdableTSDeleteRuleCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSGet mocks base method.
+func (m *MockCmdable) TSGet(ctx context.Context, key string) *redis.TSTimestampValueCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSGet", ctx, key)
+	ret0, _ := ret[0].(*redis.TSTimestampValueCmd)
+	return ret0
+}
+
+// TSGet indicates an expected call of TSGet.
+func (mr *MockCmdableMockRecorder) TSGet(ctx, key any) *MockCmdableTSGetCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSGet", reflect.TypeOf((*MockCmdable)(nil).TSGet), ctx, key)
+	return &MockCmdableTSGetCall{Call: call}
+}
+
+// MockCmdableTSGetCall wrap *gomock.Call
+type MockCmdableTSGetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSGetCall) Return(arg0 *redis.TSTimestampValueCmd) *MockCmdableTSGetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSGetCall) Do(f func(context.Context, string) *redis.TSTimestampValueCmd) *MockCmdableTSGetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSGetCall) DoAndReturn(f func(context.Context, string) *redis.TSTimestampValueCmd) *MockCmdableTSGetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSGetWithArgs mocks base method.
+func (m *MockCmdable) TSGetWithArgs(ctx context.Context, key string, options *redis.TSGetOptions) *redis.TSTimestampValueCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSGetWithArgs", ctx, key, options)
+	ret0, _ := ret[0].(*redis.TSTimestampValueCmd)
+	return ret0
+}
+
+// TSGetWithArgs indicates an expected call of TSGetWithArgs.
+func (mr *MockCmdableMockRecorder) TSGetWithArgs(ctx, key, options any) *MockCmdableTSGetWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSGetWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSGetWithArgs), ctx, key, options)
+	return &MockCmdableTSGetWithArgsCall{Call: call}
+}
+
+// MockCmdableTSGetWithArgsCall wrap *gomock.Call
+type MockCmdableTSGetWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSGetWithArgsCall) Return(arg0 *redis.TSTimestampValueCmd) *MockCmdableTSGetWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSGetWithArgsCall) Do(f func(context.Context, string, *redis.TSGetOptions) *redis.TSTimestampValueCmd) *MockCmdableTSGetWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSGetWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.TSGetOptions) *redis.TSTimestampValueCmd) *MockCmdableTSGetWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSIncrBy mocks base method.
+func (m *MockCmdable) TSIncrBy(ctx context.Context, Key string, timestamp float64) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSIncrBy", ctx, Key, timestamp)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// TSIncrBy indicates an expected call of TSIncrBy.
+func (mr *MockCmdableMockRecorder) TSIncrBy(ctx, Key, timestamp any) *MockCmdableTSIncrByCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSIncrBy", reflect.TypeOf((*MockCmdable)(nil).TSIncrBy), ctx, Key, timestamp)
+	return &MockCmdableTSIncrByCall{Call: call}
+}
+
+// MockCmdableTSIncrByCall wrap *gomock.Call
+type MockCmdableTSIncrByCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSIncrByCall) Return(arg0 *redis.IntCmd) *MockCmdableTSIncrByCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSIncrByCall) Do(f func(context.Context, string, float64) *redis.IntCmd) *MockCmdableTSIncrByCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSIncrByCall) DoAndReturn(f func(context.Context, string, float64) *redis.IntCmd) *MockCmdableTSIncrByCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSIncrByWithArgs mocks base method.
+func (m *MockCmdable) TSIncrByWithArgs(ctx context.Context, key string, timestamp float64, options *redis.TSIncrDecrOptions) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSIncrByWithArgs", ctx, key, timestamp, options)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// TSIncrByWithArgs indicates an expected call of TSIncrByWithArgs.
+func (mr *MockCmdableMockRecorder) TSIncrByWithArgs(ctx, key, timestamp, options any) *MockCmdableTSIncrByWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSIncrByWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSIncrByWithArgs), ctx, key, timestamp, options)
+	return &MockCmdableTSIncrByWithArgsCall{Call: call}
+}
+
+// MockCmdableTSIncrByWithArgsCall wrap *gomock.Call
+type MockCmdableTSIncrByWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSIncrByWithArgsCall) Return(arg0 *redis.IntCmd) *MockCmdableTSIncrByWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSIncrByWithArgsCall) Do(f func(context.Context, string, float64, *redis.TSIncrDecrOptions) *redis.IntCmd) *MockCmdableTSIncrByWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSIncrByWithArgsCall) DoAndReturn(f func(context.Context, string, float64, *redis.TSIncrDecrOptions) *redis.IntCmd) *MockCmdableTSIncrByWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSInfo mocks base method.
+func (m *MockCmdable) TSInfo(ctx context.Context, key string) *redis.MapStringInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSInfo", ctx, key)
+	ret0, _ := ret[0].(*redis.MapStringInterfaceCmd)
+	return ret0
+}
+
+// TSInfo indicates an expected call of TSInfo.
+func (mr *MockCmdableMockRecorder) TSInfo(ctx, key any) *MockCmdableTSInfoCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSInfo", reflect.TypeOf((*MockCmdable)(nil).TSInfo), ctx, key)
+	return &MockCmdableTSInfoCall{Call: call}
+}
+
+// MockCmdableTSInfoCall wrap *gomock.Call
+type MockCmdableTSInfoCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSInfoCall) Return(arg0 *redis.MapStringInterfaceCmd) *MockCmdableTSInfoCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSInfoCall) Do(f func(context.Context, string) *redis.MapStringInterfaceCmd) *MockCmdableTSInfoCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSInfoCall) DoAndReturn(f func(context.Context, string) *redis.MapStringInterfaceCmd) *MockCmdableTSInfoCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSInfoWithArgs mocks base method.
+func (m *MockCmdable) TSInfoWithArgs(ctx context.Context, key string, options *redis.TSInfoOptions) *redis.MapStringInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSInfoWithArgs", ctx, key, options)
+	ret0, _ := ret[0].(*redis.MapStringInterfaceCmd)
+	return ret0
+}
+
+// TSInfoWithArgs indicates an expected call of TSInfoWithArgs.
+func (mr *MockCmdableMockRecorder) TSInfoWithArgs(ctx, key, options any) *MockCmdableTSInfoWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSInfoWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSInfoWithArgs), ctx, key, options)
+	return &MockCmdableTSInfoWithArgsCall{Call: call}
+}
+
+// MockCmdableTSInfoWithArgsCall wrap *gomock.Call
+type MockCmdableTSInfoWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSInfoWithArgsCall) Return(arg0 *redis.MapStringInterfaceCmd) *MockCmdableTSInfoWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSInfoWithArgsCall) Do(f func(context.Context, string, *redis.TSInfoOptions) *redis.MapStringInterfaceCmd) *MockCmdableTSInfoWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSInfoWithArgsCall) DoAndReturn(f func(context.Context, string, *redis.TSInfoOptions) *redis.MapStringInterfaceCmd) *MockCmdableTSInfoWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSMAdd mocks base method.
+func (m *MockCmdable) TSMAdd(ctx context.Context, ktvSlices [][]any) *redis.IntSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSMAdd", ctx, ktvSlices)
+	ret0, _ := ret[0].(*redis.IntSliceCmd)
+	return ret0
+}
+
+// TSMAdd indicates an expected call of TSMAdd.
+func (mr *MockCmdableMockRecorder) TSMAdd(ctx, ktvSlices any) *MockCmdableTSMAddCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSMAdd", reflect.TypeOf((*MockCmdable)(nil).TSMAdd), ctx, ktvSlices)
+	return &MockCmdableTSMAddCall{Call: call}
+}
+
+// MockCmdableTSMAddCall wrap *gomock.Call
+type MockCmdableTSMAddCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSMAddCall) Return(arg0 *redis.IntSliceCmd) *MockCmdableTSMAddCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSMAddCall) Do(f func(context.Context, [][]any) *redis.IntSliceCmd) *MockCmdableTSMAddCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSMAddCall) DoAndReturn(f func(context.Context, [][]any) *redis.IntSliceCmd) *MockCmdableTSMAddCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSMGet mocks base method.
+func (m *MockCmdable) TSMGet(ctx context.Context, filters []string) *redis.MapStringSliceInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSMGet", ctx, filters)
+	ret0, _ := ret[0].(*redis.MapStringSliceInterfaceCmd)
+	return ret0
+}
+
+// TSMGet indicates an expected call of TSMGet.
+func (mr *MockCmdableMockRecorder) TSMGet(ctx, filters any) *MockCmdableTSMGetCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSMGet", reflect.TypeOf((*MockCmdable)(nil).TSMGet), ctx, filters)
+	return &MockCmdableTSMGetCall{Call: call}
+}
+
+// MockCmdableTSMGetCall wrap *gomock.Call
+type MockCmdableTSMGetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSMGetCall) Return(arg0 *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMGetCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSMGetCall) Do(f func(context.Context, []string) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMGetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSMGetCall) DoAndReturn(f func(context.Context, []string) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMGetCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSMGetWithArgs mocks base method.
+func (m *MockCmdable) TSMGetWithArgs(ctx context.Context, filters []string, options *redis.TSMGetOptions) *redis.MapStringSliceInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSMGetWithArgs", ctx, filters, options)
+	ret0, _ := ret[0].(*redis.MapStringSliceInterfaceCmd)
+	return ret0
+}
+
+// TSMGetWithArgs indicates an expected call of TSMGetWithArgs.
+func (mr *MockCmdableMockRecorder) TSMGetWithArgs(ctx, filters, options any) *MockCmdableTSMGetWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSMGetWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSMGetWithArgs), ctx, filters, options)
+	return &MockCmdableTSMGetWithArgsCall{Call: call}
+}
+
+// MockCmdableTSMGetWithArgsCall wrap *gomock.Call
+type MockCmdableTSMGetWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSMGetWithArgsCall) Return(arg0 *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMGetWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSMGetWithArgsCall) Do(f func(context.Context, []string, *redis.TSMGetOptions) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMGetWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSMGetWithArgsCall) DoAndReturn(f func(context.Context, []string, *redis.TSMGetOptions) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMGetWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSMRange mocks base method.
+func (m *MockCmdable) TSMRange(ctx context.Context, fromTimestamp, toTimestamp int, filterExpr []string) *redis.MapStringSliceInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSMRange", ctx, fromTimestamp, toTimestamp, filterExpr)
+	ret0, _ := ret[0].(*redis.MapStringSliceInterfaceCmd)
+	return ret0
+}
+
+// TSMRange indicates an expected call of TSMRange.
+func (mr *MockCmdableMockRecorder) TSMRange(ctx, fromTimestamp, toTimestamp, filterExpr any) *MockCmdableTSMRangeCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSMRange", reflect.TypeOf((*MockCmdable)(nil).TSMRange), ctx, fromTimestamp, toTimestamp, filterExpr)
+	return &MockCmdableTSMRangeCall{Call: call}
+}
+
+// MockCmdableTSMRangeCall wrap *gomock.Call
+type MockCmdableTSMRangeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSMRangeCall) Return(arg0 *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRangeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSMRangeCall) Do(f func(context.Context, int, int, []string) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRangeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSMRangeCall) DoAndReturn(f func(context.Context, int, int, []string) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRangeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSMRangeWithArgs mocks base method.
+func (m *MockCmdable) TSMRangeWithArgs(ctx context.Context, fromTimestamp, toTimestamp int, filterExpr []string, options *redis.TSMRangeOptions) *redis.MapStringSliceInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSMRangeWithArgs", ctx, fromTimestamp, toTimestamp, filterExpr, options)
+	ret0, _ := ret[0].(*redis.MapStringSliceInterfaceCmd)
+	return ret0
+}
+
+// TSMRangeWithArgs indicates an expected call of TSMRangeWithArgs.
+func (mr *MockCmdableMockRecorder) TSMRangeWithArgs(ctx, fromTimestamp, toTimestamp, filterExpr, options any) *MockCmdableTSMRangeWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSMRangeWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSMRangeWithArgs), ctx, fromTimestamp, toTimestamp, filterExpr, options)
+	return &MockCmdableTSMRangeWithArgsCall{Call: call}
+}
+
+// MockCmdableTSMRangeWithArgsCall wrap *gomock.Call
+type MockCmdableTSMRangeWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSMRangeWithArgsCall) Return(arg0 *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRangeWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSMRangeWithArgsCall) Do(f func(context.Context, int, int, []string, *redis.TSMRangeOptions) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRangeWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSMRangeWithArgsCall) DoAndReturn(f func(context.Context, int, int, []string, *redis.TSMRangeOptions) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRangeWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSMRevRange mocks base method.
+func (m *MockCmdable) TSMRevRange(ctx context.Context, fromTimestamp, toTimestamp int, filterExpr []string) *redis.MapStringSliceInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSMRevRange", ctx, fromTimestamp, toTimestamp, filterExpr)
+	ret0, _ := ret[0].(*redis.MapStringSliceInterfaceCmd)
+	return ret0
+}
+
+// TSMRevRange indicates an expected call of TSMRevRange.
+func (mr *MockCmdableMockRecorder) TSMRevRange(ctx, fromTimestamp, toTimestamp, filterExpr any) *MockCmdableTSMRevRangeCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSMRevRange", reflect.TypeOf((*MockCmdable)(nil).TSMRevRange), ctx, fromTimestamp, toTimestamp, filterExpr)
+	return &MockCmdableTSMRevRangeCall{Call: call}
+}
+
+// MockCmdableTSMRevRangeCall wrap *gomock.Call
+type MockCmdableTSMRevRangeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSMRevRangeCall) Return(arg0 *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRevRangeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSMRevRangeCall) Do(f func(context.Context, int, int, []string) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRevRangeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSMRevRangeCall) DoAndReturn(f func(context.Context, int, int, []string) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRevRangeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSMRevRangeWithArgs mocks base method.
+func (m *MockCmdable) TSMRevRangeWithArgs(ctx context.Context, fromTimestamp, toTimestamp int, filterExpr []string, options *redis.TSMRevRangeOptions) *redis.MapStringSliceInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSMRevRangeWithArgs", ctx, fromTimestamp, toTimestamp, filterExpr, options)
+	ret0, _ := ret[0].(*redis.MapStringSliceInterfaceCmd)
+	return ret0
+}
+
+// TSMRevRangeWithArgs indicates an expected call of TSMRevRangeWithArgs.
+func (mr *MockCmdableMockRecorder) TSMRevRangeWithArgs(ctx, fromTimestamp, toTimestamp, filterExpr, options any) *MockCmdableTSMRevRangeWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSMRevRangeWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSMRevRangeWithArgs), ctx, fromTimestamp, toTimestamp, filterExpr, options)
+	return &MockCmdableTSMRevRangeWithArgsCall{Call: call}
+}
+
+// MockCmdableTSMRevRangeWithArgsCall wrap *gomock.Call
+type MockCmdableTSMRevRangeWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSMRevRangeWithArgsCall) Return(arg0 *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRevRangeWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSMRevRangeWithArgsCall) Do(f func(context.Context, int, int, []string, *redis.TSMRevRangeOptions) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRevRangeWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSMRevRangeWithArgsCall) DoAndReturn(f func(context.Context, int, int, []string, *redis.TSMRevRangeOptions) *redis.MapStringSliceInterfaceCmd) *MockCmdableTSMRevRangeWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSQueryIndex mocks base method.
+func (m *MockCmdable) TSQueryIndex(ctx context.Context, filterExpr []string) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSQueryIndex", ctx, filterExpr)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// TSQueryIndex indicates an expected call of TSQueryIndex.
+func (mr *MockCmdableMockRecorder) TSQueryIndex(ctx, filterExpr any) *MockCmdableTSQueryIndexCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSQueryIndex", reflect.TypeOf((*MockCmdable)(nil).TSQueryIndex), ctx, filterExpr)
+	return &MockCmdableTSQueryIndexCall{Call: call}
+}
+
+// MockCmdableTSQueryIndexCall wrap *gomock.Call
+type MockCmdableTSQueryIndexCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSQueryIndexCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableTSQueryIndexCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSQueryIndexCall) Do(f func(context.Context, []string) *redis.StringSliceCmd) *MockCmdableTSQueryIndexCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSQueryIndexCall) DoAndReturn(f func(context.Context, []string) *redis.StringSliceCmd) *MockCmdableTSQueryIndexCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSRange mocks base method.
+func (m *MockCmdable) TSRange(ctx context.Context, key string, fromTimestamp, toTimestamp int) *redis.TSTimestampValueSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSRange", ctx, key, fromTimestamp, toTimestamp)
+	ret0, _ := ret[0].(*redis.TSTimestampValueSliceCmd)
+	return ret0
+}
+
+// TSRange indicates an expected call of TSRange.
+func (mr *MockCmdableMockRecorder) TSRange(ctx, key, fromTimestamp, toTimestamp any) *MockCmdableTSRangeCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSRange", reflect.TypeOf((*MockCmdable)(nil).TSRange), ctx, key, fromTimestamp, toTimestamp)
+	return &MockCmdableTSRangeCall{Call: call}
+}
+
+// MockCmdableTSRangeCall wrap *gomock.Call
+type MockCmdableTSRangeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSRangeCall) Return(arg0 *redis.TSTimestampValueSliceCmd) *MockCmdableTSRangeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSRangeCall) Do(f func(context.Context, string, int, int) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRangeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSRangeCall) DoAndReturn(f func(context.Context, string, int, int) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRangeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSRangeWithArgs mocks base method.
+func (m *MockCmdable) TSRangeWithArgs(ctx context.Context, key string, fromTimestamp, toTimestamp int, options *redis.TSRangeOptions) *redis.TSTimestampValueSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSRangeWithArgs", ctx, key, fromTimestamp, toTimestamp, options)
+	ret0, _ := ret[0].(*redis.TSTimestampValueSliceCmd)
+	return ret0
+}
+
+// TSRangeWithArgs indicates an expected call of TSRangeWithArgs.
+func (mr *MockCmdableMockRecorder) TSRangeWithArgs(ctx, key, fromTimestamp, toTimestamp, options any) *MockCmdableTSRangeWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSRangeWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSRangeWithArgs), ctx, key, fromTimestamp, toTimestamp, options)
+	return &MockCmdableTSRangeWithArgsCall{Call: call}
+}
+
+// MockCmdableTSRangeWithArgsCall wrap *gomock.Call
+type MockCmdableTSRangeWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSRangeWithArgsCall) Return(arg0 *redis.TSTimestampValueSliceCmd) *MockCmdableTSRangeWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSRangeWithArgsCall) Do(f func(context.Context, string, int, int, *redis.TSRangeOptions) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRangeWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSRangeWithArgsCall) DoAndReturn(f func(context.Context, string, int, int, *redis.TSRangeOptions) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRangeWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSRevRange mocks base method.
+func (m *MockCmdable) TSRevRange(ctx context.Context, key string, fromTimestamp, toTimestamp int) *redis.TSTimestampValueSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSRevRange", ctx, key, fromTimestamp, toTimestamp)
+	ret0, _ := ret[0].(*redis.TSTimestampValueSliceCmd)
+	return ret0
+}
+
+// TSRevRange indicates an expected call of TSRevRange.
+func (mr *MockCmdableMockRecorder) TSRevRange(ctx, key, fromTimestamp, toTimestamp any) *MockCmdableTSRevRangeCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSRevRange", reflect.TypeOf((*MockCmdable)(nil).TSRevRange), ctx, key, fromTimestamp, toTimestamp)
+	return &MockCmdableTSRevRangeCall{Call: call}
+}
+
+// MockCmdableTSRevRangeCall wrap *gomock.Call
+type MockCmdableTSRevRangeCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSRevRangeCall) Return(arg0 *redis.TSTimestampValueSliceCmd) *MockCmdableTSRevRangeCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSRevRangeCall) Do(f func(context.Context, string, int, int) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRevRangeCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSRevRangeCall) DoAndReturn(f func(context.Context, string, int, int) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRevRangeCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// TSRevRangeWithArgs mocks base method.
+func (m *MockCmdable) TSRevRangeWithArgs(ctx context.Context, key string, fromTimestamp, toTimestamp int, options *redis.TSRevRangeOptions) *redis.TSTimestampValueSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TSRevRangeWithArgs", ctx, key, fromTimestamp, toTimestamp, options)
+	ret0, _ := ret[0].(*redis.TSTimestampValueSliceCmd)
+	return ret0
+}
+
+// TSRevRangeWithArgs indicates an expected call of TSRevRangeWithArgs.
+func (mr *MockCmdableMockRecorder) TSRevRangeWithArgs(ctx, key, fromTimestamp, toTimestamp, options any) *MockCmdableTSRevRangeWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TSRevRangeWithArgs", reflect.TypeOf((*MockCmdable)(nil).TSRevRangeWithArgs), ctx, key, fromTimestamp, toTimestamp, options)
+	return &MockCmdableTSRevRangeWithArgsCall{Call: call}
+}
+
+// MockCmdableTSRevRangeWithArgsCall wrap *gomock.Call
+type MockCmdableTSRevRangeWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableTSRevRangeWithArgsCall) Return(arg0 *redis.TSTimestampValueSliceCmd) *MockCmdableTSRevRangeWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableTSRevRangeWithArgsCall) Do(f func(context.Context, string, int, int, *redis.TSRevRangeOptions) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRevRangeWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableTSRevRangeWithArgsCall) DoAndReturn(f func(context.Context, string, int, int, *redis.TSRevRangeOptions) *redis.TSTimestampValueSliceCmd) *MockCmdableTSRevRangeWithArgsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -12724,6 +16793,690 @@ func (c *MockCmdableUnlinkCall) Do(f func(context.Context, ...string) *redis.Int
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockCmdableUnlinkCall) DoAndReturn(f func(context.Context, ...string) *redis.IntCmd) *MockCmdableUnlinkCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VAdd mocks base method.
+func (m *MockCmdable) VAdd(ctx context.Context, key, element string, val redis.Vector) *redis.BoolCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VAdd", ctx, key, element, val)
+	ret0, _ := ret[0].(*redis.BoolCmd)
+	return ret0
+}
+
+// VAdd indicates an expected call of VAdd.
+func (mr *MockCmdableMockRecorder) VAdd(ctx, key, element, val any) *MockCmdableVAddCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VAdd", reflect.TypeOf((*MockCmdable)(nil).VAdd), ctx, key, element, val)
+	return &MockCmdableVAddCall{Call: call}
+}
+
+// MockCmdableVAddCall wrap *gomock.Call
+type MockCmdableVAddCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVAddCall) Return(arg0 *redis.BoolCmd) *MockCmdableVAddCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVAddCall) Do(f func(context.Context, string, string, redis.Vector) *redis.BoolCmd) *MockCmdableVAddCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVAddCall) DoAndReturn(f func(context.Context, string, string, redis.Vector) *redis.BoolCmd) *MockCmdableVAddCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VAddWithArgs mocks base method.
+func (m *MockCmdable) VAddWithArgs(ctx context.Context, key, element string, val redis.Vector, addArgs *redis.VAddArgs) *redis.BoolCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VAddWithArgs", ctx, key, element, val, addArgs)
+	ret0, _ := ret[0].(*redis.BoolCmd)
+	return ret0
+}
+
+// VAddWithArgs indicates an expected call of VAddWithArgs.
+func (mr *MockCmdableMockRecorder) VAddWithArgs(ctx, key, element, val, addArgs any) *MockCmdableVAddWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VAddWithArgs", reflect.TypeOf((*MockCmdable)(nil).VAddWithArgs), ctx, key, element, val, addArgs)
+	return &MockCmdableVAddWithArgsCall{Call: call}
+}
+
+// MockCmdableVAddWithArgsCall wrap *gomock.Call
+type MockCmdableVAddWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVAddWithArgsCall) Return(arg0 *redis.BoolCmd) *MockCmdableVAddWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVAddWithArgsCall) Do(f func(context.Context, string, string, redis.Vector, *redis.VAddArgs) *redis.BoolCmd) *MockCmdableVAddWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVAddWithArgsCall) DoAndReturn(f func(context.Context, string, string, redis.Vector, *redis.VAddArgs) *redis.BoolCmd) *MockCmdableVAddWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VCard mocks base method.
+func (m *MockCmdable) VCard(ctx context.Context, key string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VCard", ctx, key)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// VCard indicates an expected call of VCard.
+func (mr *MockCmdableMockRecorder) VCard(ctx, key any) *MockCmdableVCardCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VCard", reflect.TypeOf((*MockCmdable)(nil).VCard), ctx, key)
+	return &MockCmdableVCardCall{Call: call}
+}
+
+// MockCmdableVCardCall wrap *gomock.Call
+type MockCmdableVCardCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVCardCall) Return(arg0 *redis.IntCmd) *MockCmdableVCardCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVCardCall) Do(f func(context.Context, string) *redis.IntCmd) *MockCmdableVCardCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVCardCall) DoAndReturn(f func(context.Context, string) *redis.IntCmd) *MockCmdableVCardCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VClearAttributes mocks base method.
+func (m *MockCmdable) VClearAttributes(ctx context.Context, key, element string) *redis.BoolCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VClearAttributes", ctx, key, element)
+	ret0, _ := ret[0].(*redis.BoolCmd)
+	return ret0
+}
+
+// VClearAttributes indicates an expected call of VClearAttributes.
+func (mr *MockCmdableMockRecorder) VClearAttributes(ctx, key, element any) *MockCmdableVClearAttributesCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VClearAttributes", reflect.TypeOf((*MockCmdable)(nil).VClearAttributes), ctx, key, element)
+	return &MockCmdableVClearAttributesCall{Call: call}
+}
+
+// MockCmdableVClearAttributesCall wrap *gomock.Call
+type MockCmdableVClearAttributesCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVClearAttributesCall) Return(arg0 *redis.BoolCmd) *MockCmdableVClearAttributesCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVClearAttributesCall) Do(f func(context.Context, string, string) *redis.BoolCmd) *MockCmdableVClearAttributesCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVClearAttributesCall) DoAndReturn(f func(context.Context, string, string) *redis.BoolCmd) *MockCmdableVClearAttributesCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VDim mocks base method.
+func (m *MockCmdable) VDim(ctx context.Context, key string) *redis.IntCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VDim", ctx, key)
+	ret0, _ := ret[0].(*redis.IntCmd)
+	return ret0
+}
+
+// VDim indicates an expected call of VDim.
+func (mr *MockCmdableMockRecorder) VDim(ctx, key any) *MockCmdableVDimCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VDim", reflect.TypeOf((*MockCmdable)(nil).VDim), ctx, key)
+	return &MockCmdableVDimCall{Call: call}
+}
+
+// MockCmdableVDimCall wrap *gomock.Call
+type MockCmdableVDimCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVDimCall) Return(arg0 *redis.IntCmd) *MockCmdableVDimCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVDimCall) Do(f func(context.Context, string) *redis.IntCmd) *MockCmdableVDimCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVDimCall) DoAndReturn(f func(context.Context, string) *redis.IntCmd) *MockCmdableVDimCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VEmb mocks base method.
+func (m *MockCmdable) VEmb(ctx context.Context, key, element string, raw bool) *redis.SliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VEmb", ctx, key, element, raw)
+	ret0, _ := ret[0].(*redis.SliceCmd)
+	return ret0
+}
+
+// VEmb indicates an expected call of VEmb.
+func (mr *MockCmdableMockRecorder) VEmb(ctx, key, element, raw any) *MockCmdableVEmbCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VEmb", reflect.TypeOf((*MockCmdable)(nil).VEmb), ctx, key, element, raw)
+	return &MockCmdableVEmbCall{Call: call}
+}
+
+// MockCmdableVEmbCall wrap *gomock.Call
+type MockCmdableVEmbCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVEmbCall) Return(arg0 *redis.SliceCmd) *MockCmdableVEmbCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVEmbCall) Do(f func(context.Context, string, string, bool) *redis.SliceCmd) *MockCmdableVEmbCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVEmbCall) DoAndReturn(f func(context.Context, string, string, bool) *redis.SliceCmd) *MockCmdableVEmbCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VGetAttr mocks base method.
+func (m *MockCmdable) VGetAttr(ctx context.Context, key, element string) *redis.StringCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VGetAttr", ctx, key, element)
+	ret0, _ := ret[0].(*redis.StringCmd)
+	return ret0
+}
+
+// VGetAttr indicates an expected call of VGetAttr.
+func (mr *MockCmdableMockRecorder) VGetAttr(ctx, key, element any) *MockCmdableVGetAttrCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VGetAttr", reflect.TypeOf((*MockCmdable)(nil).VGetAttr), ctx, key, element)
+	return &MockCmdableVGetAttrCall{Call: call}
+}
+
+// MockCmdableVGetAttrCall wrap *gomock.Call
+type MockCmdableVGetAttrCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVGetAttrCall) Return(arg0 *redis.StringCmd) *MockCmdableVGetAttrCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVGetAttrCall) Do(f func(context.Context, string, string) *redis.StringCmd) *MockCmdableVGetAttrCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVGetAttrCall) DoAndReturn(f func(context.Context, string, string) *redis.StringCmd) *MockCmdableVGetAttrCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VInfo mocks base method.
+func (m *MockCmdable) VInfo(ctx context.Context, key string) *redis.MapStringInterfaceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VInfo", ctx, key)
+	ret0, _ := ret[0].(*redis.MapStringInterfaceCmd)
+	return ret0
+}
+
+// VInfo indicates an expected call of VInfo.
+func (mr *MockCmdableMockRecorder) VInfo(ctx, key any) *MockCmdableVInfoCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VInfo", reflect.TypeOf((*MockCmdable)(nil).VInfo), ctx, key)
+	return &MockCmdableVInfoCall{Call: call}
+}
+
+// MockCmdableVInfoCall wrap *gomock.Call
+type MockCmdableVInfoCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVInfoCall) Return(arg0 *redis.MapStringInterfaceCmd) *MockCmdableVInfoCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVInfoCall) Do(f func(context.Context, string) *redis.MapStringInterfaceCmd) *MockCmdableVInfoCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVInfoCall) DoAndReturn(f func(context.Context, string) *redis.MapStringInterfaceCmd) *MockCmdableVInfoCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VLinks mocks base method.
+func (m *MockCmdable) VLinks(ctx context.Context, key, element string) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VLinks", ctx, key, element)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// VLinks indicates an expected call of VLinks.
+func (mr *MockCmdableMockRecorder) VLinks(ctx, key, element any) *MockCmdableVLinksCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VLinks", reflect.TypeOf((*MockCmdable)(nil).VLinks), ctx, key, element)
+	return &MockCmdableVLinksCall{Call: call}
+}
+
+// MockCmdableVLinksCall wrap *gomock.Call
+type MockCmdableVLinksCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVLinksCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableVLinksCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVLinksCall) Do(f func(context.Context, string, string) *redis.StringSliceCmd) *MockCmdableVLinksCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVLinksCall) DoAndReturn(f func(context.Context, string, string) *redis.StringSliceCmd) *MockCmdableVLinksCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VLinksWithScores mocks base method.
+func (m *MockCmdable) VLinksWithScores(ctx context.Context, key, element string) *redis.VectorScoreSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VLinksWithScores", ctx, key, element)
+	ret0, _ := ret[0].(*redis.VectorScoreSliceCmd)
+	return ret0
+}
+
+// VLinksWithScores indicates an expected call of VLinksWithScores.
+func (mr *MockCmdableMockRecorder) VLinksWithScores(ctx, key, element any) *MockCmdableVLinksWithScoresCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VLinksWithScores", reflect.TypeOf((*MockCmdable)(nil).VLinksWithScores), ctx, key, element)
+	return &MockCmdableVLinksWithScoresCall{Call: call}
+}
+
+// MockCmdableVLinksWithScoresCall wrap *gomock.Call
+type MockCmdableVLinksWithScoresCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVLinksWithScoresCall) Return(arg0 *redis.VectorScoreSliceCmd) *MockCmdableVLinksWithScoresCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVLinksWithScoresCall) Do(f func(context.Context, string, string) *redis.VectorScoreSliceCmd) *MockCmdableVLinksWithScoresCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVLinksWithScoresCall) DoAndReturn(f func(context.Context, string, string) *redis.VectorScoreSliceCmd) *MockCmdableVLinksWithScoresCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VRandMember mocks base method.
+func (m *MockCmdable) VRandMember(ctx context.Context, key string) *redis.StringCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VRandMember", ctx, key)
+	ret0, _ := ret[0].(*redis.StringCmd)
+	return ret0
+}
+
+// VRandMember indicates an expected call of VRandMember.
+func (mr *MockCmdableMockRecorder) VRandMember(ctx, key any) *MockCmdableVRandMemberCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VRandMember", reflect.TypeOf((*MockCmdable)(nil).VRandMember), ctx, key)
+	return &MockCmdableVRandMemberCall{Call: call}
+}
+
+// MockCmdableVRandMemberCall wrap *gomock.Call
+type MockCmdableVRandMemberCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVRandMemberCall) Return(arg0 *redis.StringCmd) *MockCmdableVRandMemberCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVRandMemberCall) Do(f func(context.Context, string) *redis.StringCmd) *MockCmdableVRandMemberCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVRandMemberCall) DoAndReturn(f func(context.Context, string) *redis.StringCmd) *MockCmdableVRandMemberCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VRandMemberCount mocks base method.
+func (m *MockCmdable) VRandMemberCount(ctx context.Context, key string, count int) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VRandMemberCount", ctx, key, count)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// VRandMemberCount indicates an expected call of VRandMemberCount.
+func (mr *MockCmdableMockRecorder) VRandMemberCount(ctx, key, count any) *MockCmdableVRandMemberCountCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VRandMemberCount", reflect.TypeOf((*MockCmdable)(nil).VRandMemberCount), ctx, key, count)
+	return &MockCmdableVRandMemberCountCall{Call: call}
+}
+
+// MockCmdableVRandMemberCountCall wrap *gomock.Call
+type MockCmdableVRandMemberCountCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVRandMemberCountCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableVRandMemberCountCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVRandMemberCountCall) Do(f func(context.Context, string, int) *redis.StringSliceCmd) *MockCmdableVRandMemberCountCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVRandMemberCountCall) DoAndReturn(f func(context.Context, string, int) *redis.StringSliceCmd) *MockCmdableVRandMemberCountCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VRem mocks base method.
+func (m *MockCmdable) VRem(ctx context.Context, key, element string) *redis.BoolCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VRem", ctx, key, element)
+	ret0, _ := ret[0].(*redis.BoolCmd)
+	return ret0
+}
+
+// VRem indicates an expected call of VRem.
+func (mr *MockCmdableMockRecorder) VRem(ctx, key, element any) *MockCmdableVRemCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VRem", reflect.TypeOf((*MockCmdable)(nil).VRem), ctx, key, element)
+	return &MockCmdableVRemCall{Call: call}
+}
+
+// MockCmdableVRemCall wrap *gomock.Call
+type MockCmdableVRemCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVRemCall) Return(arg0 *redis.BoolCmd) *MockCmdableVRemCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVRemCall) Do(f func(context.Context, string, string) *redis.BoolCmd) *MockCmdableVRemCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVRemCall) DoAndReturn(f func(context.Context, string, string) *redis.BoolCmd) *MockCmdableVRemCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VSetAttr mocks base method.
+func (m *MockCmdable) VSetAttr(ctx context.Context, key, element string, attr any) *redis.BoolCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VSetAttr", ctx, key, element, attr)
+	ret0, _ := ret[0].(*redis.BoolCmd)
+	return ret0
+}
+
+// VSetAttr indicates an expected call of VSetAttr.
+func (mr *MockCmdableMockRecorder) VSetAttr(ctx, key, element, attr any) *MockCmdableVSetAttrCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VSetAttr", reflect.TypeOf((*MockCmdable)(nil).VSetAttr), ctx, key, element, attr)
+	return &MockCmdableVSetAttrCall{Call: call}
+}
+
+// MockCmdableVSetAttrCall wrap *gomock.Call
+type MockCmdableVSetAttrCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVSetAttrCall) Return(arg0 *redis.BoolCmd) *MockCmdableVSetAttrCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVSetAttrCall) Do(f func(context.Context, string, string, any) *redis.BoolCmd) *MockCmdableVSetAttrCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVSetAttrCall) DoAndReturn(f func(context.Context, string, string, any) *redis.BoolCmd) *MockCmdableVSetAttrCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VSim mocks base method.
+func (m *MockCmdable) VSim(ctx context.Context, key string, val redis.Vector) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VSim", ctx, key, val)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// VSim indicates an expected call of VSim.
+func (mr *MockCmdableMockRecorder) VSim(ctx, key, val any) *MockCmdableVSimCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VSim", reflect.TypeOf((*MockCmdable)(nil).VSim), ctx, key, val)
+	return &MockCmdableVSimCall{Call: call}
+}
+
+// MockCmdableVSimCall wrap *gomock.Call
+type MockCmdableVSimCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVSimCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableVSimCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVSimCall) Do(f func(context.Context, string, redis.Vector) *redis.StringSliceCmd) *MockCmdableVSimCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVSimCall) DoAndReturn(f func(context.Context, string, redis.Vector) *redis.StringSliceCmd) *MockCmdableVSimCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VSimWithArgs mocks base method.
+func (m *MockCmdable) VSimWithArgs(ctx context.Context, key string, val redis.Vector, args *redis.VSimArgs) *redis.StringSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VSimWithArgs", ctx, key, val, args)
+	ret0, _ := ret[0].(*redis.StringSliceCmd)
+	return ret0
+}
+
+// VSimWithArgs indicates an expected call of VSimWithArgs.
+func (mr *MockCmdableMockRecorder) VSimWithArgs(ctx, key, val, args any) *MockCmdableVSimWithArgsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VSimWithArgs", reflect.TypeOf((*MockCmdable)(nil).VSimWithArgs), ctx, key, val, args)
+	return &MockCmdableVSimWithArgsCall{Call: call}
+}
+
+// MockCmdableVSimWithArgsCall wrap *gomock.Call
+type MockCmdableVSimWithArgsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVSimWithArgsCall) Return(arg0 *redis.StringSliceCmd) *MockCmdableVSimWithArgsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVSimWithArgsCall) Do(f func(context.Context, string, redis.Vector, *redis.VSimArgs) *redis.StringSliceCmd) *MockCmdableVSimWithArgsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVSimWithArgsCall) DoAndReturn(f func(context.Context, string, redis.Vector, *redis.VSimArgs) *redis.StringSliceCmd) *MockCmdableVSimWithArgsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VSimWithArgsWithScores mocks base method.
+func (m *MockCmdable) VSimWithArgsWithScores(ctx context.Context, key string, val redis.Vector, args *redis.VSimArgs) *redis.VectorScoreSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VSimWithArgsWithScores", ctx, key, val, args)
+	ret0, _ := ret[0].(*redis.VectorScoreSliceCmd)
+	return ret0
+}
+
+// VSimWithArgsWithScores indicates an expected call of VSimWithArgsWithScores.
+func (mr *MockCmdableMockRecorder) VSimWithArgsWithScores(ctx, key, val, args any) *MockCmdableVSimWithArgsWithScoresCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VSimWithArgsWithScores", reflect.TypeOf((*MockCmdable)(nil).VSimWithArgsWithScores), ctx, key, val, args)
+	return &MockCmdableVSimWithArgsWithScoresCall{Call: call}
+}
+
+// MockCmdableVSimWithArgsWithScoresCall wrap *gomock.Call
+type MockCmdableVSimWithArgsWithScoresCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVSimWithArgsWithScoresCall) Return(arg0 *redis.VectorScoreSliceCmd) *MockCmdableVSimWithArgsWithScoresCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVSimWithArgsWithScoresCall) Do(f func(context.Context, string, redis.Vector, *redis.VSimArgs) *redis.VectorScoreSliceCmd) *MockCmdableVSimWithArgsWithScoresCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVSimWithArgsWithScoresCall) DoAndReturn(f func(context.Context, string, redis.Vector, *redis.VSimArgs) *redis.VectorScoreSliceCmd) *MockCmdableVSimWithArgsWithScoresCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// VSimWithScores mocks base method.
+func (m *MockCmdable) VSimWithScores(ctx context.Context, key string, val redis.Vector) *redis.VectorScoreSliceCmd {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VSimWithScores", ctx, key, val)
+	ret0, _ := ret[0].(*redis.VectorScoreSliceCmd)
+	return ret0
+}
+
+// VSimWithScores indicates an expected call of VSimWithScores.
+func (mr *MockCmdableMockRecorder) VSimWithScores(ctx, key, val any) *MockCmdableVSimWithScoresCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VSimWithScores", reflect.TypeOf((*MockCmdable)(nil).VSimWithScores), ctx, key, val)
+	return &MockCmdableVSimWithScoresCall{Call: call}
+}
+
+// MockCmdableVSimWithScoresCall wrap *gomock.Call
+type MockCmdableVSimWithScoresCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockCmdableVSimWithScoresCall) Return(arg0 *redis.VectorScoreSliceCmd) *MockCmdableVSimWithScoresCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockCmdableVSimWithScoresCall) Do(f func(context.Context, string, redis.Vector) *redis.VectorScoreSliceCmd) *MockCmdableVSimWithScoresCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockCmdableVSimWithScoresCall) DoAndReturn(f func(context.Context, string, redis.Vector) *redis.VectorScoreSliceCmd) *MockCmdableVSimWithScoresCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

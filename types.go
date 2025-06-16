@@ -9,6 +9,7 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/gotomicro/ego/server"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/multierr"
 )
 
@@ -157,4 +158,38 @@ type LinkManager interface {
 type LinkSelector interface {
 	// Select 根据特定策略，从输入的 links 切片中选择并返回一个子集。
 	Select(links []Link) []Link
+}
+
+// ServiceRegistry 定义了服务注册与发现的标准接口。
+type ServiceRegistry interface {
+	// Register 将一个节点的信息注册到服务中心。
+	// 它接收一个 apiv1.Node 对象，将其序列化为二进制格式后存入 Etcd。
+	// 注册成功后会返回一个租约ID，用于后续的续租 (KeepAlive)。
+	Register(ctx context.Context, node *apiv1.Node) (leaseID clientv3.LeaseID, err error)
+
+	// KeepAlive 为指定的租约ID自动续期。
+	// 这通常在一个独立的 goroutine 中运行，以保持节点在服务中心中的"存活"状态。
+	KeepAlive(ctx context.Context, leaseID clientv3.LeaseID) error
+
+	// Deregister 立即从服务中心注销一个节点。
+	// 这会撤销节点的租约，使其键值对从 Etcd 中被删除。
+	Deregister(ctx context.Context, leaseID clientv3.LeaseID, nodeID string) error
+
+	// GracefulDeregister 优雅地注销节点：
+	// 1. 先将节点权重设为0，停止接收新连接
+	// 2. 等待一段时间让其他节点感知到变化
+	// 3. 然后删除节点记录
+	GracefulDeregister(ctx context.Context, leaseID clientv3.LeaseID, nodeID string) error
+
+	// GetAvailableNodes 从服务中心获取除自身以外的所有可用节点列表。
+	// 它会从 Etcd 中拉取所有节点信息，反序列化为 apiv1.Node 对象，并以切片形式返回。
+	GetAvailableNodes(ctx context.Context, selfID string) ([]*apiv1.Node, error)
+
+	// UpdateNodeInfo 更新 Etcd 中已注册节点的信息。
+	// 这对于动态上报节点的负载 (Load) 等信息至关重要。
+	// 此操作会重用节点注册时获取的租约ID。
+	UpdateNodeInfo(ctx context.Context, leaseID clientv3.LeaseID, node *apiv1.Node) error
+
+	// StartNodeStateUpdater 启动节点状态更新器，定期更新节点状态信息
+	StartNodeStateUpdater(ctx context.Context, leaseID clientv3.LeaseID, nodeID string, updateFunc func(node *apiv1.Node) bool, interval time.Duration) error
 }
