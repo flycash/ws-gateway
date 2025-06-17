@@ -66,8 +66,14 @@ server:
       keepAlive:
         retryInterval: 1000000000
         maxRetries: 3
-
-
+    tokenLimiter:
+      initialCapacity: 1
+      maxCapacity: 3
+      increaseStep: 1
+      increaseInterval: 2000000000
+    backoff:
+      initialInterval: 1000000000
+      maxInterval: 3000000000
 
 backend:
   services:

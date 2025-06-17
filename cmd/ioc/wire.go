@@ -5,7 +5,9 @@ package ioc
 import (
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/limiter"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/redis/go-redis/v9"
 
 	"gitee.com/flycash/ws-gateway/ioc"
@@ -30,6 +32,8 @@ func InitApp(nodeInfo *apiv1.Node) App {
 		ioc.InitLinkEventHandlerWrapper,
 		ioc.InitLinkManager,
 		ioc.InitRegistry,
+		ioc.InitTokenLimiter,
+		ioc.InitExponentialBackOff,
 
 		convertToWebsocketComponents,
 
@@ -46,6 +50,8 @@ func convertToWebsocketComponents(
 	wrapper *gateway.LinkEventHandlerWrapper,
 	registry gateway.ServiceRegistry,
 	linkManager gateway.LinkManager,
+	tokenLimiter *limiter.TokenLimiter,
+	backoff *backoff.ExponentialBackOff,
 ) []gateway.Server {
 	configKey := "server.websocket"
 	s := make([]gateway.Server, 0, 1)
@@ -60,7 +66,10 @@ func convertToWebsocketComponents(
 		userToken,
 		wrapper,
 		registry,
-		linkManager))
+		linkManager,
+		tokenLimiter,
+		backoff,
+	))
 	// }
 	return s
 }

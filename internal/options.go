@@ -5,6 +5,8 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/limiter"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/elog"
@@ -93,5 +95,17 @@ func WithServiceRegistry(registry gateway.ServiceRegistry, updateNodeStateInterv
 func WithNodeInfo(nodeInfo *apiv1.Node) Option {
 	return func(c *Container) {
 		c.nodeInfo = nodeInfo
+	}
+}
+
+func WithTokenLimiter(tokenLimiter *limiter.TokenLimiter) Option {
+	return func(c *Container) {
+		c.tokenLimiter = tokenLimiter
+	}
+}
+
+func WithExponentialBackOff(backoff *backoff.ExponentialBackOff) Option {
+	return func(c *Container) {
+		c.backoff = backoff
 	}
 }

@@ -5,6 +5,8 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/limiter"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/econf"
@@ -37,9 +39,13 @@ type Container struct {
 	// 节点信息
 	nodeInfo *apiv1.Node
 
-	// 空想管理
+	// 空闲链接管理
 	idleTimeout      time.Duration
 	idleScanInterval time.Duration
+
+	// 灰度
+	tokenLimiter *limiter.TokenLimiter
+	backoff      *backoff.ExponentialBackOff
 
 	logger *elog.Component
 }

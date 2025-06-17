@@ -37,8 +37,8 @@ func main() {
 	elog.DefaultLogger = elog.Load("log").Build()
 	nodeInfo := &apiv1.Node{
 		Id:       os.Getenv("GATEWAY_NODE_ID"),
-		Ip:       econf.GetString("server.websocket.host"),
-		Port:     int32(econf.GetInt("server.websocket.port")),
+		Ip:       getHost(),
+		Port:     getPort(),
 		Weight:   int32(econf.GetInt("server.websocket.weight")),
 		Location: os.Getenv("GATEWAY_NODE_LOCATION"),
 		Labels:   econf.GetStringSlice("server.websocket.labels"),
@@ -54,4 +54,21 @@ func main() {
 	if err := app.Serve(servers...).Run(); err != nil {
 		elog.Panic("startup", elog.FieldErr(err))
 	}
+}
+
+func getHost() string {
+	ip := os.Getenv("GATEWAY_NODE_IP")
+	if ip != "" {
+		return ip
+	}
+	return econf.GetString("server.websocket.host")
+}
+
+func getPort() int32 {
+	port := os.Getenv("GATEWAY_NODE_PORT")
+	atoi, err := strconv.ParseInt(port, 10, 32)
+	if err == nil {
+		return int32(atoi)
+	}
+	return int32(econf.GetInt("server.websocket.port"))
 }

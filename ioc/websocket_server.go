@@ -4,9 +4,11 @@ import (
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/internal"
+	"gitee.com/flycash/ws-gateway/internal/limiter"
 	"gitee.com/flycash/ws-gateway/internal/upgrader"
 	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/econf"
@@ -23,6 +25,8 @@ func InitWebSocketServer(
 	wrapper *gateway.LinkEventHandlerWrapper,
 	registry gateway.ServiceRegistry,
 	linkManager gateway.LinkManager,
+	tokenLimiter *limiter.TokenLimiter,
+	backoff *backoff.ExponentialBackOff,
 ) gateway.Server {
 	var compressionConfig compression.Config
 	err := econf.UnmarshalKey("server.websocket.compression", &compressionConfig)
@@ -43,5 +47,7 @@ func InitWebSocketServer(
 		internal.WithServiceRegistry(registry, updateNodeStateInterval),
 		internal.WithLinkEventHandler(wrapper),
 		internal.WithAutoCloseIdleLink(idleTimeout, idleScanInterval),
+		internal.WithTokenLimiter(tokenLimiter),
+		internal.WithExponentialBackOff(backoff),
 	)
 }

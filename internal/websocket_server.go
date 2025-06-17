@@ -11,8 +11,10 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/limiter"
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/session"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/constant"
@@ -61,6 +63,10 @@ type WebSocketServer struct {
 	idleTimeout      time.Duration
 	idleScanInterval time.Duration
 
+	// 灰度
+	connLimiter *limiter.TokenLimiter
+	backoff     *backoff.ExponentialBackOff
+
 	logger *elog.Component
 }
 
@@ -84,6 +90,8 @@ func newWebSocketServer(c *Container) *WebSocketServer {
 		nodeInfo:                c.nodeInfo,
 		idleTimeout:             c.idleTimeout,
 		idleScanInterval:        c.idleScanInterval,
+		connLimiter:             c.tokenLimiter,
+		backoff:                 c.backoff,
 		logger:                  c.logger,
 	}
 
@@ -108,26 +116,30 @@ func (s *WebSocketServer) Init() error {
 }
 
 func (s *WebSocketServer) Start() error {
-	// 1. 开始监听网络连接
+	// 开始监听网络连接
 	l, err := net.Listen(s.config.Network, s.config.Address())
 	if err != nil {
 		return err
 	}
 	s.listener = l
 
-	// 2. 启动接受连接协程
+	// 启动灰度发布的容量增长过程
+	// 这个 goroutine 会在后台根据配置逐步增加令牌数量
+	go s.connLimiter.StartRampUp(s.ctx)
+
+	// 启动接受连接协程
 	go s.acceptConn()
 
-	// 3. 启动空闲连接清理协程
+	// 启动空闲连接清理协程
 	go s.cleanIdleLinks()
 
-	// 4. 初始化推送消息消费者
+	// 初始化推送消息消费者
 	err = s.initPushMessageConsumers()
 	if err != nil {
 		return fmt.Errorf("初始化下行消息消费者失败: %w", err)
 	}
 
-	// 5. 注册节点到服务注册中心
+	// 注册节点到服务注册中心
 	leaseID, err := s.registry.Register(s.ctx, s.nodeInfo)
 	if err != nil {
 		s.logger.Error("节点注册到服务中心失败", elog.FieldErr(err))
@@ -139,14 +151,14 @@ func (s *WebSocketServer) Start() error {
 		elog.String("nodeID", s.nodeInfo.GetId()),
 		elog.Int64("leaseID", int64(leaseID)))
 
-	// 6. 启动租约续期
+	// 启动租约续期
 	go func() {
 		if err1 := s.registry.KeepAlive(s.ctx, leaseID); err1 != nil {
 			s.logger.Error("租约续期失败", elog.FieldErr(err1))
 		}
 	}()
 
-	// 7. 启动节点状态上报器
+	// 启动节点状态上报器
 	go func() {
 		updateFunc := func(node *apiv1.Node) bool {
 			// 更新节点状态信息
@@ -161,8 +173,6 @@ func (s *WebSocketServer) Start() error {
 			s.logger.Error("节点状态更新器启动失败", elog.FieldErr(err1))
 		}
 	}()
-
-	<-s.ctx.Done()
 	return nil
 }
 
@@ -200,12 +210,27 @@ func (s *WebSocketServer) acceptConn() {
 			return
 		}
 
+		// 在 Accept 前获取令牌
+		if !s.connLimiter.Acquire() {
+			backoffDuration := s.backoff.NextBackOff()
+			s.logger.Warn("连接数已达当前容量上限，临时拒绝新连接",
+				elog.Int64("currentCapacity", s.connLimiter.CurrentCapacity()),
+				elog.Duration("backoff", backoffDuration))
+			time.Sleep(backoffDuration)
+			continue
+		}
+
+		//  获取令牌成功！立即重置退避策略，以便下次失败时从头开始计算。
+		s.backoff.Reset()
+
 		conn, err := s.listener.Accept()
 		if err != nil {
+			//  Accept 失败，归还刚刚获取的令牌
+			s.connLimiter.Release()
+
 			s.logger.Error("接受连接失败",
 				elog.String("step", "acceptConn"),
 				elog.FieldErr(err))
-
 			if errors.Is(err, net.ErrClosed) {
 				return
 			}
@@ -213,6 +238,9 @@ func (s *WebSocketServer) acceptConn() {
 			if errors.As(err, &netOpErr) && (netOpErr.Timeout() || netOpErr.Temporary()) {
 				continue
 			}
+
+			// 确保循环继续，而不是意外退出
+			continue
 		}
 
 		go s.handleConn(conn)
@@ -220,6 +248,9 @@ func (s *WebSocketServer) acceptConn() {
 }
 
 func (s *WebSocketServer) handleConn(conn net.Conn) {
+	// 归还令牌
+	defer s.connLimiter.Release()
+
 	defer func() {
 		err := conn.Close()
 		if err != nil && !errors.Is(err, net.ErrClosed) {
@@ -312,6 +343,9 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 }
 
 func (s *WebSocketServer) Stop() error {
+	if err := s.connLimiter.Close(); err != nil {
+		s.logger.Error("关闭连接限流器失败", elog.FieldErr(err))
+	}
 	s.ctxCancelFunc()
 	return nil
 }
