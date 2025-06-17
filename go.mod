@@ -3,7 +3,6 @@ module gitee.com/flycash/ws-gateway
 go 1.24.1
 
 require (
-	github.com/bwmarrin/snowflake v0.3.0
 	github.com/ecodeclub/ecache v0.0.0-20240111145855-75679834beca
 	github.com/ecodeclub/ekit v0.0.10
 	github.com/ecodeclub/mq-api v0.0.0-20240508035004-fd7de3346cfe

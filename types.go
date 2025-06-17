@@ -120,7 +120,7 @@ func (l *LinkEventHandlerWrapper) OnDisconnect(lk Link) error {
 type LinkManager interface {
 	// NewLink 基于底层的网络连接和用户会话，创建一个新的 Link 实例并纳入管理。
 	// 这是所有新连接加入系统的入口点。
-	NewLink(ctx context.Context, conn net.Conn, sess session.Session) (Link, error)
+	NewLink(ctx context.Context, conn net.Conn, sess session.Session, compressionState *compression.State) (Link, error)
 
 	// FindLinkByUserInfo 根据用户会话信息（如用户ID）查找对应的 Link 实例。
 	// 这是一个非常重要的业务功能，例如，用于向特定用户推送消息。

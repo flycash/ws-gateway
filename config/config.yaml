@@ -29,6 +29,10 @@ server:
   websocket:
     host: "0.0.0.0"
     port: 9002
+    weight: 1
+    labels:
+      - "core"
+    capacity: 2
     # 序列化协议：支持 json, proto
     serializer: "json"
     compression:
@@ -49,9 +53,21 @@ server:
       algorithm: "aes"  # 支持: aes, chacha20poly1305
       key: "1234567890abcdef1234567890abcdef"  # ChaCha20/AES-256需要32字节密钥
       iv: ""  # 初始化向量，留空时自动生成
-    autoClose:
+    autoCloseLink:
       idleTimeout: 10000000000
       idleScanInterval: 5000000000
+    gracefulCloseTimeout: 30000000000
+    registry:
+      updateNodeStateInterval: 5000000000
+      retryStrategy:
+        initInterval: 1000000000
+        maxInterval: 3000000000
+        maxRetries: 3
+      keepAlive:
+        retryInterval: 1000000000
+        maxRetries: 3
+
+
 
 backend:
   services:
@@ -65,13 +81,25 @@ userActionEvent:
   topic: "gateway_users_action"
   partitions: 2
 
-linkEvent:
-  requestTimeout: 3000000000
+link:
+  timeout:
+    read: 3000000000
+    write: 10000000000
+  buffer:
+    receiveBufferSize: 256
+    sendBufferSize: 256
   retryStrategy:
-    initRetryInterval: 1000000000
-    maxRetryInterval: 3000000000
+    initInterval: 1000000000
+    maxInterval: 3000000000
     maxRetries: 3
-  pushMessage:
-    retryInterval: 10000000000  # 1分钟
-    maxRetries: 6
+  eventHandler:
+    requestTimeout: 3000000000
+    retryStrategy:
+      initInterval: 1000000000
+      maxInterval: 3000000000
+      maxRetries: 3
+    pushMessage:
+      retryInterval: 10000000000  # 1分钟
+      maxRetries: 6
+
 

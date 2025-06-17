@@ -64,11 +64,11 @@ gen:
 
 .PHONY: run_gateway_only
 run_gateway_only:
-	@cd cmd && export EGO_DEBUG=true && go run main.go --config=../config/config.yaml
+	@cd cmd && export EGO_DEBUG=true GATEWAY_NODE_ID=1 GATEWAY_NODE_LOCATION=beijing GATEWAY_STOP_TIMEOUT=25 && go run main.go --config=../config/config.yaml
 
 .PHONY: run_gateway
 run_gateway:
 	@$(MAKE) e2e_down
 	@$(MAKE) e2e_up
 	@sleep 15
-	@cd cmd && export EGO_DEBUG=true && go run main.go --config=../config/config.yaml
+	@cd cmd && export EGO_DEBUG=true GATEWAY_NODE_ID=1 GATEWAY_NODE_LOCATION=beijing GATEWAY_STOP_TIMEOUT=25 && go run main.go --config=../config/config.yaml

@@ -8,6 +8,7 @@ package ioc
 
 import (
 	"gitee.com/flycash/ws-gateway"
+	"gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/ioc"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/ecodeclub/ecache"
@@ -17,7 +18,7 @@ import (
 
 // Injectors from wire.go:
 
-func InitApp() App {
+func InitApp(nodeInfo *gatewayapiv1.Node) App {
 	mq := ioc.InitMQ()
 	cmdable := ioc.InitRedisCmd()
 	cache := ioc.InitRedisCache(cmdable)
@@ -25,7 +26,9 @@ func InitApp() App {
 	codec := ioc.InitSerializer()
 	component := ioc.InitEtcdClient()
 	linkEventHandlerWrapper := ioc.InitLinkEventHandlerWrapper(cache, codec, component, mq)
-	v := convertToWebsocketComponents(mq, cache, cmdable, userToken, linkEventHandlerWrapper)
+	serviceRegistry := ioc.InitRegistry(component)
+	linkManager := ioc.InitLinkManager(codec)
+	v := convertToWebsocketComponents(nodeInfo, mq, cache, cmdable, userToken, linkEventHandlerWrapper, serviceRegistry, linkManager)
 	app := App{
 		OrderServer: v,
 	}
@@ -39,16 +42,28 @@ type App struct {
 }
 
 func convertToWebsocketComponents(
+	nodeInfo *gatewayapiv1.Node,
 	messageQueue mq.MQ,
 	c ecache.Cache,
 	rdb redis.Cmdable,
 	userToken *jwt.UserToken,
 	wrapper *gateway.LinkEventHandlerWrapper,
+	registry gateway.ServiceRegistry,
+	linkManager gateway.LinkManager,
 ) []gateway.Server {
 	configKey := "server.websocket"
 	s := make([]gateway.Server, 0, 1)
 
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, rdb, userToken, wrapper))
+	s = append(s, ioc.InitWebSocketServer(
+		configKey,
+		nodeInfo,
+		messageQueue,
+		c,
+		rdb,
+		userToken,
+		wrapper,
+		registry,
+		linkManager))
 
 	return s
 }

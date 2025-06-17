@@ -4,6 +4,7 @@ package ioc
 
 import (
 	gateway "gitee.com/flycash/ws-gateway"
+	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/redis/go-redis/v9"
 
@@ -17,7 +18,7 @@ type App struct {
 	OrderServer []gateway.Server
 }
 
-func InitApp() App {
+func InitApp(nodeInfo *apiv1.Node) App {
 	wire.Build(
 		ioc.InitRedisCmd,
 		ioc.InitRedisCache,
@@ -27,6 +28,8 @@ func InitApp() App {
 		ioc.InitSerializer,
 
 		ioc.InitLinkEventHandlerWrapper,
+		ioc.InitLinkManager,
+		ioc.InitRegistry,
 
 		convertToWebsocketComponents,
 
@@ -35,17 +38,29 @@ func InitApp() App {
 }
 
 func convertToWebsocketComponents(
+	nodeInfo *apiv1.Node,
 	messageQueue mq.MQ,
 	c ecache.Cache,
 	rdb redis.Cmdable,
 	userToken *jwt.UserToken,
 	wrapper *gateway.LinkEventHandlerWrapper,
+	registry gateway.ServiceRegistry,
+	linkManager gateway.LinkManager,
 ) []gateway.Server {
 	configKey := "server.websocket"
 	s := make([]gateway.Server, 0, 1)
 	// for i := range config {
 	// configKey := fmt.Sprintf("server.websocket.%d", i)
-	s = append(s, ioc.InitWebSocketServer(configKey, messageQueue, c, rdb, userToken, wrapper))
+	s = append(s, ioc.InitWebSocketServer(
+		configKey,
+		nodeInfo,
+		messageQueue,
+		c,
+		rdb,
+		userToken,
+		wrapper,
+		registry,
+		linkManager))
 	// }
 	return s
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
+	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/econf"
@@ -26,6 +27,17 @@ type Container struct {
 	mqPartitions     int
 	mqTopic          string
 
+	// 连接管理器
+	linkManager gateway.LinkManager
+
+	// 注册中心
+	registry                gateway.ServiceRegistry
+	updateNodeStateInterval time.Duration
+
+	// 节点信息
+	nodeInfo *apiv1.Node
+
+	// 空想管理
 	idleTimeout      time.Duration
 	idleScanInterval time.Duration
 

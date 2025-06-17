@@ -10,6 +10,7 @@ import (
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"github.com/ecodeclub/ekit/retry"
+	"github.com/ego-component/eetcd"
 	"github.com/gotomicro/ego/core/elog"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -25,8 +26,6 @@ const (
 
 	// GracefulShutdownWaitTime 优雅关闭时的等待时间，让其他节点感知到权重变化
 	GracefulShutdownWaitTime = 5 * time.Second
-
-	KeepAliveRetryJitterMs = 500
 )
 
 var (
@@ -37,7 +36,7 @@ var (
 
 // EtcdRegistry 是 ServiceRegistry 接口基于 Etcd 的具体实现。
 type EtcdRegistry struct {
-	client                    *clientv3.Client
+	client                    *eetcd.Component
 	registerInitRetryInterval time.Duration
 	registerMaxRetryInterval  time.Duration
 	registerMaxRetries        int32
@@ -45,17 +44,21 @@ type EtcdRegistry struct {
 	keepAliveRetryInterval time.Duration
 	keepAliveMaxRetries    int
 
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	logger *elog.Component
 }
 
 // NewEtcdRegistry 创建一个新的 EtcdRegistry 实例。
-func NewEtcdRegistry(client *clientv3.Client,
+func NewEtcdRegistry(client *eetcd.Component,
 	registerInitRetryInterval,
 	registerMaxRetryInterval time.Duration,
 	registerMaxRetries int32,
 	keepAliveRetryInterval time.Duration,
 	keepAliveMaxRetries int,
 ) *EtcdRegistry {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &EtcdRegistry{
 		client:                    client,
 		registerInitRetryInterval: registerInitRetryInterval,
@@ -63,6 +66,8 @@ func NewEtcdRegistry(client *clientv3.Client,
 		registerMaxRetries:        registerMaxRetries,
 		keepAliveRetryInterval:    keepAliveRetryInterval,
 		keepAliveMaxRetries:       keepAliveMaxRetries,
+		ctx:                       ctx,
+		cancel:                    cancel,
 		logger:                    elog.EgoLogger.With(elog.FieldComponent("ServiceRegistry")),
 	}
 }
@@ -180,10 +185,13 @@ func (r *EtcdRegistry) KeepAlive(ctx context.Context, leaseID clientv3.LeaseID) 
 
 			// 续期成功，重置重试计数
 			retryCount = 0
-			r.logger.Info("租约续期成功", elog.Int64("leaseID", int64(leaseID)))
+			// r.logger.Info("租约续期成功", elog.Int64("leaseID", int64(leaseID)))
 
 		case <-ctx.Done():
-			r.logger.Info("上下文取消，停止租约续期", elog.Int64("leaseID", int64(leaseID)))
+			r.logger.Info("参数上下文取消，停止租约续期", elog.Int64("leaseID", int64(leaseID)))
+			return nil
+		case <-r.ctx.Done():
+			r.logger.Info("内部上下文取消，停止租约续期", elog.Int64("leaseID", int64(leaseID)))
 			return nil
 		}
 	}
@@ -202,6 +210,7 @@ func (r *EtcdRegistry) Deregister(ctx context.Context, leaseID clientv3.LeaseID,
 	r.logger.Info("节点注销成功",
 		elog.String("nodeID", nodeID),
 		elog.Int64("leaseID", int64(leaseID)))
+	r.cancel()
 	return nil
 }
 
@@ -247,7 +256,7 @@ func (r *EtcdRegistry) GracefulDeregister(ctx context.Context, leaseID clientv3.
 	case <-time.After(GracefulShutdownWaitTime):
 		// 正常等待结束
 	case <-ctx.Done():
-		r.logger.Warn("上下文取消，提前结束等待", elog.String("nodeID", nodeID))
+		r.logger.Warn("参数上下文取消，提前结束等待", elog.String("nodeID", nodeID))
 		// 继续执行注销逻辑
 	}
 
@@ -377,7 +386,11 @@ func (r *EtcdRegistry) StartNodeStateUpdater(ctx context.Context, leaseID client
 			}
 
 		case <-ctx.Done():
-			r.logger.Info("节点状态更新器停止",
+			r.logger.Info("参数上下文取消，节点状态更新器停止",
+				elog.String("nodeID", nodeID))
+			return nil
+		case <-r.ctx.Done():
+			r.logger.Info("内部上下文取消，节点状态更新器停止",
 				elog.String("nodeID", nodeID))
 			return nil
 		}

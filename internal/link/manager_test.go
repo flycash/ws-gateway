@@ -4,7 +4,6 @@ package link_test
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -76,12 +75,12 @@ func (s *ManagerSuite) TestNewLink() {
 	s.mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
 	ctx := context.Background()
-	link, err := s.manager.NewLink(ctx, serverConn, s.mockSession)
+	lk, err := s.manager.NewLink(ctx, serverConn, s.mockSession, nil)
 
 	s.NoError(err)
-	s.NotNil(link)
+	s.NotNil(lk)
 	s.Equal(int64(1), s.manager.Len())
-	s.Equal("1-123", link.ID())
+	s.Equal("1-123", lk.ID())
 }
 
 func (s *ManagerSuite) TestFindLinkByUserInfo() {
@@ -97,13 +96,13 @@ func (s *ManagerSuite) TestFindLinkByUserInfo() {
 	s.mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
 	ctx := context.Background()
-	link, err := s.manager.NewLink(ctx, serverConn, s.mockSession)
+	lk, err := s.manager.NewLink(ctx, serverConn, s.mockSession, nil)
 	s.NoError(err)
 
 	// 测试查找
 	foundLink, exists := s.manager.FindLinkByUserInfo(userInfo)
 	s.True(exists)
-	s.Equal(link, foundLink)
+	s.Equal(lk, foundLink)
 
 	// 测试查找不存在的用户
 	notExistUserInfo := session.UserInfo{
@@ -145,8 +144,8 @@ func (s *ManagerSuite) TestRedirectLinks() {
 	s.Equal(int64(3), s.manager.Len())
 
 	// 关闭创建的链接
-	for _, link := range links {
-		link.Close()
+	for _, lk := range links {
+		lk.Close()
 	}
 }
 
@@ -241,7 +240,7 @@ func (s *ManagerSuite) TestCleanIdleLinks_WithAutoClose() {
 	s.mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
 	ctx := context.Background()
-	createdLink, err := s.manager.NewLink(ctx, serverConn, s.mockSession)
+	createdLink, err := s.manager.NewLink(ctx, serverConn, s.mockSession, nil)
 	s.NoError(err)
 
 	// 等待一段时间让链接变为空闲状态
@@ -275,7 +274,7 @@ func (s *ManagerSuite) TestCleanIdleLinks_WithoutAutoClose() {
 	s.mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
 	ctx := context.Background()
-	_, err := s.manager.NewLink(ctx, serverConn, s.mockSession)
+	_, err := s.manager.NewLink(ctx, serverConn, s.mockSession, nil)
 	s.NoError(err)
 
 	// 等待一段时间
@@ -301,7 +300,7 @@ func (s *ManagerSuite) TestCleanIdleLinks_NotIdleYet() {
 	s.mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
 	ctx := context.Background()
-	_, err := s.manager.NewLink(ctx, serverConn, s.mockSession)
+	_, err := s.manager.NewLink(ctx, serverConn, s.mockSession, nil)
 	s.NoError(err)
 
 	// 链接刚创建，还不到空闲时间
@@ -324,7 +323,7 @@ func (s *ManagerSuite) TestCleanIdleLinks_AlreadyClosed() {
 	s.mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
 	ctx := context.Background()
-	createdLink, err := s.manager.NewLink(ctx, serverConn, s.mockSession)
+	createdLink, err := s.manager.NewLink(ctx, serverConn, s.mockSession, nil)
 	s.NoError(err)
 
 	// 先关闭链接
@@ -375,8 +374,8 @@ func (s *ManagerSuite) TestLinks() {
 
 	// 验证返回的链接包含我们创建的链接
 	linkIDs := make(map[string]bool)
-	for _, link := range allLinks {
-		linkIDs[link.ID()] = true
+	for _, lk := range allLinks {
+		linkIDs[lk.ID()] = true
 	}
 
 	for _, createdLink := range createdLinks {
@@ -384,8 +383,8 @@ func (s *ManagerSuite) TestLinks() {
 	}
 
 	// 关闭链接
-	for _, link := range createdLinks {
-		link.Close()
+	for _, lk := range createdLinks {
+		lk.Close()
 	}
 }
 
@@ -400,9 +399,9 @@ func (s *ManagerSuite) TestClose() {
 	s.Equal(int64(0), s.manager.Len())
 
 	// 验证所有链接都被关闭
-	for _, link := range links {
+	for _, lk := range links {
 		select {
-		case <-link.HasClosed():
+		case <-lk.HasClosed():
 			// 链接已关闭，符合预期
 		case <-time.After(100 * time.Millisecond):
 			s.Fail("链接应该已经被关闭")
@@ -433,9 +432,9 @@ func (s *ManagerSuite) TestClose_WithClosedLinks() {
 	s.Equal(int64(0), s.manager.Len())
 
 	// 验证所有链接都被关闭
-	for _, link := range links {
+	for _, lk := range links {
 		select {
-		case <-link.HasClosed():
+		case <-lk.HasClosed():
 			// 链接已关闭
 		case <-time.After(100 * time.Millisecond):
 			s.Fail("链接应该已经被关闭")
@@ -466,9 +465,9 @@ func (s *ManagerSuite) TestClose_MultipleCallsToClose() {
 	s.Equal(int64(0), s.manager.Len())
 
 	// 验证链接确实被关闭了
-	for _, link := range links {
+	for _, lk := range links {
 		select {
-		case <-link.HasClosed():
+		case <-lk.HasClosed():
 			// 链接已关闭
 		case <-time.After(100 * time.Millisecond):
 			s.Fail("链接应该已经被关闭")
@@ -484,8 +483,8 @@ func (s *ManagerSuite) TestGracefulClose() {
 	// 模拟客户端主动关闭连接
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		for _, link := range links {
-			link.Close()
+		for _, lk := range links {
+			lk.Close()
 		}
 	}()
 
@@ -504,15 +503,15 @@ func (s *ManagerSuite) TestGracefulClose_SuccessPath() {
 	s.Equal(int64(2), s.manager.Len())
 
 	// 立即关闭所有链接以触发成功路径
-	for _, link := range links {
-		err := link.Close()
+	for _, lk := range links {
+		err := lk.Close()
 		s.NoError(err)
 	}
 
 	// 等待链接关闭
-	for _, link := range links {
+	for _, lk := range links {
 		select {
-		case <-link.HasClosed():
+		case <-lk.HasClosed():
 			// 链接已关闭
 		case <-time.After(100 * time.Millisecond):
 			s.Fail("链接应该已经被关闭")
@@ -571,10 +570,10 @@ func (s *ManagerSuite) createMultipleLinks(count int) []gateway.Link {
 		mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
 		ctx := context.Background()
-		link, err := s.manager.NewLink(ctx, serverConn, mockSession)
+		lk, err := s.manager.NewLink(ctx, serverConn, mockSession, nil)
 		s.NoError(err)
 
-		links[i] = link
+		links[i] = lk
 	}
 
 	return links
@@ -583,28 +582,14 @@ func (s *ManagerSuite) createMultipleLinks(count int) []gateway.Link {
 // MockEmptySelector 模拟一个总是返回空结果的选择器
 type MockEmptySelector struct{}
 
-func (m *MockEmptySelector) Select(links []gateway.Link) []gateway.Link {
+func (m *MockEmptySelector) Select(_ []gateway.Link) []gateway.Link {
 	return []gateway.Link{} // 总是返回空切片
-}
-
-// MockFailingLink 模拟一个Send方法总是失败的Link
-type MockFailingLink struct {
-	gateway.Link
-	id string
-}
-
-func (m *MockFailingLink) ID() string {
-	return m.id
-}
-
-func (m *MockFailingLink) Send(payload []byte) error {
-	return fmt.Errorf("mock send failure")
 }
 
 // 基准测试
 func BenchmarkManager_NewLink(b *testing.B) {
-	codec := codec.NewJSONCodec()
-	manager := link.NewManager(codec, nil)
+	c := codec.NewJSONCodec()
+	manager := link.NewManager(c, nil)
 	defer manager.Close()
 
 	ctrl := gomock.NewController(b)
@@ -621,16 +606,16 @@ func BenchmarkManager_NewLink(b *testing.B) {
 		}
 		mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
-		link, _ := manager.NewLink(context.Background(), serverConn, mockSession)
-		link.Close()
+		lk, _ := manager.NewLink(context.Background(), serverConn, mockSession, nil)
+		lk.Close()
 		clientConn.Close()
 		serverConn.Close()
 	}
 }
 
 func BenchmarkManager_FindLinkByUserInfo(b *testing.B) {
-	codec := codec.NewJSONCodec()
-	manager := link.NewManager(codec, nil)
+	c := codec.NewJSONCodec()
+	manager := link.NewManager(c, nil)
 	defer manager.Close()
 
 	ctrl := gomock.NewController(b)
@@ -649,8 +634,8 @@ func BenchmarkManager_FindLinkByUserInfo(b *testing.B) {
 		}
 		mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
-		link, _ := manager.NewLink(context.Background(), serverConn, mockSession)
-		defer link.Close()
+		lk, _ := manager.NewLink(context.Background(), serverConn, mockSession, nil)
+		defer lk.Close()
 	}
 
 	searchUserInfo := session.UserInfo{BizID: 50, UserID: 50}
@@ -662,8 +647,8 @@ func BenchmarkManager_FindLinkByUserInfo(b *testing.B) {
 }
 
 func BenchmarkManager_CleanIdleLinks(b *testing.B) {
-	codec := codec.NewJSONCodec()
-	manager := link.NewManager(codec, nil)
+	c := codec.NewJSONCodec()
+	manager := link.NewManager(c, nil)
 	defer manager.Close()
 
 	ctrl := gomock.NewController(b)
@@ -683,8 +668,8 @@ func BenchmarkManager_CleanIdleLinks(b *testing.B) {
 		}
 		mockSession.EXPECT().UserInfo().Return(userInfo).AnyTimes()
 
-		link, _ := manager.NewLink(context.Background(), serverConn, mockSession)
-		defer link.Close()
+		created, _ := manager.NewLink(context.Background(), serverConn, mockSession, nil)
+		defer created.Close()
 	}
 
 	b.ResetTimer()

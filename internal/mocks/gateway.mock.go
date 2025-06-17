@@ -20,6 +20,7 @@ import (
 	compression "gitee.com/flycash/ws-gateway/pkg/compression"
 	session "gitee.com/flycash/ws-gateway/pkg/session"
 	server "github.com/gotomicro/ego/server"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -1171,18 +1172,18 @@ func (c *MockLinkManagerLinksCall) DoAndReturn(f func() []gateway.Link) *MockLin
 }
 
 // NewLink mocks base method.
-func (m *MockLinkManager) NewLink(ctx context.Context, conn net.Conn, sess session.Session) (gateway.Link, error) {
+func (m *MockLinkManager) NewLink(ctx context.Context, conn net.Conn, sess session.Session, compressionState *compression.State) (gateway.Link, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewLink", ctx, conn, sess)
+	ret := m.ctrl.Call(m, "NewLink", ctx, conn, sess, compressionState)
 	ret0, _ := ret[0].(gateway.Link)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewLink indicates an expected call of NewLink.
-func (mr *MockLinkManagerMockRecorder) NewLink(ctx, conn, sess any) *MockLinkManagerNewLinkCall {
+func (mr *MockLinkManagerMockRecorder) NewLink(ctx, conn, sess, compressionState any) *MockLinkManagerNewLinkCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewLink", reflect.TypeOf((*MockLinkManager)(nil).NewLink), ctx, conn, sess)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewLink", reflect.TypeOf((*MockLinkManager)(nil).NewLink), ctx, conn, sess, compressionState)
 	return &MockLinkManagerNewLinkCall{Call: call}
 }
 
@@ -1198,13 +1199,13 @@ func (c *MockLinkManagerNewLinkCall) Return(arg0 gateway.Link, arg1 error) *Mock
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockLinkManagerNewLinkCall) Do(f func(context.Context, net.Conn, session.Session) (gateway.Link, error)) *MockLinkManagerNewLinkCall {
+func (c *MockLinkManagerNewLinkCall) Do(f func(context.Context, net.Conn, session.Session, *compression.State) (gateway.Link, error)) *MockLinkManagerNewLinkCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockLinkManagerNewLinkCall) DoAndReturn(f func(context.Context, net.Conn, session.Session) (gateway.Link, error)) *MockLinkManagerNewLinkCall {
+func (c *MockLinkManagerNewLinkCall) DoAndReturn(f func(context.Context, net.Conn, session.Session, *compression.State) (gateway.Link, error)) *MockLinkManagerNewLinkCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1343,6 +1344,298 @@ func (c *MockLinkSelectorSelectCall) Do(f func([]gateway.Link) []gateway.Link) *
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockLinkSelectorSelectCall) DoAndReturn(f func([]gateway.Link) []gateway.Link) *MockLinkSelectorSelectCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// MockServiceRegistry is a mock of ServiceRegistry interface.
+type MockServiceRegistry struct {
+	ctrl     *gomock.Controller
+	recorder *MockServiceRegistryMockRecorder
+	isgomock struct{}
+}
+
+// MockServiceRegistryMockRecorder is the mock recorder for MockServiceRegistry.
+type MockServiceRegistryMockRecorder struct {
+	mock *MockServiceRegistry
+}
+
+// NewMockServiceRegistry creates a new mock instance.
+func NewMockServiceRegistry(ctrl *gomock.Controller) *MockServiceRegistry {
+	mock := &MockServiceRegistry{ctrl: ctrl}
+	mock.recorder = &MockServiceRegistryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockServiceRegistry) EXPECT() *MockServiceRegistryMockRecorder {
+	return m.recorder
+}
+
+// Deregister mocks base method.
+func (m *MockServiceRegistry) Deregister(ctx context.Context, leaseID clientv3.LeaseID, nodeID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Deregister", ctx, leaseID, nodeID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Deregister indicates an expected call of Deregister.
+func (mr *MockServiceRegistryMockRecorder) Deregister(ctx, leaseID, nodeID any) *MockServiceRegistryDeregisterCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deregister", reflect.TypeOf((*MockServiceRegistry)(nil).Deregister), ctx, leaseID, nodeID)
+	return &MockServiceRegistryDeregisterCall{Call: call}
+}
+
+// MockServiceRegistryDeregisterCall wrap *gomock.Call
+type MockServiceRegistryDeregisterCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServiceRegistryDeregisterCall) Return(arg0 error) *MockServiceRegistryDeregisterCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServiceRegistryDeregisterCall) Do(f func(context.Context, clientv3.LeaseID, string) error) *MockServiceRegistryDeregisterCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServiceRegistryDeregisterCall) DoAndReturn(f func(context.Context, clientv3.LeaseID, string) error) *MockServiceRegistryDeregisterCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// GetAvailableNodes mocks base method.
+func (m *MockServiceRegistry) GetAvailableNodes(ctx context.Context, selfID string) ([]*gatewayapiv1.Node, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAvailableNodes", ctx, selfID)
+	ret0, _ := ret[0].([]*gatewayapiv1.Node)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAvailableNodes indicates an expected call of GetAvailableNodes.
+func (mr *MockServiceRegistryMockRecorder) GetAvailableNodes(ctx, selfID any) *MockServiceRegistryGetAvailableNodesCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailableNodes", reflect.TypeOf((*MockServiceRegistry)(nil).GetAvailableNodes), ctx, selfID)
+	return &MockServiceRegistryGetAvailableNodesCall{Call: call}
+}
+
+// MockServiceRegistryGetAvailableNodesCall wrap *gomock.Call
+type MockServiceRegistryGetAvailableNodesCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServiceRegistryGetAvailableNodesCall) Return(arg0 []*gatewayapiv1.Node, arg1 error) *MockServiceRegistryGetAvailableNodesCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServiceRegistryGetAvailableNodesCall) Do(f func(context.Context, string) ([]*gatewayapiv1.Node, error)) *MockServiceRegistryGetAvailableNodesCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServiceRegistryGetAvailableNodesCall) DoAndReturn(f func(context.Context, string) ([]*gatewayapiv1.Node, error)) *MockServiceRegistryGetAvailableNodesCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// GracefulDeregister mocks base method.
+func (m *MockServiceRegistry) GracefulDeregister(ctx context.Context, leaseID clientv3.LeaseID, nodeID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GracefulDeregister", ctx, leaseID, nodeID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GracefulDeregister indicates an expected call of GracefulDeregister.
+func (mr *MockServiceRegistryMockRecorder) GracefulDeregister(ctx, leaseID, nodeID any) *MockServiceRegistryGracefulDeregisterCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GracefulDeregister", reflect.TypeOf((*MockServiceRegistry)(nil).GracefulDeregister), ctx, leaseID, nodeID)
+	return &MockServiceRegistryGracefulDeregisterCall{Call: call}
+}
+
+// MockServiceRegistryGracefulDeregisterCall wrap *gomock.Call
+type MockServiceRegistryGracefulDeregisterCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServiceRegistryGracefulDeregisterCall) Return(arg0 error) *MockServiceRegistryGracefulDeregisterCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServiceRegistryGracefulDeregisterCall) Do(f func(context.Context, clientv3.LeaseID, string) error) *MockServiceRegistryGracefulDeregisterCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServiceRegistryGracefulDeregisterCall) DoAndReturn(f func(context.Context, clientv3.LeaseID, string) error) *MockServiceRegistryGracefulDeregisterCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// KeepAlive mocks base method.
+func (m *MockServiceRegistry) KeepAlive(ctx context.Context, leaseID clientv3.LeaseID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KeepAlive", ctx, leaseID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// KeepAlive indicates an expected call of KeepAlive.
+func (mr *MockServiceRegistryMockRecorder) KeepAlive(ctx, leaseID any) *MockServiceRegistryKeepAliveCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockServiceRegistry)(nil).KeepAlive), ctx, leaseID)
+	return &MockServiceRegistryKeepAliveCall{Call: call}
+}
+
+// MockServiceRegistryKeepAliveCall wrap *gomock.Call
+type MockServiceRegistryKeepAliveCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServiceRegistryKeepAliveCall) Return(arg0 error) *MockServiceRegistryKeepAliveCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServiceRegistryKeepAliveCall) Do(f func(context.Context, clientv3.LeaseID) error) *MockServiceRegistryKeepAliveCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServiceRegistryKeepAliveCall) DoAndReturn(f func(context.Context, clientv3.LeaseID) error) *MockServiceRegistryKeepAliveCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// Register mocks base method.
+func (m *MockServiceRegistry) Register(ctx context.Context, node *gatewayapiv1.Node) (clientv3.LeaseID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Register", ctx, node)
+	ret0, _ := ret[0].(clientv3.LeaseID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Register indicates an expected call of Register.
+func (mr *MockServiceRegistryMockRecorder) Register(ctx, node any) *MockServiceRegistryRegisterCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockServiceRegistry)(nil).Register), ctx, node)
+	return &MockServiceRegistryRegisterCall{Call: call}
+}
+
+// MockServiceRegistryRegisterCall wrap *gomock.Call
+type MockServiceRegistryRegisterCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServiceRegistryRegisterCall) Return(leaseID clientv3.LeaseID, err error) *MockServiceRegistryRegisterCall {
+	c.Call = c.Call.Return(leaseID, err)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServiceRegistryRegisterCall) Do(f func(context.Context, *gatewayapiv1.Node) (clientv3.LeaseID, error)) *MockServiceRegistryRegisterCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServiceRegistryRegisterCall) DoAndReturn(f func(context.Context, *gatewayapiv1.Node) (clientv3.LeaseID, error)) *MockServiceRegistryRegisterCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// StartNodeStateUpdater mocks base method.
+func (m *MockServiceRegistry) StartNodeStateUpdater(ctx context.Context, leaseID clientv3.LeaseID, nodeID string, updateFunc func(*gatewayapiv1.Node) bool, interval time.Duration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartNodeStateUpdater", ctx, leaseID, nodeID, updateFunc, interval)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StartNodeStateUpdater indicates an expected call of StartNodeStateUpdater.
+func (mr *MockServiceRegistryMockRecorder) StartNodeStateUpdater(ctx, leaseID, nodeID, updateFunc, interval any) *MockServiceRegistryStartNodeStateUpdaterCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartNodeStateUpdater", reflect.TypeOf((*MockServiceRegistry)(nil).StartNodeStateUpdater), ctx, leaseID, nodeID, updateFunc, interval)
+	return &MockServiceRegistryStartNodeStateUpdaterCall{Call: call}
+}
+
+// MockServiceRegistryStartNodeStateUpdaterCall wrap *gomock.Call
+type MockServiceRegistryStartNodeStateUpdaterCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServiceRegistryStartNodeStateUpdaterCall) Return(arg0 error) *MockServiceRegistryStartNodeStateUpdaterCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServiceRegistryStartNodeStateUpdaterCall) Do(f func(context.Context, clientv3.LeaseID, string, func(*gatewayapiv1.Node) bool, time.Duration) error) *MockServiceRegistryStartNodeStateUpdaterCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServiceRegistryStartNodeStateUpdaterCall) DoAndReturn(f func(context.Context, clientv3.LeaseID, string, func(*gatewayapiv1.Node) bool, time.Duration) error) *MockServiceRegistryStartNodeStateUpdaterCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// UpdateNodeInfo mocks base method.
+func (m *MockServiceRegistry) UpdateNodeInfo(ctx context.Context, leaseID clientv3.LeaseID, node *gatewayapiv1.Node) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateNodeInfo", ctx, leaseID, node)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateNodeInfo indicates an expected call of UpdateNodeInfo.
+func (mr *MockServiceRegistryMockRecorder) UpdateNodeInfo(ctx, leaseID, node any) *MockServiceRegistryUpdateNodeInfoCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNodeInfo", reflect.TypeOf((*MockServiceRegistry)(nil).UpdateNodeInfo), ctx, leaseID, node)
+	return &MockServiceRegistryUpdateNodeInfoCall{Call: call}
+}
+
+// MockServiceRegistryUpdateNodeInfoCall wrap *gomock.Call
+type MockServiceRegistryUpdateNodeInfoCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServiceRegistryUpdateNodeInfoCall) Return(arg0 error) *MockServiceRegistryUpdateNodeInfoCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServiceRegistryUpdateNodeInfoCall) Do(f func(context.Context, clientv3.LeaseID, *gatewayapiv1.Node) error) *MockServiceRegistryUpdateNodeInfoCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServiceRegistryUpdateNodeInfoCall) DoAndReturn(f func(context.Context, clientv3.LeaseID, *gatewayapiv1.Node) error) *MockServiceRegistryUpdateNodeInfoCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

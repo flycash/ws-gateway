@@ -10,6 +10,7 @@ import (
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
+	"gitee.com/flycash/ws-gateway/pkg/compression"
 	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gotomicro/ego/core/elog"
@@ -74,11 +75,11 @@ func NewManager(codecHelper codec.Codec, config *ManagerConfig) *Manager {
 
 // NewLink 基于底层的网络连接和用户会话，创建一个新的 Link 实例并纳入管理。
 // 这是所有新连接加入系统的入口点。
-func (m *Manager) NewLink(ctx context.Context, conn net.Conn, sess session.Session) (gateway.Link, error) {
+func (m *Manager) NewLink(ctx context.Context, conn net.Conn, sess session.Session, compressionState *compression.State) (gateway.Link, error) {
 	userInfo := sess.UserInfo()
 	linkID := m.generateLinkID(userInfo)
 	// 将 ManagerConfig 转换为 link.Option
-	opts := m.convertToLinkOptions(userInfo)
+	opts := m.convertToLinkOptions(userInfo, compressionState) // 暂时传入nil，后续需要从其他地方获取压缩状态
 	lk := New(ctx, linkID, sess, conn, opts...)
 	m.links.Store(linkID, lk)
 	m.logger.Info("创建新连接",
@@ -94,8 +95,13 @@ func (m *Manager) generateLinkID(userInfo session.UserInfo) string {
 }
 
 // convertToLinkOptions 将 ManagerConfig 转换为 link.Option
-func (m *Manager) convertToLinkOptions(userInfo session.UserInfo) []Option {
+func (m *Manager) convertToLinkOptions(userInfo session.UserInfo, compressionState *compression.State) []Option {
 	var opts []Option
+
+	// 设置压缩状态 - 如果外部提供了压缩状态则使用，否则根据配置创建
+	if compressionState != nil {
+		opts = append(opts, WithCompression(compressionState))
+	}
 
 	// 设置超时配置
 	if m.config.ReadTimeout > 0 || m.config.WriteTimeout > 0 {

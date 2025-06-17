@@ -37,9 +37,9 @@ func initLinkEventHandler(
 		MaxRetries    int           `yaml:"maxRetries"`
 	}
 	type RetryStrategyConfig struct {
-		InitRetryInterval time.Duration `yaml:"initRetryInterval"`
-		MaxRetryInterval  time.Duration `yaml:"maxRetryInterval"`
-		MaxRetries        int32         `yaml:"maxRetries"`
+		InitInterval time.Duration `yaml:"initInterval"`
+		MaxInterval  time.Duration `yaml:"maxInterval"`
+		MaxRetries   int32         `yaml:"maxRetries"`
 	}
 	type Config struct {
 		RequestTimeout time.Duration       `yaml:"requestTimeout"`
@@ -47,7 +47,7 @@ func initLinkEventHandler(
 		PushMessage    PushMessageConfig   `yaml:"pushMessage"`
 	}
 	var cfg Config
-	err = econf.UnmarshalKey("linkEvent", &cfg)
+	err = econf.UnmarshalKey("link.eventHandler", &cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -63,8 +63,8 @@ func initLinkEventHandler(
 		encryptor,
 		InitBackendClientLoader(etcdClient),
 		cfg.RequestTimeout,
-		cfg.RetryStrategy.InitRetryInterval,
-		cfg.RetryStrategy.MaxRetryInterval,
+		cfg.RetryStrategy.InitInterval,
+		cfg.RetryStrategy.MaxInterval,
 		cfg.RetryStrategy.MaxRetries,
 		cfg.PushMessage.RetryInterval, cfg.PushMessage.MaxRetries)
 }
@@ -82,7 +82,7 @@ func initUserActionHandler(q mq.MQ) *linkevent.UserActionHandler {
 	if err != nil {
 		panic(err)
 	}
-	requestTimeout := econf.GetDuration("linkEvent.requestTimeout")
+	requestTimeout := econf.GetDuration("link.eventHandler.requestTimeout")
 	return linkevent.NewUserActionHandler(
 		linkevent.NewUserActionProducer(producer, cfg.Topic),
 		requestTimeout)

@@ -6,17 +6,19 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/internal/link"
+	"gitee.com/flycash/ws-gateway/pkg/session"
 	"github.com/ecodeclub/ecache"
-	"github.com/ecodeclub/ekit/syncx"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/constant"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/gotomicro/ego/server"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var (
@@ -39,8 +41,23 @@ type WebSocketServer struct {
 	mqPartitions int
 	mqTopic      string
 
-	links *syncx.Map[string, gateway.Link]
+	listener net.Listener
 
+	// 连接管理器
+	linkManager gateway.LinkManager
+
+	// 注册中心
+	registry                gateway.ServiceRegistry
+	updateNodeStateInterval time.Duration
+	leaseID                 clientv3.LeaseID
+
+	// 节点信息
+	nodeInfo *apiv1.Node
+
+	// 优雅关闭控制
+	acceptingConnections atomic.Bool
+
+	// 空闲管理
 	idleTimeout      time.Duration
 	idleScanInterval time.Duration
 
@@ -49,22 +66,31 @@ type WebSocketServer struct {
 
 func newWebSocketServer(c *Container) *WebSocketServer {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	return &WebSocketServer{
-		name:             c.name,
-		config:           c.config,
-		upgrader:         c.upgrader,
-		linkEventHandler: c.linkEventHandler,
-		cache:            c.cache,
-		ctx:              ctx,
-		ctxCancelFunc:    cancelFunc,
-		mq:               c.mq,
-		mqPartitions:     c.mqPartitions,
-		mqTopic:          c.mqTopic,
-		links:            &syncx.Map[string, gateway.Link]{},
-		idleTimeout:      c.idleTimeout,
-		idleScanInterval: c.idleScanInterval,
-		logger:           c.logger,
+
+	s := &WebSocketServer{
+		name:                    c.name,
+		config:                  c.config,
+		upgrader:                c.upgrader,
+		linkEventHandler:        c.linkEventHandler,
+		cache:                   c.cache,
+		ctx:                     ctx,
+		ctxCancelFunc:           cancelFunc,
+		mq:                      c.mq,
+		mqPartitions:            c.mqPartitions,
+		mqTopic:                 c.mqTopic,
+		linkManager:             c.linkManager,
+		registry:                c.registry,
+		updateNodeStateInterval: c.updateNodeStateInterval,
+		nodeInfo:                c.nodeInfo,
+		idleTimeout:             c.idleTimeout,
+		idleScanInterval:        c.idleScanInterval,
+		logger:                  c.logger,
 	}
+
+	// 初始状态接受连接
+	s.acceptingConnections.Store(true)
+
+	return s
 }
 
 func (s *WebSocketServer) Name() string {
@@ -82,32 +108,72 @@ func (s *WebSocketServer) Init() error {
 }
 
 func (s *WebSocketServer) Start() error {
-	err := s.initConsumers()
-	if err != nil {
-		return err
-	}
-
+	// 1. 开始监听网络连接
 	l, err := net.Listen(s.config.Network, s.config.Address())
 	if err != nil {
 		return err
 	}
+	s.listener = l
 
-	go s.acceptConn(l)
-	// 启动空闲连接清理协程
+	// 2. 启动接受连接协程
+	go s.acceptConn()
+
+	// 3. 启动空闲连接清理协程
 	go s.cleanIdleLinks()
 
+	// 4. 初始化推送消息消费者
+	err = s.initPushMessageConsumers()
+	if err != nil {
+		return fmt.Errorf("初始化下行消息消费者失败: %w", err)
+	}
+
+	// 5. 注册节点到服务注册中心
+	leaseID, err := s.registry.Register(s.ctx, s.nodeInfo)
+	if err != nil {
+		s.logger.Error("节点注册到服务中心失败", elog.FieldErr(err))
+		return fmt.Errorf("节点注册失败: %w", err)
+	}
+
+	s.leaseID = leaseID
+	s.logger.Info("节点注册到服务中心成功",
+		elog.String("nodeID", s.nodeInfo.GetId()),
+		elog.Int64("leaseID", int64(leaseID)))
+
+	// 6. 启动租约续期
+	go func() {
+		if err1 := s.registry.KeepAlive(s.ctx, leaseID); err1 != nil {
+			s.logger.Error("租约续期失败", elog.FieldErr(err1))
+		}
+	}()
+
+	// 7. 启动节点状态上报器
+	go func() {
+		updateFunc := func(node *apiv1.Node) bool {
+			// 更新节点状态信息
+			newLoad := s.linkManager.Len()
+			if node.GetLoad() != newLoad {
+				node.Load = newLoad
+				return true // 需要更新
+			}
+			return false // 不需要更新
+		}
+		if err1 := s.registry.StartNodeStateUpdater(s.ctx, leaseID, s.nodeInfo.GetId(), updateFunc, s.updateNodeStateInterval); err1 != nil {
+			s.logger.Error("节点状态更新器启动失败", elog.FieldErr(err1))
+		}
+	}()
+
 	<-s.ctx.Done()
-	return l.Close()
+	return nil
 }
 
-func (s *WebSocketServer) initConsumers() error {
+func (s *WebSocketServer) initPushMessageConsumers() error {
 	for i := 0; i < s.mqPartitions; i++ {
 		partition := i
 		consumer, err := s.mq.Consumer(s.mqTopic, s.Name())
 		if err != nil {
 			s.logger.Error("获取MQ消费者失败",
 				elog.String("step", "Start"),
-				elog.String("step", "initConsumers"),
+				elog.String("step", "initPushMessageConsumers"),
 				elog.FieldErr(err),
 			)
 			return err
@@ -116,19 +182,25 @@ func (s *WebSocketServer) initConsumers() error {
 		if err != nil {
 			s.logger.Error("获取MQ消费者Chan失败",
 				elog.String("step", "Start"),
-				elog.String("step", "initConsumers"),
+				elog.String("step", "initPushMessageConsumers"),
 				elog.FieldErr(err),
 			)
 			return err
 		}
-		go s.pushHandler(partition, ch)
+		go s.pushMessageHandler(partition, ch)
 	}
 	return nil
 }
 
-func (s *WebSocketServer) acceptConn(l net.Listener) {
+func (s *WebSocketServer) acceptConn() {
 	for {
-		conn, err := l.Accept()
+		// 检查是否还接受新连接
+		if !s.acceptingConnections.Load() {
+			s.logger.Info("不再接受新连接，正在优雅关闭中")
+			return
+		}
+
+		conn, err := s.listener.Accept()
 		if err != nil {
 			s.logger.Error("接受连接失败",
 				elog.String("step", "acceptConn"),
@@ -142,6 +214,7 @@ func (s *WebSocketServer) acceptConn(l net.Listener) {
 				continue
 			}
 		}
+
 		go s.handleConn(conn)
 	}
 }
@@ -166,16 +239,18 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 		return
 	}
 
-	userInfo := sess.UserInfo()
-	linkID := s.getLinkID(userInfo.BizID, userInfo.UserID)
-	lk := link.New(s.ctx, linkID, sess, conn,
-		link.WithCompression(compressionState),
-		link.WithAutoClose(userInfo.AutoClose),
-	)
-	s.links.Store(linkID, lk)
+	// 创建和管理连接
+	lk, err := s.linkManager.NewLink(s.ctx, conn, sess, compressionState)
+	if err != nil {
+		s.logger.Error("创建Link失败",
+			elog.String("step", "handleConn"),
+			elog.FieldErr(err),
+		)
+		return
+	}
 
 	defer func() {
-		s.links.Delete(lk.ID())
+		s.linkManager.RemoveLink(lk.ID())
 		if err1 := lk.Close(); err1 != nil {
 			s.logger.Error("关闭Link失败",
 				elog.String("step", "handleConn"),
@@ -236,14 +311,8 @@ func (s *WebSocketServer) handleConn(conn net.Conn) {
 	}
 }
 
-func (s *WebSocketServer) getLinkID(bizID, userID int64) string {
-	return fmt.Sprintf("%d-%d", bizID, userID)
-}
-
 func (s *WebSocketServer) Stop() error {
-	// todo: 强制关闭
 	s.ctxCancelFunc()
-	// 关闭消息队列客户端
 	return nil
 }
 
@@ -253,14 +322,72 @@ func (s *WebSocketServer) Prepare() error {
 	return nil
 }
 
-func (s *WebSocketServer) GracefulStop(_ context.Context) error {
-	// todo: 优雅关闭
-	s.ctxCancelFunc()
-	// 关闭消息队列客户端
-	// 1. 停止接受新的websocket
-	// 2. 遍历所有link，下发，redirect指令，重试3次，打印log
-	s.logger.Info("优雅关闭中......")
-	return nil
+func (s *WebSocketServer) GracefulStop(ctx context.Context) error {
+	s.logger.Info("开始优雅关闭服务器")
+
+	n := 3
+	done := make(chan struct{}, n)
+	// 停止接受新连接
+	go func() {
+		s.acceptingConnections.Store(false)
+		_ = s.listener.Close()
+		done <- struct{}{}
+	}()
+
+	ch := make(chan []*apiv1.Node)
+	go func() {
+		// 获取其他可用节点
+		availableNodes, err := s.registry.GetAvailableNodes(ctx, s.nodeInfo.GetId())
+		if err != nil {
+			s.logger.Error("获取可用节点失败", elog.FieldErr(err))
+			// 即使获取失败，也继续优雅关闭流程
+			availableNodes = []*apiv1.Node{}
+		}
+		ch <- availableNodes
+		s.logger.Info("获取到可用节点",
+			elog.Int("nodeCount", len(availableNodes)))
+		// 优雅注销节点（先降权重，等待，再删除）
+		err = s.registry.GracefulDeregister(ctx, s.leaseID, s.nodeInfo.GetId())
+		if err != nil {
+			s.logger.Error("优雅注销节点失败", elog.FieldErr(err))
+		} else {
+			s.logger.Info("节点已从服务中心优雅注销")
+		}
+		done <- struct{}{}
+	}()
+
+	go func() {
+		availableNodes := <-ch
+		// 如果有可用节点，向所有连接发送重定向消息
+		err := s.linkManager.RedirectLinks(ctx, link.NewAllLinksSelector(), &apiv1.NodeList{Nodes: availableNodes})
+		if err != nil {
+			s.logger.Error("发送重定向消息失败", elog.FieldErr(err))
+		} else {
+			s.logger.Info("向所有连接发送重定向消息成功")
+		}
+		// 优雅关闭所有连接（等待客户端主动断开或超时）
+		err = s.linkManager.GracefulClose(ctx)
+		if err != nil {
+			s.logger.Warn("优雅关闭连接超时，将强制关闭", elog.FieldErr(err))
+		} else {
+			s.logger.Info("所有连接已优雅关闭")
+		}
+		done <- struct{}{}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			// 超时强制关闭
+			return s.Stop()
+		case <-done:
+			n--
+			if n == 0 {
+				// 正常关闭
+				return s.Stop()
+			}
+		}
+	}
 }
 
 func (s *WebSocketServer) Info() *server.ServiceInfo {
@@ -281,9 +408,9 @@ func (s *WebSocketServer) Health() bool {
 func (s *WebSocketServer) Invoker(_ ...func() error) {
 }
 
-func (s *WebSocketServer) pushHandler(partition int, mqChan <-chan *mq.Message) {
+func (s *WebSocketServer) pushMessageHandler(partition int, mqChan <-chan *mq.Message) {
 	s.logger.Info(s.Name(),
-		elog.String("step", fmt.Sprintf("%s-%d", "pushHandler", partition)),
+		elog.String("step", fmt.Sprintf("%s-%d", "pushMessageHandler", partition)),
 		elog.String("step", "已启动"))
 
 	for {
@@ -295,14 +422,14 @@ func (s *WebSocketServer) pushHandler(partition int, mqChan <-chan *mq.Message) 
 				return
 			}
 			s.logger.Info(s.Name(),
-				elog.String("step", fmt.Sprintf("%s-%d", "pushHandler", partition)),
+				elog.String("step", fmt.Sprintf("%s-%d", "pushMessageHandler", partition)),
 				elog.String("收到消息kafka消息", string(message.Value)))
 
 			msg := &apiv1.PushMessage{}
 			err := json.Unmarshal(message.Value, msg)
 			if err != nil {
 				s.logger.Error("反序列化MQ消息体失败",
-					elog.String("step", "pushHandler"),
+					elog.String("step", "pushMessageHandler"),
 					elog.String("MQ消息体", string(message.Value)),
 					elog.FieldErr(err),
 				)
@@ -312,7 +439,7 @@ func (s *WebSocketServer) pushHandler(partition int, mqChan <-chan *mq.Message) 
 			lk, err := s.findLink(msg)
 			if err != nil {
 				s.logger.Error("根据消息体查找Link失败",
-					elog.String("step", "pushHandler"),
+					elog.String("step", "pushMessageHandler"),
 					elog.String("msg", msg.String()),
 					elog.FieldErr(err))
 				continue
@@ -321,7 +448,7 @@ func (s *WebSocketServer) pushHandler(partition int, mqChan <-chan *mq.Message) 
 			err = s.linkEventHandler.OnBackendPushMessage(lk, msg)
 			if err != nil {
 				s.logger.Error("下推消息给前端用户失败",
-					elog.String("step", "pushHandler"),
+					elog.String("step", "pushMessageHandler"),
 					elog.String("消息体", msg.String()),
 					elog.FieldErr(err))
 				continue
@@ -332,9 +459,10 @@ func (s *WebSocketServer) pushHandler(partition int, mqChan <-chan *mq.Message) 
 }
 
 func (s *WebSocketServer) findLink(msg *apiv1.PushMessage) (gateway.Link, error) {
-	// 当前认为wsid+bizID+userID可以唯一确定一个link，复杂场景可能需要考虑多设备登录问题。
-	linkID := s.getLinkID(msg.GetBizId(), msg.GetReceiverId())
-	lk, ok := s.links.Load(linkID)
+	lk, ok := s.linkManager.FindLinkByUserInfo(session.UserInfo{
+		BizID:  msg.GetBizId(),
+		UserID: msg.GetReceiverId(),
+	})
 	if !ok {
 		return nil, fmt.Errorf("%w: bizID=%d, userID=%d", ErrUnknownReceiver, msg.GetBizId(), msg.GetReceiverId())
 	}
@@ -355,17 +483,11 @@ func (s *WebSocketServer) cleanIdleLinks() {
 			s.logger.Info("空闲连接清理器已停止")
 			return
 		case <-ticker.C:
-			s.links.Range(func(key string, link gateway.Link) bool {
-				if link.TryCloseIfIdle(s.idleTimeout) {
-					if l, deleted := s.links.LoadAndDelete(key); deleted {
-						s.logger.Info("清理空闲连接",
-							elog.String("linkID", l.ID()),
-							elog.Any("userInfo", l.Session().UserInfo()),
-						)
-					}
-				}
-				return true
-			})
+			// 使用 LinkManager 的清理方法
+			cleanedCount := s.linkManager.CleanIdleLinks(s.idleTimeout)
+			if cleanedCount > 0 {
+				s.logger.Info("清理了空闲连接", elog.Int("cleanedCount", cleanedCount))
+			}
 		}
 	}
 }

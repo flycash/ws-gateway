@@ -4,6 +4,7 @@ import (
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
+	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"github.com/ecodeclub/ecache"
 	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/elog"
@@ -70,5 +71,27 @@ func WithAutoCloseIdleLink(idleTimeout, idleScanInterval time.Duration) Option {
 	return func(c *Container) {
 		c.idleTimeout = idleTimeout
 		c.idleScanInterval = idleScanInterval
+	}
+}
+
+// WithLinkManager 设置连接管理器
+func WithLinkManager(manager gateway.LinkManager) Option {
+	return func(c *Container) {
+		c.linkManager = manager
+	}
+}
+
+// WithServiceRegistry 设置服务注册中心
+func WithServiceRegistry(registry gateway.ServiceRegistry, updateNodeStateInterval time.Duration) Option {
+	return func(c *Container) {
+		c.registry = registry
+		c.updateNodeStateInterval = updateNodeStateInterval
+	}
+}
+
+// WithNodeInfo 设置节点信息
+func WithNodeInfo(nodeInfo *apiv1.Node) Option {
+	return func(c *Container) {
+		c.nodeInfo = nodeInfo
 	}
 }
