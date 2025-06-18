@@ -3,13 +3,12 @@ package ioc
 import (
 	"time"
 
-	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"github.com/gotomicro/ego/core/econf"
 )
 
-func InitLinkManager(c codec.Codec) gateway.LinkManager {
+func InitLinkManager(c codec.Codec) *link.Manager {
 	type TimeoutConfig struct {
 		Read  time.Duration `yaml:"read"`
 		Write time.Duration `yaml:"write"`

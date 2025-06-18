@@ -11,6 +11,7 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"gitee.com/flycash/ws-gateway/internal/limiter"
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/session"
@@ -39,9 +40,8 @@ type WebSocketServer struct {
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
 
-	mq           mq.MQ
-	mqPartitions int
-	mqTopic      string
+	// 消费者
+	consumers map[string]*event.Consumer
 
 	listener net.Listener
 
@@ -81,9 +81,7 @@ func newWebSocketServer(c *Container) *WebSocketServer {
 		cache:                   c.cache,
 		ctx:                     ctx,
 		ctxCancelFunc:           cancelFunc,
-		mq:                      c.mq,
-		mqPartitions:            c.mqPartitions,
-		mqTopic:                 c.mqTopic,
+		consumers:               c.consumers,
 		linkManager:             c.linkManager,
 		registry:                c.registry,
 		updateNodeStateInterval: c.updateNodeStateInterval,
@@ -134,9 +132,19 @@ func (s *WebSocketServer) Start() error {
 	go s.cleanIdleLinks()
 
 	// 初始化推送消息消费者
-	err = s.initPushMessageConsumers()
-	if err != nil {
-		return fmt.Errorf("初始化下行消息消费者失败: %w", err)
+	for key := range s.consumers {
+		switch key {
+		case "pushMessage":
+			err = s.consumers[key].Start(s.ctx, s.consumePushMessageEvent)
+			if err != nil {
+				return err
+			}
+		case "scaleUp":
+			err = s.consumers[key].Start(s.ctx, s.consumeScaleUpEvent)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	// 注册节点到服务注册中心
@@ -173,32 +181,6 @@ func (s *WebSocketServer) Start() error {
 			s.logger.Error("节点状态更新器启动失败", elog.FieldErr(err1))
 		}
 	}()
-	return nil
-}
-
-func (s *WebSocketServer) initPushMessageConsumers() error {
-	for i := 0; i < s.mqPartitions; i++ {
-		partition := i
-		consumer, err := s.mq.Consumer(s.mqTopic, s.Name())
-		if err != nil {
-			s.logger.Error("获取MQ消费者失败",
-				elog.String("step", "Start"),
-				elog.String("step", "initPushMessageConsumers"),
-				elog.FieldErr(err),
-			)
-			return err
-		}
-		ch, err := consumer.ConsumeChan(context.Background())
-		if err != nil {
-			s.logger.Error("获取MQ消费者Chan失败",
-				elog.String("step", "Start"),
-				elog.String("step", "initPushMessageConsumers"),
-				elog.FieldErr(err),
-			)
-			return err
-		}
-		go s.pushMessageHandler(partition, ch)
-	}
 	return nil
 }
 
@@ -359,12 +341,29 @@ func (s *WebSocketServer) Prepare() error {
 func (s *WebSocketServer) GracefulStop(ctx context.Context) error {
 	s.logger.Info("开始优雅关闭服务器")
 
-	n := 3
+	n := 4
 	done := make(chan struct{}, n)
 	// 停止接受新连接
 	go func() {
 		s.acceptingConnections.Store(false)
 		_ = s.listener.Close()
+		done <- struct{}{}
+	}()
+
+	go func() {
+		// 关闭消费者
+		for key := range s.consumers {
+			err := s.consumers[key].Stop()
+			if err != nil {
+				s.logger.Error("关闭消费者失败",
+					elog.String("name", s.consumers[key].Name()),
+					elog.FieldErr(err))
+			} else {
+				s.logger.Info("关闭消费者成功",
+					elog.String("name", s.consumers[key].Name()),
+				)
+			}
+		}
 		done <- struct{}{}
 	}()
 
@@ -442,54 +441,36 @@ func (s *WebSocketServer) Health() bool {
 func (s *WebSocketServer) Invoker(_ ...func() error) {
 }
 
-func (s *WebSocketServer) pushMessageHandler(partition int, mqChan <-chan *mq.Message) {
-	s.logger.Info(s.Name(),
-		elog.String("step", fmt.Sprintf("%s-%d", "pushMessageHandler", partition)),
-		elog.String("step", "已启动"))
-
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case message, ok := <-mqChan:
-			if !ok {
-				return
-			}
-			s.logger.Info(s.Name(),
-				elog.String("step", fmt.Sprintf("%s-%d", "pushMessageHandler", partition)),
-				elog.String("收到消息kafka消息", string(message.Value)))
-
-			msg := &apiv1.PushMessage{}
-			err := json.Unmarshal(message.Value, msg)
-			if err != nil {
-				s.logger.Error("反序列化MQ消息体失败",
-					elog.String("step", "pushMessageHandler"),
-					elog.String("MQ消息体", string(message.Value)),
-					elog.FieldErr(err),
-				)
-				continue
-			}
-
-			lk, err := s.findLink(msg)
-			if err != nil {
-				s.logger.Error("根据消息体查找Link失败",
-					elog.String("step", "pushMessageHandler"),
-					elog.String("msg", msg.String()),
-					elog.FieldErr(err))
-				continue
-			}
-
-			err = s.linkEventHandler.OnBackendPushMessage(lk, msg)
-			if err != nil {
-				s.logger.Error("下推消息给前端用户失败",
-					elog.String("step", "pushMessageHandler"),
-					elog.String("消息体", msg.String()),
-					elog.FieldErr(err))
-				continue
-			}
-
-		}
+func (s *WebSocketServer) consumePushMessageEvent(_ context.Context, message *mq.Message) error {
+	msg := &apiv1.PushMessage{}
+	err := json.Unmarshal(message.Value, msg)
+	if err != nil {
+		s.logger.Error("反序列化MQ消息体失败",
+			elog.String("step", "consumePushMessageEvent"),
+			elog.String("MQ消息体", string(message.Value)),
+			elog.FieldErr(err),
+		)
+		return err
 	}
+
+	lk, err := s.findLink(msg)
+	if err != nil {
+		s.logger.Error("根据消息体查找Link失败",
+			elog.String("step", "consumePushMessageEvent"),
+			elog.String("msg", msg.String()),
+			elog.FieldErr(err))
+		return err
+	}
+
+	err = s.linkEventHandler.OnBackendPushMessage(lk, msg)
+	if err != nil {
+		s.logger.Error("下推消息给前端用户失败",
+			elog.String("step", "consumePushMessageEvent"),
+			elog.String("消息体", msg.String()),
+			elog.FieldErr(err))
+		return err
+	}
+	return nil
 }
 
 func (s *WebSocketServer) findLink(msg *apiv1.PushMessage) (gateway.Link, error) {
@@ -501,6 +482,56 @@ func (s *WebSocketServer) findLink(msg *apiv1.PushMessage) (gateway.Link, error)
 		return nil, fmt.Errorf("%w: bizID=%d, userID=%d", ErrUnknownReceiver, msg.GetBizId(), msg.GetReceiverId())
 	}
 	return lk, nil
+}
+
+func (s *WebSocketServer) consumeScaleUpEvent(ctx context.Context, message *mq.Message) error {
+	var msg event.ScaleUpEvent
+	err := json.Unmarshal(message.Value, &msg)
+	if err != nil {
+		s.logger.Error("反序列化MQ消息体失败",
+			elog.String("step", "consumeScaleUpEvent"),
+			elog.String("MQ消息体", string(message.Value)),
+			elog.FieldErr(err),
+		)
+		return err
+	}
+
+	// 新扩容节点忽略扩容事件
+	for i := range msg.NewNodeList.Nodes {
+		if msg.NewNodeList.Nodes[i].GetId() == s.nodeInfo.GetId() {
+			s.logger.Info("新扩容节点忽略扩容事件",
+				elog.String("step", "consumeScaleUpEvent"),
+				elog.String("MQ消息体", string(message.Value)),
+				elog.String("节点信息", s.nodeInfo.String()),
+				elog.FieldErr(err),
+			)
+			return nil
+		}
+	}
+
+	// 迁移超过 M * (N-k)/N 的连接，其中 M 是阈值，N 是最新节点数量，k 是扩容节点数量
+	// 1000 * (4-1)/4 = 750
+	// M - M * (N-k)/N  = M * K/N = 250
+	// (M*(N-K)/N)/(N-K) = (M/N) = 250
+	m := s.connLimiter.CurrentCapacity()
+	n := msg.TotalNodeCount
+	k := msg.NewNodeCount
+
+	count := m * (k / n)
+	selector := link.NewRandomLinksSelector(count)
+	err = s.linkManager.RedirectLinks(ctx, selector, msg.NewNodeList)
+	if err != nil {
+		s.logger.Error("扩容后，重均衡失败：下发重定向指令时出错", elog.FieldErr(err))
+		return err
+	}
+
+	s.logger.Info("扩容后，重均衡成功",
+		elog.String("step", "consumeScaleUpEvent"),
+		elog.String("节点信息", s.nodeInfo.String()),
+		elog.String("新增节点", msg.NewNodeList.String()),
+		elog.Int64("重定向连接数", count),
+	)
+	return nil
 }
 
 func (s *WebSocketServer) cleanIdleLinks() {

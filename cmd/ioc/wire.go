@@ -5,14 +5,15 @@ package ioc
 import (
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"gitee.com/flycash/ws-gateway/internal/limiter"
+	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/redis/go-redis/v9"
 
 	"gitee.com/flycash/ws-gateway/ioc"
 	"github.com/ecodeclub/ecache"
-	"github.com/ecodeclub/mq-api"
 	"github.com/google/wire"
 )
 
@@ -29,6 +30,9 @@ func InitApp(nodeInfo *apiv1.Node) App {
 		ioc.InitMQ,
 		ioc.InitSerializer,
 
+		ioc.InitConsumers,
+		ioc.InitScaleUpEventProducer,
+		ioc.InitUserActionEventProducer,
 		ioc.InitLinkEventHandlerWrapper,
 		ioc.InitLinkManager,
 		ioc.InitRegistry,
@@ -43,24 +47,24 @@ func InitApp(nodeInfo *apiv1.Node) App {
 
 func convertToWebsocketComponents(
 	nodeInfo *apiv1.Node,
-	messageQueue mq.MQ,
 	c ecache.Cache,
 	rdb redis.Cmdable,
 	userToken *jwt.UserToken,
 	wrapper *gateway.LinkEventHandlerWrapper,
 	registry gateway.ServiceRegistry,
-	linkManager gateway.LinkManager,
+	linkManager *link.Manager,
 	tokenLimiter *limiter.TokenLimiter,
 	backoff *backoff.ExponentialBackOff,
+	consumers map[string]*event.Consumer,
+	producer event.ScaleUpEventProducer,
 ) []gateway.Server {
 	configKey := "server.websocket"
-	s := make([]gateway.Server, 0, 1)
+	s := make([]gateway.Server, 0, 2)
 	// for i := range config {
 	// configKey := fmt.Sprintf("server.websocket.%d", i)
 	s = append(s, ioc.InitWebSocketServer(
 		configKey,
 		nodeInfo,
-		messageQueue,
 		c,
 		rdb,
 		userToken,
@@ -69,7 +73,9 @@ func convertToWebsocketComponents(
 		linkManager,
 		tokenLimiter,
 		backoff,
+		consumers,
 	))
+	s = append(s, ioc.InitWebhookServer(nodeInfo, registry, linkManager, producer))
 	// }
 	return s
 }

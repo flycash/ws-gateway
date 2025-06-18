@@ -5,11 +5,11 @@ import (
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"gitee.com/flycash/ws-gateway/internal/linkevent"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"github.com/ecodeclub/ecache"
-	"github.com/ecodeclub/mq-api"
 	"github.com/ego-component/eetcd"
 	"github.com/gotomicro/ego/core/econf"
 )
@@ -69,22 +69,10 @@ func initLinkEventHandler(
 		cfg.PushMessage.RetryInterval, cfg.PushMessage.MaxRetries)
 }
 
-func initUserActionHandler(q mq.MQ) *linkevent.UserActionHandler {
-	type Config struct {
-		Topic string `yaml:"topic"`
-	}
-	var cfg Config
-	err := econf.UnmarshalKey("userActionEvent", &cfg)
-	if err != nil {
-		panic(err)
-	}
-	producer, err := q.Producer(cfg.Topic)
-	if err != nil {
-		panic(err)
-	}
+func initUserActionHandler(producer event.UserActionEventProducer) *linkevent.UserActionHandler {
 	requestTimeout := econf.GetDuration("link.eventHandler.requestTimeout")
 	return linkevent.NewUserActionHandler(
-		linkevent.NewUserActionProducer(producer, cfg.Topic),
+		producer,
 		requestTimeout)
 }
 
@@ -96,10 +84,10 @@ func InitLinkEventHandlerWrapper(
 	cache ecache.Cache,
 	codecHelper codec.Codec,
 	etcdClient *eetcd.Component,
-	q mq.MQ,
+	producer event.UserActionEventProducer,
 ) *gateway.LinkEventHandlerWrapper {
 	h := initLinkEventHandler(cache, codecHelper, etcdClient)
-	uah := initUserActionHandler(q)
+	uah := initUserActionHandler(producer)
 	olh := initOnlineUserHandler()
 	return gateway.NewLinkEventHandlerWrapper(h, uah, olh)
 }

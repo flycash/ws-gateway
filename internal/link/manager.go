@@ -147,10 +147,6 @@ func (m *Manager) RemoveLink(linkID string) bool {
 
 // RedirectLinks 重定向选中的连接
 func (m *Manager) RedirectLinks(_ context.Context, selector gateway.LinkSelector, availableNodes *apiv1.NodeList) error {
-	if len(availableNodes.GetNodes()) == 0 {
-		return fmt.Errorf("没有可用的节点进行重定向")
-	}
-
 	// 获取所有连接
 	allLinks := m.Links()
 	if len(allLinks) == 0 {

@@ -2,63 +2,21 @@ package linkevent
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	"github.com/ecodeclub/mq-api"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"github.com/gotomicro/ego/core/elog"
 )
 
-const (
-	ActionOnline  = "ONLINE"
-	ActionOffline = "OFFLINE"
-)
-
-type UserAction struct {
-	BizID  int64  `json:"bizId"`
-	UserID int64  `json:"userId"`
-	Action string `json:"action"` // ONLINE，OFFLINE
-}
-
-type UserActionProducer interface {
-	Produce(ctx context.Context, evt UserAction) error
-}
-
-type producer struct {
-	producer mq.Producer
-	topic    string
-}
-
-func NewUserActionProducer(p mq.Producer, topic string) UserActionProducer {
-	return &producer{
-		producer: p,
-		topic:    topic,
-	}
-}
-
-func (p *producer) Produce(ctx context.Context, evt UserAction) error {
-	b, err := json.Marshal(evt)
-	if err != nil {
-		return err
-	}
-	_, err = p.producer.Produce(ctx, &mq.Message{
-		Key:   []byte(fmt.Sprintf("%d-%d", evt.BizID, evt.UserID)),
-		Value: b,
-		Topic: p.topic,
-	})
-	return err
-}
-
 type UserActionHandler struct {
-	producer       UserActionProducer
+	producer       event.UserActionEventProducer
 	requestTimeout time.Duration
 	logger         *elog.Component
 }
 
-func NewUserActionHandler(producer UserActionProducer, requestTimeout time.Duration) *UserActionHandler {
+func NewUserActionHandler(producer event.UserActionEventProducer, requestTimeout time.Duration) *UserActionHandler {
 	return &UserActionHandler{
 		producer:       producer,
 		requestTimeout: requestTimeout,
@@ -67,17 +25,17 @@ func NewUserActionHandler(producer UserActionProducer, requestTimeout time.Durat
 }
 
 func (u *UserActionHandler) OnConnect(lk gateway.Link) error {
-	err := u.sendUserActionEvent(lk, ActionOnline)
+	err := u.sendUserActionEvent(lk, event.UserActionOnline)
 	if err != nil {
 		u.logger.Error("发送用户上线事件失败",
-			elog.String("action", ActionOnline),
+			elog.String("action", event.UserActionOnline),
 			elog.String("linkID", lk.ID()),
 			elog.Any("userInfo", lk.Session().UserInfo()),
 			elog.FieldErr(err),
 		)
 	} else {
 		u.logger.Info("发送用户上线事件成功",
-			elog.String("action", ActionOnline),
+			elog.String("action", event.UserActionOnline),
 			elog.String("linkID", lk.ID()),
 			elog.Any("userInfo", lk.Session().UserInfo()),
 		)
@@ -89,7 +47,7 @@ func (u *UserActionHandler) sendUserActionEvent(lk gateway.Link, action string) 
 	userInfo := lk.Session().UserInfo()
 	ctx, cancel := context.WithTimeout(context.Background(), u.requestTimeout)
 	defer cancel()
-	return u.producer.Produce(ctx, UserAction{
+	return u.producer.Produce(ctx, event.UserActionEvent{
 		BizID:  userInfo.BizID,
 		UserID: userInfo.UserID,
 		Action: action,
@@ -105,17 +63,17 @@ func (u *UserActionHandler) OnBackendPushMessage(_ gateway.Link, _ *apiv1.PushMe
 }
 
 func (u *UserActionHandler) OnDisconnect(lk gateway.Link) error {
-	err := u.sendUserActionEvent(lk, ActionOffline)
+	err := u.sendUserActionEvent(lk, event.UserActionOffline)
 	if err != nil {
 		u.logger.Error("发送用户下线事件失败",
-			elog.String("action", ActionOffline),
+			elog.String("action", event.UserActionOffline),
 			elog.String("linkID", lk.ID()),
 			elog.Any("userInfo", lk.Session().UserInfo()),
 			elog.FieldErr(err),
 		)
 	} else {
 		u.logger.Info("发送用户下线事件成功",
-			elog.String("action", ActionOffline),
+			elog.String("action", event.UserActionOffline),
 			elog.String("linkID", lk.ID()),
 			elog.Any("userInfo", lk.Session().UserInfo()),
 		)

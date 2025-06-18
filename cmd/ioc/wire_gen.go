@@ -9,32 +9,36 @@ package ioc
 import (
 	"gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"gitee.com/flycash/ws-gateway/internal/limiter"
+	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/ioc"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/ecodeclub/ecache"
-	"github.com/ecodeclub/mq-api"
 	"github.com/redis/go-redis/v9"
 )
 
 // Injectors from wire.go:
 
 func InitApp(nodeInfo *gatewayapiv1.Node) App {
-	mq := ioc.InitMQ()
 	cmdable := ioc.InitRedisCmd()
 	cache := ioc.InitRedisCache(cmdable)
 	userToken := ioc.InitUserToken()
 	codec := ioc.InitSerializer()
 	component := ioc.InitEtcdClient()
-	linkEventHandlerWrapper := ioc.InitLinkEventHandlerWrapper(cache, codec, component, mq)
+	mq := ioc.InitMQ()
+	userActionEventProducer := ioc.InitUserActionEventProducer(mq)
+	linkEventHandlerWrapper := ioc.InitLinkEventHandlerWrapper(cache, codec, component, userActionEventProducer)
 	serviceRegistry := ioc.InitRegistry(component)
-	linkManager := ioc.InitLinkManager(codec)
+	manager := ioc.InitLinkManager(codec)
 	tokenLimiter := ioc.InitTokenLimiter()
 	exponentialBackOff := ioc.InitExponentialBackOff()
-	v := convertToWebsocketComponents(nodeInfo, mq, cache, cmdable, userToken, linkEventHandlerWrapper, serviceRegistry, linkManager, tokenLimiter, exponentialBackOff)
+	v := ioc.InitConsumers(mq)
+	scaleUpEventProducer := ioc.InitScaleUpEventProducer(mq)
+	v2 := convertToWebsocketComponents(nodeInfo, cache, cmdable, userToken, linkEventHandlerWrapper, serviceRegistry, manager, tokenLimiter, exponentialBackOff, v, scaleUpEventProducer)
 	app := App{
-		OrderServer: v,
+		OrderServer: v2,
 	}
 	return app
 }
@@ -47,30 +51,31 @@ type App struct {
 
 func convertToWebsocketComponents(
 	nodeInfo *gatewayapiv1.Node,
-	messageQueue mq.MQ,
 	c ecache.Cache,
 	rdb redis.Cmdable,
 	userToken *jwt.UserToken,
 	wrapper *gateway.LinkEventHandlerWrapper,
 	registry gateway.ServiceRegistry,
-	linkManager gateway.LinkManager,
+	linkManager *link.Manager,
 	tokenLimiter *limiter.TokenLimiter, backoff2 *backoff.ExponentialBackOff,
+	consumers map[string]*event.Consumer,
+	producer event.ScaleUpEventProducer,
 ) []gateway.Server {
 	configKey := "server.websocket"
-	s := make([]gateway.Server, 0, 1)
+	s := make([]gateway.Server, 0, 2)
 
 	s = append(s, ioc.InitWebSocketServer(
 		configKey,
 		nodeInfo,
-		messageQueue,
 		c,
 		rdb,
 		userToken,
 		wrapper,
 		registry,
 		linkManager,
-		tokenLimiter, backoff2,
+		tokenLimiter, backoff2, consumers,
 	))
+	s = append(s, ioc.InitWebhookServer(nodeInfo, registry, linkManager, producer))
 
 	return s
 }

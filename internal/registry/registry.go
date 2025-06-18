@@ -17,8 +17,8 @@ import (
 
 const (
 	// GatewayRegistryPrefix 是 Etcd 中存储所有网关节点信息键的前缀。
-	// 所有节点信息都将存储在类似 `/gateways/node/${ID}` 的键下。
-	GatewayRegistryPrefix = "/gateways/node/"
+	// 所有节点信息都将存储在类似 `/services/gateway/node/${ID}` 的键下。
+	GatewayRegistryPrefix = "/services/gateway/node/"
 
 	// LeaseTTL 定义了节点注册到 Etcd 时使用的租约秒数 (Time-To-Live)。
 	// 节点必须在此时间内续租，否则其注册信息将因租约到期而被 Etcd 自动删除。

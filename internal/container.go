@@ -5,10 +5,10 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"gitee.com/flycash/ws-gateway/internal/limiter"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/ecodeclub/ecache"
-	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/econf"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/gotomicro/ego/core/util/xnet"
@@ -25,9 +25,9 @@ type Container struct {
 	upgrader         gateway.Upgrader
 	linkEventHandler gateway.LinkEventHandler
 	cache            ecache.Cache
-	mq               mq.MQ
-	mqPartitions     int
-	mqTopic          string
+
+	// 消费者集合
+	consumers map[string]*event.Consumer
 
 	// 连接管理器
 	linkManager gateway.LinkManager

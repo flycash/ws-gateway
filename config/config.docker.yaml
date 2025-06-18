@@ -2,16 +2,18 @@ log:
   debug: true
 
 redis:
-  addr: "localhost:6379"
+  # redis 服务的地址，从环境变量 REDIS_ADDR 获取，如果不存在则使用默认值 redis:6379
+  addr: "${REDIS_ADDR:redis:6379}"
 
 mq:
   kafka:
     network: "tcp"
-    addr: "localhost:9092"
+    addr: "${KAFKA_ADDR:kafka:9094}" # 注意: docker-compose 里 kafka 内部端口是 9094
 
 etcd:
   addrs:
-    - "127.0.0.1:2379"
+    # etcd 地址也从环境变量获取
+    - "${ETCD_ADDR:etcd:2379}"
   connectTimeout: "1s"
   secure: false
 
@@ -20,8 +22,6 @@ cache:
     capacity: 1000000
   requestTimeout: 3000000000
   valueExpiration: 600000000000
-
-
 
 server:
   webhook:
@@ -115,5 +115,3 @@ link:
     pushMessage:
       retryInterval: 10000000000  # 1分钟
       maxRetries: 6
-
-

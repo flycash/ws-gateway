@@ -5,10 +5,10 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"gitee.com/flycash/ws-gateway/internal/limiter"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/ecodeclub/ecache"
-	"github.com/ecodeclub/mq-api"
 	"github.com/gotomicro/ego/core/elog"
 )
 
@@ -61,14 +61,6 @@ func WithCache(cache ecache.Cache) Option {
 	}
 }
 
-func WithMQ(q mq.MQ, partitions int, topic string) Option {
-	return func(c *Container) {
-		c.mq = q
-		c.mqPartitions = partitions
-		c.mqTopic = topic
-	}
-}
-
 func WithAutoCloseIdleLink(idleTimeout, idleScanInterval time.Duration) Option {
 	return func(c *Container) {
 		c.idleTimeout = idleTimeout
@@ -107,5 +99,11 @@ func WithTokenLimiter(tokenLimiter *limiter.TokenLimiter) Option {
 func WithExponentialBackOff(backoff *backoff.ExponentialBackOff) Option {
 	return func(c *Container) {
 		c.backoff = backoff
+	}
+}
+
+func WithConsumers(consumers map[string]*event.Consumer) Option {
+	return func(c *Container) {
+		c.consumers = consumers
 	}
 }

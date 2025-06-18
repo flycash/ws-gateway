@@ -72,3 +72,21 @@ run_gateway:
 	@$(MAKE) e2e_up
 	@sleep 15
 	@cd cmd && export EGO_DEBUG=true GATEWAY_NODE_ID=1 GATEWAY_NODE_LOCATION=beijing GATEWAY_STOP_TIMEOUT=25 && go run main.go --config=../config/config.yaml
+
+.PHONY: build_image
+build_image:
+	@echo "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 构建Docker镜像 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
+	# 构建Docker镜像
+	@$(eval IMAGE_NAME := ws-gateway-$(shell date +%Y-%m-%d-%H-%M%S):latest)
+	@docker build --progress plain -t $(IMAGE_NAME) -f ./scripts/build/Dockerfile .
+	# 本次构建出的镜像名
+	@echo $(IMAGE_NAME)
+
+# 构建镜像并部署
+.PHONY: deploy
+deploy:
+	$(MAKE) build_image
+	# 修改image字段
+	@sed -i.out "/im:/,/image:/ s|image:.*|image: \'\$(IMAGE_NAME)\'|" ./scripts/test_docker_compose.yml
+	@$(MAKE) e2e_down
+	@$(MAKE) e2e_up
