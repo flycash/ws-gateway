@@ -116,4 +116,8 @@ link:
       retryInterval: 10000000000  # 1分钟
       maxRetries: 6
 
+# Docker 扩容配置
+docker:
+  compose_project: "ws-gateway"
+
 

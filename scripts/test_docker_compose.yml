@@ -1,18 +1,18 @@
 services:
   redis:
-    image: 'redislabs/rebloom:latest'
+    image: "redislabs/rebloom:latest"
     command: redis-server --notify-keyspace-events AKE --loadmodule /usr/lib/redis/modules/redisbloom.so
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     ports:
-      - '6379:6379'
+      - "6379:6379"
     networks:
       default:
   kafka:
-    image: 'bitnami/kafka:3.9.0'
+    image: "bitnami/kafka:3.9.0"
     ports:
-      - '9092:9092'
-      - '9094:9094'
+      - "9092:9092"
+      - "9094:9094"
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
@@ -24,7 +24,11 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1",
+        ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -32,7 +36,7 @@ services:
     networks:
       default:
   etcd:
-    image: 'bitnami/etcd:latest'
+    image: "bitnami/etcd:latest"
     environment:
       - ALLOW_NONE_AUTHENTICATION=yes
       - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
@@ -46,6 +50,7 @@ services:
     volumes:
       #  - 将本地的 prometheus 文件映射到容器内的配置文件
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       #  - 访问数据的端口
       - 9090:9090
@@ -58,5 +63,50 @@ services:
     image: grafana/grafana-enterprise:latest
     ports:
       - 3000:3000
+
+  # 默认网关节点1
+  gateway-1:
+    image: "ws-gateway-2025-06-18-19-57-28:latest"
+    ports:
+      - "9004:9002" # WebSocket端口
+    environment:
+      - GATEWAY_NODE_ID=gw-1
+      - GATEWAY_NODE_HOST_IP=localhost
+      - GATEWAY_NODE_HOST_PORT=9004
+      - GATEWAY_STOP_TIMEOUT=30
+      - EGO_DEBUG=true
+    depends_on:
+      - etcd
+      - kafka
+      - redis
+    labels:
+      - "job=ws-gateway"
+      - "node_id=gw-1"
+      - "metrics_port=9003"
+    networks:
+      default:
+
+  # 默认网关节点2
+  gateway-2:
+    image: "ws-gateway-2025-06-18-19-57-28:latest"
+    ports:
+      - "9005:9002" # WebSocket端口映射到宿主机9004
+    environment:
+      - GATEWAY_NODE_ID=gw-2
+      - GATEWAY_NODE_HOST_IP=localhost
+      - GATEWAY_NODE_HOST_PORT=9005
+      - GATEWAY_STOP_TIMEOUT=30
+      - EGO_DEBUG=true
+    depends_on:
+      - etcd
+      - kafka
+      - redis
+    labels:
+      - "job=ws-gateway"
+      - "node_id=gw-2"
+      - "metrics_port=9003"
+    networks:
+      default:
+
 volumes:
   default:

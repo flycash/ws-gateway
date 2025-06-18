@@ -1,38 +1,38 @@
-# Stage 1: Build the application and dependencies
+# 阶段1: 构建应用程序和依赖项
 FROM golang:1.24 AS builder
 
-# Set the working directory inside the container
+# 设置容器内的工作目录
 WORKDIR /app
 
-# Copy the Go module files
+# 复制Go模块文件
 COPY go.mod go.sum ./
 
-# Download the Go dependencies
-RUN go env -w GOPROXY=https://goproxy.cn,direct && go env -w GOPRIVATE=github.com/ecodeclub
+# 下载Go依赖项
+RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN go mod download && go mod tidy
 
-# Copy the rest of the application source code
-COPY singleprocess .
+# 复制其余的应用程序源代码
+COPY . .
 
-# Build the Go binaries
+# 构建Go二进制文件
 RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o gateway cmd/main.go
 
-# Stage 2: Create minimal Docker images for exec
+# 阶段2: 创建用于执行的最小Docker镜像
 FROM golang:1.24-alpine
 
-# Set the working directory inside the container
+# 设置容器内的工作目录
 WORKDIR /app
 
-# Copy the builted gateway binary
+# 从构建阶段复制已构建的gateway二进制文件
 COPY --from=builder /app/gateway .
 
-# Copy the prod.toml for gateway
+# 为gateway复制生产配置文件
 COPY --from=builder /app/config/config.docker.yaml config.yaml
 
-# Set the executable permissions for ecodim binary
+# 为gateway二进制文件设置可执行权限
 RUN chmod +x ./gateway
 
 ENV EGO_DEBUG=true
 
-# Set the command to run when the container starts
-CMD ["./gateway", "--config=config.toml"]
+# 设置容器启动时运行的命令
+CMD ["./gateway", "--config=config.yaml"]

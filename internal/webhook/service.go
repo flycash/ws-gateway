@@ -7,6 +7,7 @@ import (
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"gitee.com/flycash/ws-gateway/internal/event"
+	"gitee.com/flycash/ws-gateway/pkg/scaler"
 	"github.com/gotomicro/ego/core/elog"
 )
 
@@ -15,6 +16,7 @@ type Service struct {
 	registry    gateway.ServiceRegistry
 	linkManager gateway.LinkManager
 	producer    event.ScaleUpEventProducer
+	scaler      scaler.Scaler
 	logger      *elog.Component
 }
 
@@ -22,12 +24,14 @@ func NewService(nodeInfo *apiv1.Node,
 	registry gateway.ServiceRegistry,
 	linkManager gateway.LinkManager,
 	producer event.ScaleUpEventProducer,
+	scaler scaler.Scaler,
 ) *Service {
 	return &Service{
 		nodeInfo:    nodeInfo,
 		registry:    registry,
 		linkManager: linkManager,
 		producer:    producer,
+		scaler:      scaler,
 		logger:      elog.EgoLogger.With(elog.FieldComponent("webhook.Service")),
 	}
 }
@@ -55,34 +59,47 @@ func (s *Service) Rebalance(ctx context.Context, selector gateway.LinkSelector) 
 }
 
 func (s *Service) ScaleUp(ctx context.Context) error {
-	// 调用scaler
-	s.logger.Info("扩容中....确保扩容节点正常启动 —— 拿到扩容节点在注册中心的信息")
-	// todo:给出节点扩容的节点ID集合
-	newNodeIDs := make([]string, 0)
-	var availableNodes []*apiv1.Node
-	newNodes := make([]*apiv1.Node, 0, len(newNodeIDs))
-	// 获取所有可用节点信息
-	// for len(newNodeIDs) != len(newNodes) {
+	s.logger.Info("开始扩容流程")
 
+	// 调用DockerScaler进行完整扩容操作（包括等待注册成功）
+	scaleUpCount := 1
+	newNodes, err := s.scaler.ScaleUp(ctx, scaleUpCount)
+	if err != nil {
+		s.logger.Error("扩容操作失败", elog.FieldErr(err))
+		return fmt.Errorf("扩容操作失败: %w", err)
+	}
+
+	if newNodes == nil || len(newNodes.Nodes) == 0 {
+		s.logger.Warn("扩容操作没有创建新节点，可能存在并发扩容或其他原因")
+		return nil
+	}
+
+	s.logger.Info("扩容操作成功，新节点已注册到服务中心",
+		elog.Int("newNodeCount", len(newNodes.Nodes)))
+
+	// 获取最新的可用节点列表用于计算总数
 	availableNodes, err := s.registry.GetAvailableNodes(ctx, s.nodeInfo.GetId())
 	if err != nil {
-		s.logger.Error("获取可用节点信息失败", elog.FieldErr(err))
-		return fmt.Errorf("获取可用节点信息失败: %w", err)
+		s.logger.Error("获取可用节点列表失败", elog.FieldErr(err))
+		return fmt.Errorf("获取可用节点列表失败: %w", err)
 	}
 
-	for i := range newNodeIDs {
-		for j := range availableNodes {
-			if availableNodes[j].GetId() == newNodeIDs[i] {
-				newNodes = append(newNodes, availableNodes[j])
-			}
-		}
+	// 发送扩容事件通知集群中的其他节点
+	totalNodes := len(newNodes.Nodes) + len(availableNodes) + 1 // +1是当前节点
+	scaleUpEvent := event.ScaleUpEvent{
+		NewNodeCount:   int64(len(newNodes.Nodes)),
+		TotalNodeCount: int64(totalNodes),
+		NewNodeList:    newNodes,
+	}
+	err = s.producer.Produce(ctx, scaleUpEvent)
+	if err != nil {
+		s.logger.Error("发送扩容事件失败", elog.FieldErr(err))
+		return fmt.Errorf("发送扩容事件失败: %w", err)
 	}
 
-	// }
-	nodeList := &apiv1.NodeList{Nodes: newNodes}
-	return s.producer.Produce(ctx, event.ScaleUpEvent{
-		NewNodeCount:   int64(len(newNodes)),
-		TotalNodeCount: int64(len(availableNodes) + 1),
-		NewNodeList:    nodeList,
-	})
+	s.logger.Info("扩容流程完成",
+		elog.Int("newNodeCount", len(newNodes.Nodes)),
+		elog.Int("totalNodeCount", totalNodes))
+
+	return nil
 }

@@ -77,16 +77,20 @@ run_gateway:
 build_image:
 	@echo "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 构建Docker镜像 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
 	# 构建Docker镜像
-	@$(eval IMAGE_NAME := ws-gateway-$(shell date +%Y-%m-%d-%H-%M%S):latest)
+	@$(eval IMAGE_NAME := ws-gateway-$(shell date +%Y-%m-%d-%H-%M-%S):latest)
 	@docker build --progress plain -t $(IMAGE_NAME) -f ./scripts/build/Dockerfile .
 	# 本次构建出的镜像名
-	@echo $(IMAGE_NAME)
+	@echo "构建完成，镜像名称: $(IMAGE_NAME)"
 
 # 构建镜像并部署
 .PHONY: deploy
 deploy:
-	$(MAKE) build_image
-	# 修改image字段
-	@sed -i.out "/im:/,/image:/ s|image:.*|image: \'\$(IMAGE_NAME)\'|" ./scripts/test_docker_compose.yml
-	@$(MAKE) e2e_down
-	@$(MAKE) e2e_up
+	@echo "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 构建并部署 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
+	# 在同一个shell中完成构建和部署
+	@$(eval IMAGE_NAME := ws-gateway-$(shell date +%Y-%m-%d-%H-%M-%S):latest) \
+	&& echo "构建Docker镜像: $(IMAGE_NAME)" \
+	&& docker build --progress plain -t $(IMAGE_NAME) -f ./scripts/build/Dockerfile . \
+	&& echo "更新docker-compose中的镜像名称为: $(IMAGE_NAME)" \
+	&& sed -i.bak 's|image: "ws-gateway-[^"]*"|image: "$(IMAGE_NAME)"|g' ./scripts/test_docker_compose.yml \
+	&& $(MAKE) e2e_down \
+	&& $(MAKE) e2e_up

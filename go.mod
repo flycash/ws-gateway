@@ -5,6 +5,7 @@ go 1.24.1
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/docker/docker v28.2.2+incompatible
+	github.com/docker/go-connections v0.5.0
 	github.com/ecodeclub/ecache v0.0.0-20240111145855-75679834beca
 	github.com/ecodeclub/ekit v0.0.10
 	github.com/ecodeclub/ginx v0.0.1
@@ -50,7 +51,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fasthttp/websocket v1.5.2 // indirect
 	github.com/felixge/fgprof v0.9.2 // indirect

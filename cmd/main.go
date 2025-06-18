@@ -57,7 +57,8 @@ func main() {
 }
 
 func getHost() string {
-	ip := os.Getenv("GATEWAY_NODE_IP")
+	// 宿主机IP
+	ip := os.Getenv("GATEWAY_NODE_HOST_IP")
 	if ip != "" {
 		return ip
 	}
@@ -65,7 +66,8 @@ func getHost() string {
 }
 
 func getPort() int32 {
-	port := os.Getenv("GATEWAY_NODE_PORT")
+	// 映射到的宿主机端口
+	port := os.Getenv("GATEWAY_NODE_HOST_PORT")
 	atoi, err := strconv.ParseInt(port, 10, 32)
 	if err == nil {
 		return int32(atoi)

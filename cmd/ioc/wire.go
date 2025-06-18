@@ -9,6 +9,7 @@ import (
 	"gitee.com/flycash/ws-gateway/internal/limiter"
 	"gitee.com/flycash/ws-gateway/internal/link"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
+	scalerpkg "gitee.com/flycash/ws-gateway/pkg/scaler"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/redis/go-redis/v9"
 
@@ -39,6 +40,10 @@ func InitApp(nodeInfo *apiv1.Node) App {
 		ioc.InitTokenLimiter,
 		ioc.InitExponentialBackOff,
 
+		// Docker 扩容相关
+		ioc.InitDockerClient,
+		ioc.InitDockerScaler,
+
 		convertToWebsocketComponents,
 
 		wire.Struct(new(App), "*"))
@@ -57,6 +62,7 @@ func convertToWebsocketComponents(
 	backoff *backoff.ExponentialBackOff,
 	consumers map[string]*event.Consumer,
 	producer event.ScaleUpEventProducer,
+	scaler scalerpkg.Scaler,
 ) []gateway.Server {
 	configKey := "server.websocket"
 	s := make([]gateway.Server, 0, 2)
@@ -75,7 +81,7 @@ func convertToWebsocketComponents(
 		backoff,
 		consumers,
 	))
-	s = append(s, ioc.InitWebhookServer(nodeInfo, registry, linkManager, producer))
+	s = append(s, ioc.InitWebhookServer(nodeInfo, registry, linkManager, producer, scaler))
 	// }
 	return s
 }
