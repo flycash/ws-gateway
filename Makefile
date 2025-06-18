@@ -86,11 +86,11 @@ build_image:
 .PHONY: deploy
 deploy:
 	@echo "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 构建并部署 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
-	# 在同一个shell中完成构建和部署
-	@$(eval IMAGE_NAME := ws-gateway-$(shell date +%Y-%m-%d-%H-%M-%S):latest) \
-	&& echo "构建Docker镜像: $(IMAGE_NAME)" \
-	&& docker build --progress plain -t $(IMAGE_NAME) -f ./scripts/build/Dockerfile . \
-	&& echo "更新docker-compose中的镜像名称为: $(IMAGE_NAME)" \
-	&& sed -i.bak 's|image: "ws-gateway-[^"]*"|image: "$(IMAGE_NAME)"|g' ./scripts/test_docker_compose.yml \
-	&& $(MAKE) e2e_down \
-	&& $(MAKE) e2e_up
+	@$(eval IMAGE_NAME := ws-gateway-$(shell date +%Y-%m-%d-%H-%M-%S):latest)
+	@echo "构建Docker镜像: $(IMAGE_NAME)"
+	@docker build --progress plain -t $(IMAGE_NAME) -f ./scripts/build/Dockerfile .
+	@echo "更新docker-compose中的镜像名称为: $(IMAGE_NAME)"
+	@sed -i.bak 's|image: "ws-gateway-[^"]*"|image: "$(IMAGE_NAME)"|g' ./scripts/test_docker_compose.yml
+	@echo "部署完成，镜像名称: $(IMAGE_NAME)"
+	@$(MAKE) e2e_down
+	@$(MAKE) e2e_up
