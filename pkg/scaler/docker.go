@@ -3,6 +3,7 @@ package scaler
 import (
 	"context"
 	"fmt"
+	"net"
 	"strconv"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/ego-component/eetcd"
@@ -250,7 +251,7 @@ func (d *DockerScaler) createSingleNode(ctx context.Context, imageName, hostIP s
 		elog.Int64("hostPort", hostPort))
 
 	newNodeID := fmt.Sprintf("gw-%d", nodeID)
-	containerName := fmt.Sprintf("gateway-%d-1", nodeID)
+	containerName := fmt.Sprintf("%s-gateway-%d-1", d.dockerComposeProject, nodeID)
 
 	// 创建和启动容器
 	containerID, err := d.createAndStartContainer(ctx, containerName, newNodeID, imageName, hostIP, hostPort)
@@ -339,10 +340,16 @@ func (d *DockerScaler) createAndStartContainer(ctx context.Context, containerNam
 	}
 
 	// 配置端口映射
+	bindingIP := d.getBindingIP(hostIP)
+
+	d.logger.Info("确定端口绑定IP",
+		elog.String("inputHostIP", hostIP),
+		elog.String("finalBindingIP", bindingIP),
+	)
 	portBindings := nat.PortMap{}
 	portBindings[port] = []nat.PortBinding{
 		{
-			HostIP:   "0.0.0.0",
+			HostIP:   bindingIP,
 			HostPort: strconv.FormatInt(hostPort, 10),
 		},
 	}
@@ -361,18 +368,25 @@ func (d *DockerScaler) createAndStartContainer(ctx context.Context, containerNam
 		ExtraHosts: []string{
 			"host.docker.internal:host-gateway",
 		},
-		// 挂载Docker socket以支持容器扩容功能
-		Mounts: []mount.Mount{
-			{
-				Type:   mount.TypeBind,
-				Source: "/var/run/docker.sock",
-				Target: "/var/run/docker.sock",
+		// 挂载Docker socket以支持容器扩容功能，使用Binds与docker-compose保持一致
+		Binds: []string{
+			"/var/run/docker.sock:/var/run/docker.sock:rw",
+		},
+	}
+
+	networkConfig := &network.NetworkingConfig{
+		EndpointsConfig: map[string]*network.EndpointSettings{
+			networkName: {
+				Aliases: []string{
+					fmt.Sprintf("gateway-%d", d.extractNodeIDNumber(nodeID)), // 如 "gateway-3"
+					containerName,
+				},
 			},
 		},
 	}
 
 	// 创建容器（不需要单独的networkConfig，NetworkMode已经处理了网络配置）
-	resp, err := d.dockerCli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, containerName)
+	resp, err := d.dockerCli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, nil, containerName)
 	if err != nil {
 		return "", fmt.Errorf("创建容器失败: %w", err)
 	}
@@ -383,6 +397,26 @@ func (d *DockerScaler) createAndStartContainer(ctx context.Context, containerNam
 	}
 
 	return resp.ID, nil
+}
+
+func (d *DockerScaler) getBindingIP(hostIP string) string {
+	// 动态决定用于端口绑定的IP地址
+	// 这是你提出的绝佳方案！
+	var bindingIP string
+	// 解析传入的hostIP
+	parsedIP := net.ParseIP(hostIP)
+
+	// 如果hostIP是"localhost"，或者是一个回环/未指定地址 (如127.0.0.1, 0.0.0.0, ::, ::1)
+	// 我们就将bindingIP设为空字符串""，让Docker Daemon自动绑定到所有接口(IPv4+IPv6)
+	// 这样做最稳健。
+	if hostIP == "localhost" || (parsedIP != nil && (parsedIP.IsLoopback() || parsedIP.IsUnspecified())) {
+		bindingIP = ""
+	} else {
+		// 否则，它就是一个明确的、需要绑定的IP地址（比如另一台机器的IP或本机特定网卡IP）
+		// 我们就原样使用它。
+		bindingIP = hostIP
+	}
+	return bindingIP
 }
 
 // waitForNodesRegistration 等待新节点注册到服务中心

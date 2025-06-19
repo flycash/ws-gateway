@@ -134,6 +134,8 @@ type LinkManager interface {
 	// 这是实现优雅退出、再均衡等高级功能的关键方法。
 	RedirectLinks(ctx context.Context, selector LinkSelector, availableNodes *apiv1.NodeList) error
 
+	PushMessage(ctx context.Context, selector LinkSelector, message *apiv1.Message) error
+
 	// CleanIdleLinks 遍历所有连接，清理超过指定空闲时长的连接。
 	// 返回被清理的连接数量。此方法通常由一个后台定时任务周期性调用。
 	CleanIdleLinks(idleTimeout time.Duration) int
@@ -151,6 +153,8 @@ type LinkManager interface {
 	// GracefulClose 以优雅的方式关闭管理器。
 	// 它会首先尝试将所有连接重定向到其他节点，并在给定的超时时间内等待操作完成。
 	GracefulClose(ctx context.Context, availableNodes *apiv1.NodeList) error
+
+	GracefulCloseV2(ctx context.Context, message *apiv1.Message) error
 }
 
 // LinkSelector 定义了如何从一组 Link 中挑选出子集的策略接口。

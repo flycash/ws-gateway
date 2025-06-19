@@ -85,9 +85,8 @@ func (s *Service) ScaleUp(ctx context.Context) error {
 	}
 
 	// 发送扩容事件通知集群中的其他节点
-	totalNodes := len(newNodes.Nodes) + len(availableNodes.GetNodes()) + 1 // +1是当前节点
+	totalNodes := len(availableNodes.GetNodes()) + 1 // +1是当前节点
 	scaleUpEvent := event.ScaleUpEvent{
-		NewNodeCount:   int64(len(newNodes.Nodes)),
 		TotalNodeCount: int64(totalNodes),
 		NewNodeList:    newNodes,
 	}

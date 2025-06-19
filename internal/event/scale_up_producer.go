@@ -10,7 +10,6 @@ import (
 
 // ScaleUpEvent SCALE_UP 事件所需的具体数据。
 type ScaleUpEvent struct {
-	NewNodeCount   int64           `json:"newNodeCount"`
 	TotalNodeCount int64           `json:"totalNodeCount"`
 	NewNodeList    *apiv1.NodeList `json:"newNodeList"`
 }

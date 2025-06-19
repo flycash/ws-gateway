@@ -341,79 +341,53 @@ func (s *WebSocketServer) Prepare() error {
 func (s *WebSocketServer) GracefulStop(ctx context.Context) error {
 	s.logger.Info("开始优雅关闭服务器")
 
-	n := 4
-	done := make(chan struct{}, n)
 	// 停止接受新连接
-	go func() {
-		s.acceptingConnections.Store(false)
-		_ = s.listener.Close()
-		done <- struct{}{}
-	}()
+	s.acceptingConnections.Store(false)
+	_ = s.listener.Close()
 
-	go func() {
-		// 关闭消费者
-		for key := range s.consumers {
-			err := s.consumers[key].Stop()
-			if err != nil {
-				s.logger.Error("关闭消费者失败",
-					elog.String("name", s.consumers[key].Name()),
-					elog.FieldErr(err))
-			} else {
-				s.logger.Info("关闭消费者成功",
-					elog.String("name", s.consumers[key].Name()),
-				)
-			}
-		}
-		done <- struct{}{}
-	}()
+	// 优雅注销节点（先降权重，等待，再删除）
+	err := s.registry.GracefulDeregister(ctx, s.leaseID, s.nodeInfo.GetId())
+	if err != nil {
+		s.logger.Error("优雅注销节点失败", elog.FieldErr(err))
+	} else {
+		s.logger.Info("节点已从服务中心优雅注销")
+	}
 
-	ch := make(chan *apiv1.NodeList)
-	go func() {
-		// 获取其他可用节点
-		availableNodes, err := s.registry.GetAvailableNodes(ctx, s.nodeInfo.GetId())
+	// 关闭消费者
+	for key := range s.consumers {
+		err1 := s.consumers[key].Stop()
 		if err != nil {
-			s.logger.Error("获取可用节点失败", elog.FieldErr(err))
-			// 即使获取失败，也继续优雅关闭流程
-			availableNodes = &apiv1.NodeList{}
-		}
-		ch <- availableNodes
-		s.logger.Info("获取到可用节点",
-			elog.Int("nodeCount", len(availableNodes.GetNodes())))
-		// 优雅注销节点（先降权重，等待，再删除）
-		err = s.registry.GracefulDeregister(ctx, s.leaseID, s.nodeInfo.GetId())
-		if err != nil {
-			s.logger.Error("优雅注销节点失败", elog.FieldErr(err))
+			s.logger.Error("关闭消费者失败",
+				elog.String("name", s.consumers[key].Name()),
+				elog.FieldErr(err1))
 		} else {
-			s.logger.Info("节点已从服务中心优雅注销")
-		}
-		done <- struct{}{}
-	}()
-
-	go func() {
-		availableNodes := <-ch
-		// 优雅关闭所有连接（等待客户端主动断开或超时）
-		err := s.linkManager.GracefulClose(ctx, availableNodes)
-		if err != nil {
-			s.logger.Warn("优雅关闭连接超时，将强制关闭", elog.FieldErr(err))
-		} else {
-			s.logger.Info("所有连接已优雅关闭")
-		}
-		done <- struct{}{}
-	}()
-
-	for {
-		select {
-		case <-ctx.Done():
-			// 超时强制关闭
-			return s.Stop()
-		case <-done:
-			n--
-			if n == 0 {
-				// 正常关闭
-				return s.Stop()
-			}
+			s.logger.Info("关闭消费者成功",
+				elog.String("name", s.consumers[key].Name()),
+			)
 		}
 	}
+
+	// 获取其他可用节点
+	availableNodes, err := s.registry.GetAvailableNodes(ctx, s.nodeInfo.GetId())
+	if err != nil {
+		s.logger.Error("获取可用节点失败", elog.FieldErr(err))
+		// 即使获取失败，也继续优雅关闭流程
+		availableNodes = &apiv1.NodeList{}
+	}
+
+	s.logger.Info("获取到可用节点",
+		elog.Int("nodeCount", len(availableNodes.GetNodes())))
+
+	// 优雅关闭所有连接（等待客户端主动断开或超时）
+	err = s.linkManager.GracefulClose(ctx, availableNodes)
+	if err != nil {
+		s.logger.Warn("优雅关闭连接超时，将强制关闭", elog.FieldErr(err))
+	} else {
+		s.logger.Info("所有连接已优雅关闭")
+	}
+
+	<-ctx.Done()
+	return s.Stop()
 }
 
 func (s *WebSocketServer) Info() *server.ServiceInfo {
@@ -510,7 +484,7 @@ func (s *WebSocketServer) consumeScaleUpEvent(ctx context.Context, message *mq.M
 	// m := s.connLimiter.CurrentCapacity() // 会增大到配置的Capacity，当前为10
 	m := s.linkManager.Len() // 演示使用
 	n := msg.TotalNodeCount
-	k := msg.NewNodeCount
+	k := int64(len(msg.NewNodeList.GetNodes()))
 	count := m - ((m * (n - k)) / n)
 	s.logger.Info("count := m * (k/n)",
 		elog.Int64("count", count),
