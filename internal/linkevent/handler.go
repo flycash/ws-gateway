@@ -310,7 +310,7 @@ func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message
 		)
 		return err
 	}
-	return l.sendUpstreamMessageAck(lk, resp)
+	return l.sendUpstreamMessageAck(lk, msg.GetKey(), resp)
 }
 
 func (l *Handler) forwardToBusinessBackend(bizID int64, msg *apiv1.Message) (*apiv1.OnReceiveResponse, error) {
@@ -359,7 +359,7 @@ func (l *Handler) getBackendServiceClient(bizID int64) (apiv1.BackendServiceClie
 	}
 }
 
-func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveResponse) error {
+func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, key string, resp *apiv1.OnReceiveResponse) error {
 	// 将业务后端返回的"上行消息"的响应直接封装为body
 	respBody, err := l.codecHelper.Marshal(resp)
 	if err != nil {
@@ -371,8 +371,10 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, resp *apiv1.OnReceiveR
 	}
 
 	err = l.push(lk, &apiv1.Message{
-		Cmd:  apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
-		Key:  fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
+		Cmd: apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
+		//直接用原来的 key
+		Key: key,
+		//Key:  fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
 		Body: respBody,
 	})
 	if err != nil {
