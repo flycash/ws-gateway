@@ -11,7 +11,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/ego-component/eetcd"
@@ -240,13 +240,17 @@ func (d *DockerScaler) createNewNodes(ctx context.Context, count int, imageName 
 // createSingleNode 创建单个网关节点
 func (d *DockerScaler) createSingleNode(ctx context.Context, imageName, hostIP string) (*apiv1.Node, error) {
 	// 获取下一个可用的节点ID和端口（基于现有节点的最大值）
-	nodeID, hostPort, err := d.getNextAvailableNodeIDAndPort(ctx, d.currentNodeID)
+	nodeID, hostPort, err := d.getNextAvailableNodeIDAndPort(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("获取可用节点ID和端口失败: %w", err)
 	}
 
+	d.logger.Info("新节点ID和端口",
+		elog.Int64("nodeID", nodeID),
+		elog.Int64("hostPort", hostPort))
+
 	newNodeID := fmt.Sprintf("gw-%d", nodeID)
-	containerName := fmt.Sprintf("gateway-%d", nodeID)
+	containerName := fmt.Sprintf("gateway-%d-1", nodeID)
 
 	// 创建和启动容器
 	containerID, err := d.createAndStartContainer(ctx, containerName, newNodeID, imageName, hostIP, hostPort)
@@ -269,19 +273,23 @@ func (d *DockerScaler) createSingleNode(ctx context.Context, imageName, hostIP s
 }
 
 // getNextAvailableNodeIDAndPort 获取下一个可用的节点ID和端口，基于现有节点的最大值
-func (d *DockerScaler) getNextAvailableNodeIDAndPort(ctx context.Context, currentNodeID string) (nodeID, port int64, err error) {
+func (d *DockerScaler) getNextAvailableNodeIDAndPort(ctx context.Context) (nodeID, port int64, err error) {
 	// 获取所有可用节点（包括当前节点）
-	availableNodes, err := d.registry.GetAvailableNodes(ctx, currentNodeID)
+	availableNodes, err := d.registry.GetAvailableNodes(ctx, "")
 	if err != nil {
 		return 0, 0, fmt.Errorf("获取可用节点失败: %w", err)
 	}
+
+	d.logger.Info("获取全部节点信息（包含当前节点）",
+		elog.String("availableNodes", availableNodes.String()))
 
 	// 找到最大节点ID和端口号
 	// 如果没有现有节点，从1开始分配节点ID，从9003开始分配端口（避开9002这个内部端口）
 	maxNodeID := int64(DefaultStartNodeID) // 如果没有节点，下一个将是1
 	maxPort := int64(DefaultStartPort)     // 如果没有节点，下一个将是9003
 
-	for _, node := range availableNodes {
+	nodes := availableNodes.GetNodes()
+	for _, node := range nodes {
 		// 解析节点ID中的数字部分 (gw-1 -> 1)
 		if nodeIDNum := d.extractNodeIDNumber(node.Id); nodeIDNum > maxNodeID {
 			maxNodeID = nodeIDNum
@@ -324,9 +332,10 @@ func (d *DockerScaler) createAndStartContainer(ctx context.Context, containerNam
 			"node_id":                    nodeID,
 			"metrics_port":               "9003",
 			"com.docker.compose.project": d.dockerComposeProject,
+			"dynamic-scaling":            "true",
 		},
 		// 有些网络驱动要求 ExposedPorts 才能完成 nat 绑定
-		ExposedPorts: nat.PortSet{port: struct{}{}}, // 新增
+		ExposedPorts: nat.PortSet{port: struct{}{}},
 	}
 
 	// 配置端口映射
@@ -338,20 +347,32 @@ func (d *DockerScaler) createAndStartContainer(ctx context.Context, containerNam
 		},
 	}
 
-	hostConfig := &container.HostConfig{
-		PortBindings: portBindings,
-	}
-
 	// 配置网络 - Docker Compose自动创建的网络名格式为: {项目名}_default
 	networkName := d.dockerComposeProject + "_default"
-	networkConfig := &network.NetworkingConfig{
-		EndpointsConfig: map[string]*network.EndpointSettings{
-			networkName: {},
+
+	d.logger.Info("配置容器网络",
+		elog.String("networkName", networkName),
+		elog.String("dockerComposeProject", d.dockerComposeProject))
+
+	hostConfig := &container.HostConfig{
+		NetworkMode:  container.NetworkMode(networkName), // 设置正确的网络模式
+		PortBindings: portBindings,
+		// 允许容器访问宿主机服务（如IM后端服务）
+		ExtraHosts: []string{
+			"host.docker.internal:host-gateway",
+		},
+		// 挂载Docker socket以支持容器扩容功能
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: "/var/run/docker.sock",
+				Target: "/var/run/docker.sock",
+			},
 		},
 	}
 
-	// 创建容器
-	resp, err := d.dockerCli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, nil, containerName)
+	// 创建容器（不需要单独的networkConfig，NetworkMode已经处理了网络配置）
+	resp, err := d.dockerCli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, containerName)
 	if err != nil {
 		return "", fmt.Errorf("创建容器失败: %w", err)
 	}
@@ -393,7 +414,7 @@ func (d *DockerScaler) waitForNodesRegistration(ctx context.Context, expectedNod
 			}
 
 			// 检查新节点是否已注册
-			registeredNodes := d.findRegisteredNodes(expectedNodes, availableNodes)
+			registeredNodes := d.findRegisteredNodes(expectedNodes, availableNodes.GetNodes())
 
 			d.logger.Debug("检查新节点注册状态",
 				elog.Int("expectedCount", len(expectedNodes)),

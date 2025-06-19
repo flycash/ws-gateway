@@ -35,7 +35,7 @@ func InitApp(nodeInfo *gatewayapiv1.Node) App {
 	manager := ioc.InitLinkManager(codec)
 	tokenLimiter := ioc.InitTokenLimiter()
 	exponentialBackOff := ioc.InitExponentialBackOff()
-	v := ioc.InitConsumers(mq)
+	v := ioc.InitConsumers(mq, nodeInfo)
 	scaleUpEventProducer := ioc.InitScaleUpEventProducer(mq)
 	client := ioc.InitDockerClient()
 	scaler := ioc.InitDockerScaler(client, component, serviceRegistry, nodeInfo)

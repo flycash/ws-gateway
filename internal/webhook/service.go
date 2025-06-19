@@ -46,10 +46,10 @@ func (s *Service) Rebalance(ctx context.Context, selector gateway.LinkSelector) 
 		return fmt.Errorf("获取可用节点失败: %w", err)
 	}
 
-	s.logger.Info("找到可用重定向节点", elog.Any("nodes", availableNodes))
+	s.logger.Info("找到可用重定向节点", elog.String("nodes", availableNodes.String()))
 
 	// 对选中的link集合进行重定向
-	err = s.linkManager.RedirectLinks(ctx, selector, &apiv1.NodeList{Nodes: availableNodes})
+	err = s.linkManager.RedirectLinks(ctx, selector, availableNodes)
 	if err != nil {
 		s.logger.Error("重均衡失败：下发重定向指令时出错", elog.FieldErr(err))
 		return err
@@ -85,7 +85,7 @@ func (s *Service) ScaleUp(ctx context.Context) error {
 	}
 
 	// 发送扩容事件通知集群中的其他节点
-	totalNodes := len(newNodes.Nodes) + len(availableNodes) + 1 // +1是当前节点
+	totalNodes := len(newNodes.Nodes) + len(availableNodes.GetNodes()) + 1 // +1是当前节点
 	scaleUpEvent := event.ScaleUpEvent{
 		NewNodeCount:   int64(len(newNodes.Nodes)),
 		TotalNodeCount: int64(totalNodes),

@@ -1058,17 +1058,17 @@ func (c *MockLinkManagerFindLinkByUserInfoCall) DoAndReturn(f func(session.UserI
 }
 
 // GracefulClose mocks base method.
-func (m *MockLinkManager) GracefulClose(ctx context.Context) error {
+func (m *MockLinkManager) GracefulClose(ctx context.Context, availableNodes *gatewayapiv1.NodeList) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GracefulClose", ctx)
+	ret := m.ctrl.Call(m, "GracefulClose", ctx, availableNodes)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // GracefulClose indicates an expected call of GracefulClose.
-func (mr *MockLinkManagerMockRecorder) GracefulClose(ctx any) *MockLinkManagerGracefulCloseCall {
+func (mr *MockLinkManagerMockRecorder) GracefulClose(ctx, availableNodes any) *MockLinkManagerGracefulCloseCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GracefulClose", reflect.TypeOf((*MockLinkManager)(nil).GracefulClose), ctx)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GracefulClose", reflect.TypeOf((*MockLinkManager)(nil).GracefulClose), ctx, availableNodes)
 	return &MockLinkManagerGracefulCloseCall{Call: call}
 }
 
@@ -1084,13 +1084,13 @@ func (c *MockLinkManagerGracefulCloseCall) Return(arg0 error) *MockLinkManagerGr
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockLinkManagerGracefulCloseCall) Do(f func(context.Context) error) *MockLinkManagerGracefulCloseCall {
+func (c *MockLinkManagerGracefulCloseCall) Do(f func(context.Context, *gatewayapiv1.NodeList) error) *MockLinkManagerGracefulCloseCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockLinkManagerGracefulCloseCall) DoAndReturn(f func(context.Context) error) *MockLinkManagerGracefulCloseCall {
+func (c *MockLinkManagerGracefulCloseCall) DoAndReturn(f func(context.Context, *gatewayapiv1.NodeList) error) *MockLinkManagerGracefulCloseCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1411,10 +1411,10 @@ func (c *MockServiceRegistryDeregisterCall) DoAndReturn(f func(context.Context, 
 }
 
 // GetAvailableNodes mocks base method.
-func (m *MockServiceRegistry) GetAvailableNodes(ctx context.Context, selfID string) ([]*gatewayapiv1.Node, error) {
+func (m *MockServiceRegistry) GetAvailableNodes(ctx context.Context, selfID string) (*gatewayapiv1.NodeList, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAvailableNodes", ctx, selfID)
-	ret0, _ := ret[0].([]*gatewayapiv1.Node)
+	ret0, _ := ret[0].(*gatewayapiv1.NodeList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -1432,19 +1432,19 @@ type MockServiceRegistryGetAvailableNodesCall struct {
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockServiceRegistryGetAvailableNodesCall) Return(arg0 []*gatewayapiv1.Node, arg1 error) *MockServiceRegistryGetAvailableNodesCall {
+func (c *MockServiceRegistryGetAvailableNodesCall) Return(arg0 *gatewayapiv1.NodeList, arg1 error) *MockServiceRegistryGetAvailableNodesCall {
 	c.Call = c.Call.Return(arg0, arg1)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockServiceRegistryGetAvailableNodesCall) Do(f func(context.Context, string) ([]*gatewayapiv1.Node, error)) *MockServiceRegistryGetAvailableNodesCall {
+func (c *MockServiceRegistryGetAvailableNodesCall) Do(f func(context.Context, string) (*gatewayapiv1.NodeList, error)) *MockServiceRegistryGetAvailableNodesCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockServiceRegistryGetAvailableNodesCall) DoAndReturn(f func(context.Context, string) ([]*gatewayapiv1.Node, error)) *MockServiceRegistryGetAvailableNodesCall {
+func (c *MockServiceRegistryGetAvailableNodesCall) DoAndReturn(f func(context.Context, string) (*gatewayapiv1.NodeList, error)) *MockServiceRegistryGetAvailableNodesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

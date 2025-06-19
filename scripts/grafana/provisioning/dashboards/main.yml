@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: 'default-dashboards'
+    orgId: 1
+    folder: 'Dashboards'   # 在 Grafana UI 中显示的文件夹名
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards  # 这是容器内的路径，我们会通过 volume 映射

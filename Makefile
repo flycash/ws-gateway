@@ -36,6 +36,10 @@ e2e_up:
 
 .PHONY: e2e_down
 e2e_down:
+	@echo "清理动态创建的网关容器..."
+	@docker ps -q --filter "label=com.docker.compose.project=ws-gateway" --filter "label=dynamic-scaling=true" | xargs -r docker stop
+	@docker ps -aq --filter "label=com.docker.compose.project=ws-gateway" --filter "label=dynamic-scaling=true" | xargs -r docker rm
+	@echo "清理Docker Compose文件定义的容器..."
 	@docker compose -p ws-gateway -f scripts/test_docker_compose.yml down -v
 
 .PHONY: e2e
@@ -86,6 +90,7 @@ build_image:
 .PHONY: deploy
 deploy:
 	@echo "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 构建并部署 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
+	@$(MAKE) e2e_down
 	@$(eval IMAGE_NAME := ws-gateway-$(shell date +%Y-%m-%d-%H-%M-%S):latest)
 	@echo "构建Docker镜像: $(IMAGE_NAME)"
 	@docker build --progress plain -t $(IMAGE_NAME) -f ./scripts/build/Dockerfile .

@@ -367,18 +367,18 @@ func (s *WebSocketServer) GracefulStop(ctx context.Context) error {
 		done <- struct{}{}
 	}()
 
-	ch := make(chan []*apiv1.Node)
+	ch := make(chan *apiv1.NodeList)
 	go func() {
 		// 获取其他可用节点
 		availableNodes, err := s.registry.GetAvailableNodes(ctx, s.nodeInfo.GetId())
 		if err != nil {
 			s.logger.Error("获取可用节点失败", elog.FieldErr(err))
 			// 即使获取失败，也继续优雅关闭流程
-			availableNodes = []*apiv1.Node{}
+			availableNodes = &apiv1.NodeList{}
 		}
 		ch <- availableNodes
 		s.logger.Info("获取到可用节点",
-			elog.Int("nodeCount", len(availableNodes)))
+			elog.Int("nodeCount", len(availableNodes.GetNodes())))
 		// 优雅注销节点（先降权重，等待，再删除）
 		err = s.registry.GracefulDeregister(ctx, s.leaseID, s.nodeInfo.GetId())
 		if err != nil {
@@ -391,15 +391,8 @@ func (s *WebSocketServer) GracefulStop(ctx context.Context) error {
 
 	go func() {
 		availableNodes := <-ch
-		// 如果有可用节点，向所有连接发送重定向消息
-		err := s.linkManager.RedirectLinks(ctx, link.NewAllLinksSelector(), &apiv1.NodeList{Nodes: availableNodes})
-		if err != nil {
-			s.logger.Error("发送重定向消息失败", elog.FieldErr(err))
-		} else {
-			s.logger.Info("向所有连接发送重定向消息成功")
-		}
 		// 优雅关闭所有连接（等待客户端主动断开或超时）
-		err = s.linkManager.GracefulClose(ctx)
+		err := s.linkManager.GracefulClose(ctx, availableNodes)
 		if err != nil {
 			s.logger.Warn("优雅关闭连接超时，将强制关闭", elog.FieldErr(err))
 		} else {
@@ -485,6 +478,7 @@ func (s *WebSocketServer) findLink(msg *apiv1.PushMessage) (gateway.Link, error)
 }
 
 func (s *WebSocketServer) consumeScaleUpEvent(ctx context.Context, message *mq.Message) error {
+	s.logger.Info("开始处理扩容再均衡事件")
 	var msg event.ScaleUpEvent
 	err := json.Unmarshal(message.Value, &msg)
 	if err != nil {
@@ -513,19 +507,24 @@ func (s *WebSocketServer) consumeScaleUpEvent(ctx context.Context, message *mq.M
 	// 1000 * (4-1)/4 = 750
 	// M - M * (N-k)/N  = M * K/N = 250
 	// (M*(N-K)/N)/(N-K) = (M/N) = 250
-	m := s.connLimiter.CurrentCapacity()
+	// m := s.connLimiter.CurrentCapacity() // 会增大到配置的Capacity，当前为10
+	m := s.linkManager.Len() // 演示使用
 	n := msg.TotalNodeCount
 	k := msg.NewNodeCount
-
-	count := m * (k / n)
+	count := m - ((m * (n - k)) / n)
+	s.logger.Info("count := m * (k/n)",
+		elog.Int64("count", count),
+		elog.Int64("m", m),
+		elog.Int64("k", k),
+		elog.Int64("n", n))
 	selector := link.NewRandomLinksSelector(count)
 	err = s.linkManager.RedirectLinks(ctx, selector, msg.NewNodeList)
 	if err != nil {
-		s.logger.Error("扩容后，重均衡失败：下发重定向指令时出错", elog.FieldErr(err))
+		s.logger.Error("扩容再均衡失败：下发重定向指令时出错", elog.FieldErr(err))
 		return err
 	}
 
-	s.logger.Info("扩容后，重均衡成功",
+	s.logger.Info("扩容再均衡成功",
 		elog.String("step", "consumeScaleUpEvent"),
 		elog.String("节点信息", s.nodeInfo.String()),
 		elog.String("新增节点", msg.NewNodeList.String()),

@@ -44,8 +44,10 @@ scrape_configs:
         target_label: __metrics_port
 
       # __address__ = 容器IP:metrics_port
-      - source_labels: [__meta_docker_container_ip, __metrics_port]
-        regex: (.+);(.+)
+      #  老版本用 __meta_docker_container_ip 获取ip
+      #  新版本用 __meta_docker_network_ip 获取ip
+      - source_labels: [__meta_docker_network_ip, __metrics_port]
+        regex: ^(.+);(\d+)$
         replacement: $1:$2
         target_label: __address__
 

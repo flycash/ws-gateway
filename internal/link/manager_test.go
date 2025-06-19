@@ -488,11 +488,18 @@ func (s *ManagerSuite) TestGracefulClose() {
 		}
 	}()
 
+	// 创建可用节点列表
+	availableNodes := &apiv1.NodeList{
+		Nodes: []*apiv1.Node{
+			{Id: "node-1", Ip: "192.168.1.1", Port: 8080},
+		},
+	}
+
 	// 测试优雅关闭
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	err := s.manager.GracefulClose(ctx)
+	err := s.manager.GracefulClose(ctx, availableNodes)
 	s.NoError(err)
 	s.Equal(int64(0), s.manager.Len())
 }
@@ -518,11 +525,18 @@ func (s *ManagerSuite) TestGracefulClose_SuccessPath() {
 		}
 	}
 
+	// 创建可用节点列表
+	availableNodes := &apiv1.NodeList{
+		Nodes: []*apiv1.Node{
+			{Id: "node-1", Ip: "192.168.1.1", Port: 8080},
+		},
+	}
+
 	// 测试优雅关闭，应该立即成功
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err := s.manager.GracefulClose(ctx)
+	err := s.manager.GracefulClose(ctx, availableNodes)
 	s.NoError(err)
 	s.Equal(int64(0), s.manager.Len())
 }
@@ -532,11 +546,18 @@ func (s *ManagerSuite) TestGracefulClose_Timeout() {
 	s.createMultipleLinks(2)
 	s.Equal(int64(2), s.manager.Len())
 
+	// 创建可用节点列表
+	availableNodes := &apiv1.NodeList{
+		Nodes: []*apiv1.Node{
+			{Id: "node-1", Ip: "192.168.1.1", Port: 8080},
+		},
+	}
+
 	// 设置很短的超时时间
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	err := s.manager.GracefulClose(ctx)
+	err := s.manager.GracefulClose(ctx, availableNodes)
 	s.NoError(err) // 超时后会调用 Close()，所以不应该返回错误
 	s.Equal(int64(0), s.manager.Len())
 }
@@ -544,10 +565,18 @@ func (s *ManagerSuite) TestGracefulClose_Timeout() {
 func (s *ManagerSuite) TestGracefulClose_EmptyManager() {
 	// 测试空管理器的优雅关闭
 	emptyManager := link.NewManager(s.codec, nil)
+
+	// 创建可用节点列表
+	availableNodes := &apiv1.NodeList{
+		Nodes: []*apiv1.Node{
+			{Id: "node-1", Ip: "192.168.1.1", Port: 8080},
+		},
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	err := emptyManager.GracefulClose(ctx)
+	err := emptyManager.GracefulClose(ctx, availableNodes)
 	s.NoError(err)
 	s.Equal(int64(0), emptyManager.Len())
 }

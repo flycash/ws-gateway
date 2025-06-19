@@ -47,10 +47,12 @@ services:
       - 2380:2380
   prometheus:
     image: prom/prometheus:latest
+    user: root
     volumes:
       #  - 将本地的 prometheus 文件映射到容器内的配置文件
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # 挂载Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro # ro = 只读权限
     ports:
       #  - 访问数据的端口
       - 9090:9090
@@ -63,10 +65,20 @@ services:
     image: grafana/grafana-enterprise:latest
     ports:
       - 3000:3000
+    volumes:
+      # 挂载我们创建的置备文件
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      # 挂载 Dashboard JSON 文件
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+    environment:
+      # 设置一个固定的 admin 密码，避免每次启动都随机生成
+      - GF_SECURITY_ADMIN_PASSWORD=123
+    depends_on:
+      - prometheus
 
   # 默认网关节点1
   gateway-1:
-    image: "ws-gateway-2025-06-18-21-19-14:latest"
+    image: "ws-gateway-2025-06-19-17-48-34:latest"
     ports:
       - "9004:9002" # WebSocket端口
     environment:
@@ -75,10 +87,15 @@ services:
       - GATEWAY_NODE_HOST_PORT=9004
       - GATEWAY_STOP_TIMEOUT=30
       - EGO_DEBUG=true
+    volumes:
+      # 挂载Docker socket，需要写权限创建容器扩容
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - etcd
       - kafka
       - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "job=ws-gateway"
       - "node_id=gw-1"
@@ -88,19 +105,24 @@ services:
 
   # 默认网关节点2
   gateway-2:
-    image: "ws-gateway-2025-06-18-21-19-14:latest"
+    image: "ws-gateway-2025-06-19-17-48-34:latest"
     ports:
-      - "9005:9002" # WebSocket端口映射到宿主机9004
+      - "9005:9002" # WebSocket端口映射到宿主机9005
     environment:
       - GATEWAY_NODE_ID=gw-2
       - GATEWAY_NODE_HOST_IP=localhost
       - GATEWAY_NODE_HOST_PORT=9005
       - GATEWAY_STOP_TIMEOUT=30
       - EGO_DEBUG=true
+    volumes:
+      # 挂载Docker socket，需要写权限创建容器扩容
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - etcd
       - kafka
       - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "job=ws-gateway"
       - "node_id=gw-2"

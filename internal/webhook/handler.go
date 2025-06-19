@@ -39,6 +39,12 @@ func (h *Handler) Rebalance(ctx *ginx.Context, req GrafanaWebhookPayload) (ginx.
 		elog.Any("req", req),
 	)
 
+	// 过滤 DatasourceNoData 告警，避免无意义的触发
+	if h.isDatasourceNoDataAlert(req) {
+		h.logger.Warn("收到 DatasourceNoData 告警，已忽略", elog.String("status", req.Status))
+		return ginx.Result{Msg: "OK"}, nil
+	}
+
 	h.logger.Info("收到 Grafana webhook 回调",
 		elog.String("status", req.Status))
 
@@ -65,6 +71,12 @@ func (h *Handler) ScaleUp(ctx *ginx.Context, req GrafanaWebhookPayload) (ginx.Re
 		elog.Any("req", req),
 	)
 
+	// 过滤 DatasourceNoData 告警，避免无意义的触发
+	if h.isDatasourceNoDataAlert(req) {
+		h.logger.Warn("收到 DatasourceNoData 告警，已忽略", elog.String("status", req.Status))
+		return ginx.Result{Msg: "OK"}, nil
+	}
+
 	h.logger.Info("收到 Grafana webhook 回调",
 		elog.String("status", req.Status))
 
@@ -81,4 +93,14 @@ func (h *Handler) ScaleUp(ctx *ginx.Context, req GrafanaWebhookPayload) (ginx.Re
 	return ginx.Result{
 		Msg: "OK",
 	}, nil
+}
+
+// isDatasourceNoDataAlert 检查是否为数据源无数据告警
+func (h *Handler) isDatasourceNoDataAlert(req GrafanaWebhookPayload) bool {
+	for i := range req.Alerts {
+		if req.Alerts[i].AlertName() == "DatasourceNoData" {
+			return true
+		}
+	}
+	return false
 }

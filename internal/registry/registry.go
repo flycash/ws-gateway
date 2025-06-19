@@ -292,7 +292,7 @@ func (r *EtcdRegistry) getNodeInfo(ctx context.Context, nodeID string) (*apiv1.N
 }
 
 // GetAvailableNodes 实现了从 Etcd 获取并反序列化所有可用节点信息的逻辑。
-func (r *EtcdRegistry) GetAvailableNodes(ctx context.Context, selfID string) ([]*apiv1.Node, error) {
+func (r *EtcdRegistry) GetAvailableNodes(ctx context.Context, selfID string) (*apiv1.NodeList, error) {
 	// 1. 从 Etcd 获取指定前缀下的所有键值对
 	resp, err := r.client.Get(ctx, GatewayRegistryPrefix, clientv3.WithPrefix())
 	if err != nil {
@@ -321,7 +321,7 @@ func (r *EtcdRegistry) GetAvailableNodes(ctx context.Context, selfID string) ([]
 		elog.String("selfID", selfID),
 		elog.Int("nodeCount", len(nodes)))
 
-	return nodes, nil
+	return &apiv1.NodeList{Nodes: nodes}, nil
 }
 
 // UpdateNodeInfo 实现了更新 Etcd 中节点信息的逻辑。

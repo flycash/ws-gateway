@@ -25,6 +25,10 @@ func initMQ() (mq.MQ, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = createTopic(queue, "scaleUpEvent.topic", "scaleUpEvent.partitions")
+	if err != nil {
+		return nil, err
+	}
 	return queue, nil
 }
 

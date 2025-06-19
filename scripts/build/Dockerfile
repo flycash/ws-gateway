@@ -9,7 +9,7 @@ COPY go.mod go.sum ./
 
 # 下载Go依赖项
 RUN go env -w GOPROXY=https://goproxy.cn,direct
-RUN go mod download && go mod tidy
+RUN go mod download
 
 # 复制其余的应用程序源代码
 COPY . .

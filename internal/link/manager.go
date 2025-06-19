@@ -165,6 +165,10 @@ func (m *Manager) RedirectLinks(_ context.Context, selector gateway.LinkSelector
 		return nil
 	}
 
+	return m.sendRedirectMessage(selectedLinks, availableNodes)
+}
+
+func (m *Manager) sendRedirectMessage(selectedLinks []gateway.Link, availableNodes *apiv1.NodeList) error {
 	payload, err := m.marshalRedirectMessage(availableNodes)
 	if err != nil {
 		m.logger.Error("序列化重定向消息失败",
@@ -179,7 +183,7 @@ func (m *Manager) RedirectLinks(_ context.Context, selector gateway.LinkSelector
 			m.logger.Error("发送重定向消息失败",
 				elog.String("linkID", selectedLinks[i].ID()),
 				elog.Any("availableNodes", availableNodes),
-				elog.FieldErr(err),
+				elog.FieldErr(err1),
 			)
 		} else {
 			m.logger.Info("发送重定向消息成功",
@@ -196,6 +200,7 @@ func (m *Manager) marshalRedirectMessage(availableNodes *apiv1.NodeList) ([]byte
 	if err != nil {
 		return nil, fmt.Errorf("序列化节点信息失败: %w", err)
 	}
+	m.logger.Info("重定向消息体，可用网关节点信息", elog.String("body", availableNodes.String()))
 	msg := &apiv1.Message{
 		Cmd:  apiv1.Message_COMMAND_TYPE_REDIRECT,
 		Key:  fmt.Sprintf("%d", time.Now().UnixMilli()),
@@ -266,7 +271,7 @@ func (m *Manager) Close() error {
 }
 
 // GracefulClose 优雅关闭所有连接
-func (m *Manager) GracefulClose(ctx context.Context) error {
+func (m *Manager) GracefulClose(ctx context.Context, availableNodes *apiv1.NodeList) error {
 	if m.len.Load() == 0 {
 		return nil
 	}
@@ -275,6 +280,13 @@ func (m *Manager) GracefulClose(ctx context.Context) error {
 		elog.Int64("linkCount", m.len.Load()),
 	)
 
+	// 向所有连接发送重定向消息
+	err := m.sendRedirectMessage(m.Links(), availableNodes)
+	if err != nil {
+		m.logger.Error("优雅关闭，向所有连接发送重定向消息失败", elog.FieldErr(err))
+	}
+
+	// 等待前端关闭连接
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {

@@ -150,7 +150,7 @@ type LinkManager interface {
 
 	// GracefulClose 以优雅的方式关闭管理器。
 	// 它会首先尝试将所有连接重定向到其他节点，并在给定的超时时间内等待操作完成。
-	GracefulClose(ctx context.Context) error
+	GracefulClose(ctx context.Context, availableNodes *apiv1.NodeList) error
 }
 
 // LinkSelector 定义了如何从一组 Link 中挑选出子集的策略接口。
@@ -183,7 +183,7 @@ type ServiceRegistry interface {
 
 	// GetAvailableNodes 从服务中心获取除自身以外的所有可用节点列表。
 	// 它会从 Etcd 中拉取所有节点信息，反序列化为 apiv1.Node 对象，并以切片形式返回。
-	GetAvailableNodes(ctx context.Context, selfID string) ([]*apiv1.Node, error)
+	GetAvailableNodes(ctx context.Context, selfID string) (*apiv1.NodeList, error)
 
 	// UpdateNodeInfo 更新 Etcd 中已注册节点的信息。
 	// 这对于动态上报节点的负载 (Load) 等信息至关重要。
