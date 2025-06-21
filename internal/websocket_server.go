@@ -478,11 +478,10 @@ func (s *WebSocketServer) consumeScaleUpEvent(ctx context.Context, message *mq.M
 	}
 
 	// 迁移超过 M * (N-k)/N 的连接，其中 M 是阈值，N 是最新节点数量，k 是扩容节点数量
-	// 1000 * (4-1)/4 = 750
+	// 1000 - 1000 * (4-1)/4 = 1000 - 750 =  250
 	// M - M * (N-k)/N  = M * K/N = 250
-	// (M*(N-K)/N)/(N-K) = (M/N) = 250
-	// m := s.connLimiter.CurrentCapacity() // 会增大到配置的Capacity，当前为10
-	m := s.linkManager.Len() // 演示使用
+	// m := s.connLimiter.CurrentCapacity() // 生产使用，会增大到配置的Capacity，当前为10
+	m := s.linkManager.Len() // 演示使用，用少量连接就可以看到迁移效果
 	n := msg.TotalNodeCount
 	k := int64(len(msg.NewNodeList.GetNodes()))
 	count := m - ((m * (n - k)) / n)

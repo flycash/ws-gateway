@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
@@ -16,6 +17,7 @@ import (
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/gotomicro/ego/core/elog"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -56,6 +58,9 @@ type Handler struct {
 
 	pushRetryManager *pushretry.Manager
 
+	messageCounter     *prometheus.CounterVec
+	messageSizeCounter *prometheus.CounterVec
+
 	logger *elog.Component
 }
 
@@ -89,6 +94,25 @@ func NewHandler(
 		maxRetries:                      maxRetries,
 		logger:                          elog.EgoLogger.With(elog.FieldComponent("LinkEvent.Handler")),
 	}
+
+	registry := prometheus.DefaultRegisterer
+	h.messageCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "websocket_gateway",
+			Name:      "messages_total",
+			Help:      "上行和下行消息总数。",
+		},
+		[]string{"direction", "biz_id"},
+	)
+	h.messageSizeCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "websocket_gateway",
+			Name:      "message_size_bytes_total",
+			Help:      "消息体的总字节大小。",
+		},
+		[]string{"direction", "biz_id"},
+	)
+	registry.MustRegister(h.messageCounter, h.messageSizeCounter)
 
 	// 初始化重传管理器
 	h.pushRetryManager = pushretry.NewManager(
@@ -301,7 +325,10 @@ func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message
 	// 收到有意义的上行消息，更新活跃时间
 	lk.UpdateActiveTime()
 
-	resp, err := l.forwardToBusinessBackend(l.userInfo(lk).BizID, msg)
+	bizID := l.userInfo(lk).BizID
+	l.updateMessageMetrics("upstream", bizID, len(msg.GetBody()))
+
+	resp, err := l.forwardToBusinessBackend(bizID, msg)
 	if err != nil {
 		// 向业务后端转发失败，（包含已经重试）如何处理？ 这里返回err相当于丢掉了，等待前端超时重试
 		l.logger.Warn("向业务后端转发消息失败",
@@ -311,6 +338,12 @@ func (l *Handler) handleOnUpstreamMessageCmd(lk gateway.Link, msg *apiv1.Message
 		return err
 	}
 	return l.sendUpstreamMessageAck(lk, msg.GetKey(), resp)
+}
+
+func (l *Handler) updateMessageMetrics(direction string, bizID int64, bodySize int) {
+	bizIDStr := strconv.FormatInt(bizID, 10)
+	l.messageCounter.WithLabelValues(direction, bizIDStr).Inc()
+	l.messageSizeCounter.WithLabelValues(direction, bizIDStr).Add(float64(bodySize))
 }
 
 func (l *Handler) forwardToBusinessBackend(bizID int64, msg *apiv1.Message) (*apiv1.OnReceiveResponse, error) {
@@ -413,6 +446,8 @@ func (l *Handler) OnBackendPushMessage(lk gateway.Link, msg *apiv1.PushMessage) 
 	if msg.GetBizId() == 0 || msg.GetKey() == "" {
 		return fmt.Errorf("%w", ErrUnKnownBackendMessageFormat)
 	}
+
+	l.updateMessageMetrics("downstream", msg.GetBizId(), len(msg.GetBody()))
 
 	message := &apiv1.Message{
 		Cmd:  apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE,

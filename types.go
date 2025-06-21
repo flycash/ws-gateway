@@ -119,11 +119,9 @@ func (l *LinkEventHandlerWrapper) OnDisconnect(lk Link) error {
 // 它是网关节点的核心组件之一，负责连接的生命周期管理、查找和调度。
 type LinkManager interface {
 	// NewLink 基于底层的网络连接和用户会话，创建一个新的 Link 实例并纳入管理。
-	// 这是所有新连接加入系统的入口点。
 	NewLink(ctx context.Context, conn net.Conn, sess session.Session, compressionState *compression.State) (Link, error)
 
 	// FindLinkByUserInfo 根据用户会话信息（如用户ID）查找对应的 Link 实例。
-	// 这是一个非常重要的业务功能，例如，用于向特定用户推送消息。
 	FindLinkByUserInfo(userInfo session.UserInfo) (Link, bool)
 
 	// RemoveLink 根据连接ID从管理器中移除一个 Link 实例。
@@ -131,9 +129,9 @@ type LinkManager interface {
 	RemoveLink(linkID string) bool
 
 	// RedirectLinks 根据指定的 LinkSelector 策略，选择一组连接，并将它们重定向到其他可用节点。
-	// 这是实现优雅退出、再均衡等高级功能的关键方法。
 	RedirectLinks(ctx context.Context, selector LinkSelector, availableNodes *apiv1.NodeList) error
 
+	// PushMessage 根据指定的 LinkSelector 策略，选择一组连接，然后为它们推送 message
 	PushMessage(ctx context.Context, selector LinkSelector, message *apiv1.Message) error
 
 	// CleanIdleLinks 遍历所有连接，清理超过指定空闲时长的连接。
@@ -153,7 +151,7 @@ type LinkManager interface {
 	// GracefulClose 以优雅的方式关闭管理器。
 	// 它会首先尝试将所有连接重定向到其他节点，并在给定的超时时间内等待操作完成。
 	GracefulClose(ctx context.Context, availableNodes *apiv1.NodeList) error
-
+	// GracefulCloseV2 与GracefulClose的区别是外部拼好消息
 	GracefulCloseV2(ctx context.Context, message *apiv1.Message) error
 }
 
