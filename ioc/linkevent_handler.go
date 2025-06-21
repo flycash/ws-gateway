@@ -80,6 +80,10 @@ func initOnlineUserHandler() *linkevent.OnlineUserHandler {
 	return linkevent.NewOnlineUserHandler()
 }
 
+func initPrometheusHandler(codecHelper codec.Codec) *linkevent.PrometheusHandler {
+	return linkevent.NewPrometheusHandler(codecHelper)
+}
+
 func InitLinkEventHandlerWrapper(
 	cache ecache.Cache,
 	codecHelper codec.Codec,
@@ -89,5 +93,6 @@ func InitLinkEventHandlerWrapper(
 	h := initLinkEventHandler(cache, codecHelper, etcdClient)
 	uah := initUserActionHandler(producer)
 	olh := initOnlineUserHandler()
-	return gateway.NewLinkEventHandlerWrapper(h, uah, olh)
+	ph := initPrometheusHandler(codecHelper)
+	return gateway.NewLinkEventHandlerWrapper(h, uah, olh, ph)
 }

@@ -78,7 +78,7 @@ services:
 
   # 默认网关节点1
   gateway-1:
-    image: "ws-gateway-2025-06-21-18-51-14:latest"
+    image: "ws-gateway-2025-06-21-20-16-57:latest"
     ports:
       - "9004:9002" # WebSocket端口
     environment:
@@ -105,7 +105,7 @@ services:
 
   # 默认网关节点2
   gateway-2:
-    image: "ws-gateway-2025-06-21-18-51-14:latest"
+    image: "ws-gateway-2025-06-21-20-16-57:latest"
     ports:
       - "9005:9002" # WebSocket端口映射到宿主机9005
     environment:
