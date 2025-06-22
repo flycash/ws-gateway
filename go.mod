@@ -22,7 +22,9 @@ require (
 	go.etcd.io/etcd/client/v3 v3.6.1
 	go.uber.org/mock v0.5.2
 	go.uber.org/multierr v1.11.0
+	go.uber.org/ratelimit v0.3.1
 	golang.org/x/crypto v0.39.0
+	golang.org/x/time v0.5.0
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
 )
@@ -35,6 +37,7 @@ require (
 	github.com/alibaba/sentinel-golang v1.0.3 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect

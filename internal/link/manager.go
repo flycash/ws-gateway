@@ -26,6 +26,7 @@ const (
 	DefaultWriteBufferSize   = 256
 	DefaultReadBufferSize    = 256
 	DefaultCloseTimeout      = 1 * time.Second
+	DefaultUserRateLimit     = 10
 )
 
 var _ gateway.LinkManager = (*Manager)(nil)
@@ -40,6 +41,7 @@ type ManagerConfig struct {
 	MaxRetries        int32
 	SendBufferSize    int
 	ReceiveBufferSize int
+	UserRateLimit     int
 }
 
 // DefaultManagerConfig 返回默认配置
@@ -63,6 +65,7 @@ func NewManager(codecHelper codec.Codec, config *ManagerConfig) *Manager {
 			MaxRetries:        DefaultMaxRetries,
 			SendBufferSize:    DefaultWriteBufferSize,
 			ReceiveBufferSize: DefaultReadBufferSize,
+			UserRateLimit:     DefaultUserRateLimit,
 		}
 	}
 	return &Manager{
@@ -122,8 +125,12 @@ func (m *Manager) convertToLinkOptions(userInfo session.UserInfo, compressionSta
 		opts = append(opts, WithBuffer(m.config.SendBufferSize, m.config.ReceiveBufferSize))
 	}
 
-	// 设置自动关闭
-	opts = append(opts, WithAutoClose(userInfo.AutoClose))
+	opts = append(opts,
+		// 设置自动关闭
+		WithAutoClose(userInfo.AutoClose),
+		// 设置限流器
+		WithRateLimit(m.config.UserRateLimit))
+
 	return opts
 }
 

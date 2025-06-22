@@ -34,7 +34,9 @@ const (
 	Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE Message_CommandType = 4 // 下行推送请求
 	Message_COMMAND_TYPE_DOWNSTREAM_ACK     Message_CommandType = 5 // 下行推送响应
 	// 网关下发给前端的重定向指令，通常用于网关优雅关闭，前端不需要响应
-	Message_COMMAND_TYPE_REDIRECT Message_CommandType = 6 // 添加其他命令类型
+	Message_COMMAND_TYPE_REDIRECT Message_CommandType = 6
+	// 网关下发给前端的限流指令，前端不需要响应
+	Message_COMMAND_TYPE_RATE_LIMIT_EXCEEDED Message_CommandType = 7 // 添加其他命令类型
 )
 
 // Enum value maps for Message_CommandType.
@@ -47,6 +49,7 @@ var (
 		4: "COMMAND_TYPE_DOWNSTREAM_MESSAGE",
 		5: "COMMAND_TYPE_DOWNSTREAM_ACK",
 		6: "COMMAND_TYPE_REDIRECT",
+		7: "COMMAND_TYPE_RATE_LIMIT_EXCEEDED",
 	}
 	Message_CommandType_value = map[string]int32{
 		"COMMAND_TYPE_INVALID_UNSPECIFIED": 0,
@@ -56,6 +59,7 @@ var (
 		"COMMAND_TYPE_DOWNSTREAM_MESSAGE":  4,
 		"COMMAND_TYPE_DOWNSTREAM_ACK":      5,
 		"COMMAND_TYPE_REDIRECT":            6,
+		"COMMAND_TYPE_RATE_LIMIT_EXCEEDED": 7,
 	}
 )
 
@@ -214,7 +218,7 @@ func (x *OnReceiveRequest) GetBody() []byte {
 
 type OnReceiveResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MsgId         int64                  `protobuf:"varint,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"` // 业务方生成 的 ID，其实跟 gateway 没什么关系
+	MsgId         int64                  `protobuf:"varint,1,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"` // 业务方生成的 ID，其实跟 gateway 没什么关系
 	BizId         int64                  `protobuf:"varint,2,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -420,11 +424,11 @@ var File_gatewayapi_v1_message_proto protoreflect.FileDescriptor
 
 const file_gatewayapi_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\"\xda\x02\n" +
+	"\x1bgatewayapi/v1/message.proto\x12\rgatewayapi.v1\"\x80\x03\n" +
 	"\aMessage\x124\n" +
 	"\x03cmd\x18\x01 \x01(\x0e2\".gatewayapi.v1.Message.CommandTypeR\x03cmd\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x12\n" +
-	"\x04body\x18\x03 \x01(\fR\x04body\"\xf2\x01\n" +
+	"\x04body\x18\x03 \x01(\fR\x04body\"\x98\x02\n" +
 	"\vCommandType\x12$\n" +
 	" COMMAND_TYPE_INVALID_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16COMMAND_TYPE_HEARTBEAT\x10\x01\x12!\n" +
@@ -432,7 +436,8 @@ const file_gatewayapi_v1_message_proto_rawDesc = "" +
 	"\x19COMMAND_TYPE_UPSTREAM_ACK\x10\x03\x12#\n" +
 	"\x1fCOMMAND_TYPE_DOWNSTREAM_MESSAGE\x10\x04\x12\x1f\n" +
 	"\x1bCOMMAND_TYPE_DOWNSTREAM_ACK\x10\x05\x12\x19\n" +
-	"\x15COMMAND_TYPE_REDIRECT\x10\x06\"8\n" +
+	"\x15COMMAND_TYPE_REDIRECT\x10\x06\x12$\n" +
+	" COMMAND_TYPE_RATE_LIMIT_EXCEEDED\x10\a\"8\n" +
 	"\x10OnReceiveRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04body\x18\x02 \x01(\fR\x04body\"A\n" +

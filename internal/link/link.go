@@ -15,6 +15,7 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/gotomicro/ego/core/elog"
+	"go.uber.org/ratelimit"
 )
 
 var ErrLinkClosed = errors.New("websocket: 连接已关闭")
@@ -58,6 +59,10 @@ type Link struct {
 	autoClose      bool
 	lastActiveTime time.Time
 
+	// 限流
+	limitRate int
+	limiter   ratelimit.Limiter
+
 	// 日志
 	logger *elog.Component
 }
@@ -95,6 +100,15 @@ func WithBuffer(sendBuf, recvBuf int) Option {
 func WithAutoClose(autoClose bool) Option {
 	return func(l *Link) {
 		l.autoClose = autoClose
+	}
+}
+
+func WithRateLimit(rate int) Option {
+	return func(l *Link) {
+		if rate > 0 {
+			l.limitRate = rate
+			l.limiter = ratelimit.New(rate)
+		}
 	}
 }
 
@@ -215,6 +229,11 @@ func (l *Link) receiveLoop() {
 	}()
 
 	for {
+
+		if l.limiter != nil {
+			l.limiter.Take()
+		}
+
 		// 检查连接状态
 		select {
 		case <-l.ctx.Done():

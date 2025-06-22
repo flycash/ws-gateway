@@ -12,6 +12,7 @@ import (
 	"github.com/ecodeclub/ecache"
 	"github.com/ego-component/eetcd"
 	"github.com/gotomicro/ego/core/econf"
+	"golang.org/x/time/rate"
 )
 
 func initLinkEventHandler(
@@ -84,15 +85,21 @@ func initPrometheusHandler(codecHelper codec.Codec) *linkevent.PrometheusHandler
 	return linkevent.NewPrometheusHandler(codecHelper)
 }
 
+func initLimitHandler(c codec.Codec, limiter *rate.Limiter) *linkevent.LimitHandler {
+	return linkevent.NewLimitHandler(c, limiter)
+}
+
 func InitLinkEventHandlerWrapper(
 	cache ecache.Cache,
 	codecHelper codec.Codec,
 	etcdClient *eetcd.Component,
 	producer event.UserActionEventProducer,
+	limiter *rate.Limiter,
 ) *gateway.LinkEventHandlerWrapper {
 	h := initLinkEventHandler(cache, codecHelper, etcdClient)
 	uah := initUserActionHandler(producer)
 	olh := initOnlineUserHandler()
 	ph := initPrometheusHandler(codecHelper)
-	return gateway.NewLinkEventHandlerWrapper(h, uah, olh, ph)
+	l := initLimitHandler(codecHelper, limiter)
+	return gateway.NewLinkEventHandlerWrapper(l, h, uah, olh, ph)
 }

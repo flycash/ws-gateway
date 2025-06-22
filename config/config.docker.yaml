@@ -78,6 +78,9 @@ server:
     backoff:
       initialInterval: 1000000000
       maxInterval: 3000000000
+    limit:
+      rate: 1 # 每秒请求数
+      burst: 2 # 令牌桶容量
 
 backend:
   services:
@@ -106,6 +109,8 @@ link:
     initInterval: 1000000000
     maxInterval: 3000000000
     maxRetries: 3
+  limit:
+    rate: 2 # 每秒请求数
   eventHandler:
     requestTimeout: 3000000000
     retryStrategy:

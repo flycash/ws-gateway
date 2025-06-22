@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"net"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/multierr"
 )
+
+var ErrRateLimitExceeded = errors.New("请求过于频繁，请稍后重试")
 
 type Server interface {
 	server.Server
@@ -91,10 +94,15 @@ func (l *LinkEventHandlerWrapper) OnConnect(lk Link) error {
 	return err
 }
 
-func (l *LinkEventHandlerWrapper) OnFrontendSendMessage(lk Link, payload []byte) error {
+func (l *LinkEventHandlerWrapper) OnFrontendSendMessage(link Link, payload []byte) error {
 	var err error
-	for i := range l.handlers {
-		err = multierr.Append(err, l.handlers[i].OnFrontendSendMessage(lk, payload))
+	for _, h := range l.handlers {
+		err1 := h.OnFrontendSendMessage(link, payload)
+		if errors.Is(err1, ErrRateLimitExceeded) {
+			// 限流错误已经被处理（已通知前端），中断调用链即可
+			return nil
+		}
+		err = multierr.Append(err, err1)
 	}
 	return err
 }
@@ -156,7 +164,7 @@ type LinkManager interface {
 }
 
 // LinkSelector 定义了如何从一组 Link 中挑选出子集的策略接口。
-// 这是一个策略模式的应用，用于解耦“如何挑选”和“如何处理”。
+// 这是一个策略模式的应用，用于解耦"如何挑选"和"如何处理"。
 type LinkSelector interface {
 	// Select 根据特定策略，从输入的 links 切片中选择并返回一个子集。
 	Select(links []Link) []Link
