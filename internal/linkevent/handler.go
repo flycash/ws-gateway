@@ -372,9 +372,9 @@ func (l *Handler) sendUpstreamMessageAck(lk gateway.Link, key string, resp *apiv
 
 	err = l.push(lk, &apiv1.Message{
 		Cmd: apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,
-		//直接用原来的 key
+		// 直接用原来的 key
 		Key: key,
-		//Key:  fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
+		// Key:  fmt.Sprintf("%d-%d", resp.GetBizId(), resp.GetMsgId()),
 		Body: respBody,
 	})
 	if err != nil {
