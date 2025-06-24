@@ -1,4 +1,4 @@
-// Package capacity 实现一个“容量递增 + 轮询”LB。
+// Package v1 实现一个“容量递增 + 轮询”LB。
 // 每条后端在 resolver.Address.Attributes 中带 4 个字段：
 //
 //	initCapacity   int64   初始容量
@@ -7,7 +7,7 @@
 //	growthRate     float64 每秒按比例递增(0.1 代表 +10%)；二选一
 //
 // 十分适合做“灰度逐步放量”。
-package capacity
+package v1
 
 import (
 	"google.golang.org/grpc/balancer"
@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	BalancerName = "capacity_round_robin"
+	BalancerName = "capacity_round_robin_v1"
 )
 
 // NewBuilder ！！！警告：此函数包含一个严重的、会导致服务间状态交叉污染的 Bug。请勿在生产环境中使用。！！！
@@ -64,7 +64,7 @@ func NewBuilder() balancer.Builder {
 	//
 	// 正确的做法是：实现一个自定义的 `balancer.Builder`，并在其 `Build` 方法内部，
 	// 为每一个 `balancer.Balancer` 实例创建一个全新的、独立的 `pickerBuilder` 实例。
-	// 这可以确保每个服务（每个 `ClientConn`）的状态被完全隔离，互不干扰。
+	// 这可以确保每个服务（每个 `ClientConn`）的状态被完全隔离，互不干扰。详见 v2 版本
 	// ==================================================================================================
 	builder := base.NewBalancerBuilder(BalancerName, &pickerBuilder{}, base.Config{HealthCheck: true})
 	balancer.Register(builder)

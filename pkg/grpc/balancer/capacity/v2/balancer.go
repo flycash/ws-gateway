@@ -1,4 +1,4 @@
-// Package capacity 实现一个“容量递增 + 轮询”LB。
+// Package v2 实现一个"容量递增 + 轮询"LB。
 // 每条后端在 resolver.Address.Attributes 中带 4 个字段：
 //
 //	initCapacity   int64   初始容量
@@ -6,8 +6,8 @@
 //	increaseStep   int64   每秒线性递增步长（若为 0，则用 growthRate）
 //	growthRate     float64 每秒按比例递增(0.1 代表 +10%)；二选一
 //
-// 十分适合做“灰度逐步放量”。
-package capacity
+// 十分适合做"灰度逐步放量"。
+package v2
 
 import (
 	"sync"
@@ -19,32 +19,50 @@ import (
 )
 
 const (
-	BalancerNameV2 = "capacity_round_robin_v2"
+	BalancerName = "capacity_round_robin_v2"
 )
 
-// NewBuilderV2 创建一个新的自定义 Builder，解决服务间状态污染问题
-func NewBuilderV2() balancer.Builder {
+// NewBuilder 创建一个新的自定义 Builder。
+//
+// 为何需要自定义 Builder 而不使用 `base.NewBalancerBuilder`?
+// `base.NewBalancerBuilder` 会在所有服务间共享同一个 `PickerBuilder` 实例，这会导致严重的服务间状态污染问题。
+// (详见 v1 版本的注释)。
+//
+// 通过实现自定义的 `balancer.Builder` 接口，我们可以在其 `Build` 方法中，为每一个新的 `ClientConn`
+// (即每一个新的服务连接) 创建一个全新的、独立的 `capacityBalancer` 和 `pickerBuilder` 实例。
+// 这从根本上保证了每个服务之间的负载均衡状态是完全隔离的，互不干扰。
+func NewBuilder() balancer.Builder {
 	builder := &balancerBuilder{}
 	balancer.Register(builder)
 	return builder
 }
 
-// balancerBuilder 自定义的 Builder 实现
+// balancerBuilder 是一个实现了 `balancer.Builder` 接口的空结构体，其唯一目的是构建 `capacityBalancer`。
 type balancerBuilder struct{}
 
+// Build 为每个 ClientConn 创建一个全新的、隔离的 Balancer 实例。
 func (b *balancerBuilder) Build(cc balancer.ClientConn, _ balancer.BuildOptions) balancer.Balancer {
 	return &capacityBalancer{
 		conn:          cc,
-		pickerBuilder: &pickerBuilder{}, // 每个 ClientConn 独立的 pickerBuilder 实例
+		pickerBuilder: &pickerBuilder{}, // 每个 Balancer 实例都拥有一个独立的、有状态的 pickerBuilder。
 		subConns:      make(map[balancer.SubConn]*subConnInfo),
 	}
 }
 
 func (b *balancerBuilder) Name() string {
-	return BalancerNameV2
+	return BalancerName
 }
 
-// capacityBalancer 自定义的 Balancer 实现
+// capacityBalancer 是自定义的 Balancer 实现。
+//
+// 核心职责: SubConn 生命周期管理器。
+// 1. 接收来自 Resolver 的权威地址列表。
+// 2. 计算地址变更，创建 (NewSubConn) 或销毁 (Shutdown) SubConn。
+// 3. 监听所有 SubConn 的连接状态变化。
+// 4. 当一个 SubConn 被确认永久删除时，负责通知 pickerBuilder 清理其长期保留的状态。
+// 5. 在任何可能影响可用连接集合的事件发生后，调用 pickerBuilder 来构建一个新的 Picker，并更新给 gRPC 内核。
+//
+// 它自身是无状态的（就容量而言），所有与容量相关的、需要跨时间保持的状态，都委托给 pickerBuilder 管理。
 type capacityBalancer struct {
 	conn          balancer.ClientConn
 	pickerBuilder *pickerBuilder
@@ -73,6 +91,12 @@ func (b *capacityBalancer) UpdateClientConnState(state balancer.ClientConnState)
 		if !addrsSet[info.addr.Addr] {
 			sc.Shutdown()
 			delete(b.subConns, sc)
+
+			// 通知 pickerBuilder 清理过期的状态
+			nodeID := attrAs(info.addr, attrNodeID, "")
+			if nodeID != "" {
+				b.pickerBuilder.RemoveSubConn(nodeID)
+			}
 		}
 	}
 
@@ -85,7 +109,6 @@ func (b *capacityBalancer) UpdateClientConnState(state balancer.ClientConnState)
 				break
 			}
 		}
-
 		if found {
 			continue
 		}

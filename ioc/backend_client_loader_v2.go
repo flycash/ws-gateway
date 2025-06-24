@@ -9,7 +9,7 @@ import (
 
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	grpcpkg "gitee.com/flycash/ws-gateway/pkg/grpc"
-	capacityBalancer "gitee.com/flycash/ws-gateway/pkg/grpc/balancer/capacity"
+	capacityBalancerV2 "gitee.com/flycash/ws-gateway/pkg/grpc/balancer/capacity/v2"
 	registry "gitee.com/flycash/ws-gateway/pkg/grpc/registry/etcd"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/ego-component/eetcd"
@@ -40,7 +40,7 @@ func (b *BackendClientsLoaderV2) Load() *syncx.Map[int64, apiv1.BackendServiceCl
 	grpcClients := grpcpkg.NewClientsV2(
 		b.registry,
 		b.timeout,
-		capacityBalancer.NewBuilder(),
+		capacityBalancerV2.NewBuilder(),
 		func(conn *grpc.ClientConn) apiv1.BackendServiceClient {
 			return apiv1.NewBackendServiceClient(conn)
 		})
