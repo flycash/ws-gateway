@@ -1,0 +1,10 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus     # 在 Grafana UI 中显示的名字
+    type: prometheus
+    access: proxy         # 通过 Grafana 后端代理访问
+    url: http://prometheus:9090  # Docker Compose 网络中的服务名
+    uid: prometheus-uid   # 设置固定的UID，确保告警规则能正确引用
+    isDefault: true       # 设为默认数据源
+    editable: false       # 不允许在 UI 上修改

@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'websocket-gateway-local'
+    # 手动在宿主机上启动的网关
+    # 只需要一条 static_configs，就能在容器与宿主机混合场景下工作
+    scrape_interval: 5s
+    metrics_path: /metrics
+    static_configs:
+      # 机制一：静态配置，用于固定目标
+      # host.docker.internal 是一个特殊的 DNS 名称，
+      # 在 Docker 容器内部，它会解析为你宿主机的 IP 地址。
+      # 假设你的网关应用在宿主机上运行，并且 metrics 端口是 9003。
+      # 如果你的网关也作为 Docker 容器运行，你需要使用容器名和端口，
+      # 例如：['gateway-app-1:9003']
+      - targets: [ 'host.docker.internal:9003' ]
+        labels:
+          node_id: manual-node        # 可选，让它也有 node_id
+
+  - job_name: 'websocket-gateway'
+    # 2) 运行在 Docker 中、打了 label 的网关
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s   # 默认 60s，改小一点更及时
+
+    # 只抓取带 label 的容器
+    relabel_configs:
+      # 仅保留 label `job=ws-gateway` 的容器
+      - source_labels: [__meta_docker_container_label_job]
+        regex: ws-gateway
+        action: keep
+
+      # 用自定义 label 里的端口替换默认地址
+      - source_labels: [__meta_docker_container_label_metrics_port]
+        target_label: __metrics_port
+
+      # __address__ = 容器IP:metrics_port
+      #  老版本用 __meta_docker_container_ip 获取ip
+      #  新版本用 __meta_docker_network_ip 获取ip
+      - source_labels: [__meta_docker_network_ip, __metrics_port]
+        regex: ^(.+);(\d+)$
+        replacement: $1:$2
+        target_label: __address__
+
+      # 记录 node_id
+      - source_labels: [__meta_docker_container_label_node_id]
+        target_label: node_id

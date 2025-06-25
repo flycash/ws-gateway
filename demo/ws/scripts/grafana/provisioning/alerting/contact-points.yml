@@ -1,0 +1,18 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: gw-1-智能再均衡
+    receivers:
+      - uid: aepe1rr1zmp6oe
+        type: webhook
+        settings:
+          url: http://gateway-1:8001/webhook/v1
+        disableResolveMessage: false
+  - orgId: 1
+    name: gw-2-扩容再均衡
+    receivers:
+      - uid: depe1vk8aw2rkf
+        type: webhook
+        settings:
+          url: http://gateway-2:8001/webhook/v2
+        disableResolveMessage: false

@@ -1,0 +1,14 @@
+
+server:
+  grpc:
+    name: "mockServer"
+    addr: "127.0.0.1:8902"
+
+registry:
+  scheme: "etcd"
+
+etcd:
+  addrs:
+    - "127.0.0.1:2379"
+  connectTimeout: "1s"
+  secure: false
