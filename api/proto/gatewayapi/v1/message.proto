@@ -60,6 +60,27 @@ message OnReceiveResponse {
   int64 biz_id = 2;
 }
 
+// BatchBackendService 是业务后端可选实现的批量处理服务
+// 网关会将同一个BizID的消息聚合后，通过此服务批量发送给业务后端
+// 相比单个处理，批量处理可以显著提升吞吐量，减少网络开销
+// 业务后端可以选择实现此服务来获得更好的性能
+service BatchBackendService {
+  // BatchOnReceive 批量处理上行消息
+  // 网关会将满足以下任一条件的消息聚合后调用此接口：
+  // 1. 同一BizID下消息数量达到配置的阈值
+  // 2. 同一BizID下首个消息等待时间超过配置的超时时间
+  // 请求和响应的数组必须一一对应，顺序必须保持一致
+  rpc BatchOnReceive(BatchOnReceiveRequest) returns (BatchOnReceiveResponse);
+}
+
+message BatchOnReceiveRequest {
+  repeated OnReceiveRequest reqs = 1; // 批量请求列表，同属于一个BizID
+}
+
+message BatchOnReceiveResponse {
+  repeated OnReceiveResponse res = 1; // 批量响应列表，必须与请求列表一一对应且顺序一致
+}
+
 // PushMessage 是业务后端主动向gateway发送消息时所用的消息格式
 // 具体的通信方式有以下两种：
 // 1. 业务方发送PushMessage消息到Kafka中的指定topic，gateway监听并消费

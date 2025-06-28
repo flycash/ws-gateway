@@ -39,6 +39,12 @@ server:
     capacity: &cap 10
     # 序列化协议：支持 json, proto
     serializer: "json"
+    # 批处理配置
+    batch:
+      # 批次大小阈值
+      size: 10
+      # 批次超时时间（500ms）
+      timeout: 500000000  # 500ms in nanoseconds
     compression:
       # 是否启用 permessage-deflate 压缩扩展
       enabled: true

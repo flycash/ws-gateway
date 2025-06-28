@@ -126,6 +126,126 @@ var BackendService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	BatchBackendService_BatchOnReceive_FullMethodName = "/gatewayapi.v1.BatchBackendService/BatchOnReceive"
+)
+
+// BatchBackendServiceClient is the client API for BatchBackendService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// BatchBackendService 是业务后端可选实现的批量处理服务
+// 网关会将同一个BizID的消息聚合后，通过此服务批量发送给业务后端
+// 相比单个处理，批量处理可以显著提升吞吐量，减少网络开销
+// 业务后端可以选择实现此服务来获得更好的性能
+type BatchBackendServiceClient interface {
+	// BatchOnReceive 批量处理上行消息
+	// 网关会将满足以下任一条件的消息聚合后调用此接口：
+	// 1. 同一BizID下消息数量达到配置的阈值
+	// 2. 同一BizID下首个消息等待时间超过配置的超时时间
+	// 请求和响应的数组必须一一对应，顺序必须保持一致
+	BatchOnReceive(ctx context.Context, in *BatchOnReceiveRequest, opts ...grpc.CallOption) (*BatchOnReceiveResponse, error)
+}
+
+type batchBackendServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewBatchBackendServiceClient(cc grpc.ClientConnInterface) BatchBackendServiceClient {
+	return &batchBackendServiceClient{cc}
+}
+
+func (c *batchBackendServiceClient) BatchOnReceive(ctx context.Context, in *BatchOnReceiveRequest, opts ...grpc.CallOption) (*BatchOnReceiveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchOnReceiveResponse)
+	err := c.cc.Invoke(ctx, BatchBackendService_BatchOnReceive_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// BatchBackendServiceServer is the server API for BatchBackendService service.
+// All implementations should embed UnimplementedBatchBackendServiceServer
+// for forward compatibility.
+//
+// BatchBackendService 是业务后端可选实现的批量处理服务
+// 网关会将同一个BizID的消息聚合后，通过此服务批量发送给业务后端
+// 相比单个处理，批量处理可以显著提升吞吐量，减少网络开销
+// 业务后端可以选择实现此服务来获得更好的性能
+type BatchBackendServiceServer interface {
+	// BatchOnReceive 批量处理上行消息
+	// 网关会将满足以下任一条件的消息聚合后调用此接口：
+	// 1. 同一BizID下消息数量达到配置的阈值
+	// 2. 同一BizID下首个消息等待时间超过配置的超时时间
+	// 请求和响应的数组必须一一对应，顺序必须保持一致
+	BatchOnReceive(context.Context, *BatchOnReceiveRequest) (*BatchOnReceiveResponse, error)
+}
+
+// UnimplementedBatchBackendServiceServer should be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedBatchBackendServiceServer struct{}
+
+func (UnimplementedBatchBackendServiceServer) BatchOnReceive(context.Context, *BatchOnReceiveRequest) (*BatchOnReceiveResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchOnReceive not implemented")
+}
+func (UnimplementedBatchBackendServiceServer) testEmbeddedByValue() {}
+
+// UnsafeBatchBackendServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to BatchBackendServiceServer will
+// result in compilation errors.
+type UnsafeBatchBackendServiceServer interface {
+	mustEmbedUnimplementedBatchBackendServiceServer()
+}
+
+func RegisterBatchBackendServiceServer(s grpc.ServiceRegistrar, srv BatchBackendServiceServer) {
+	// If the following call pancis, it indicates UnimplementedBatchBackendServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&BatchBackendService_ServiceDesc, srv)
+}
+
+func _BatchBackendService_BatchOnReceive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchOnReceiveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BatchBackendServiceServer).BatchOnReceive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BatchBackendService_BatchOnReceive_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BatchBackendServiceServer).BatchOnReceive(ctx, req.(*BatchOnReceiveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// BatchBackendService_ServiceDesc is the grpc.ServiceDesc for BatchBackendService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var BatchBackendService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "gatewayapi.v1.BatchBackendService",
+	HandlerType: (*BatchBackendServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "BatchOnReceive",
+			Handler:    _BatchBackendService_BatchOnReceive_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "gatewayapi/v1/message.proto",
+}
+
+const (
 	PushService_Push_FullMethodName = "/gatewayapi.v1.PushService/Push"
 )
 

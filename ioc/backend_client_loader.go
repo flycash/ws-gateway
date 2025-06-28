@@ -64,6 +64,7 @@ func (b *BackendClientsLoader) UpdateBackendServiceInfo(value []byte) error {
 	return err
 }
 
+//nolint:dupl // 忽略
 func InitBackendClientLoader(etcdClient *eetcd.Component) func() *syncx.Map[int64, apiv1.BackendServiceClient] {
 	type Config struct {
 		EtcdKey string `yaml:"etcdKey"`
