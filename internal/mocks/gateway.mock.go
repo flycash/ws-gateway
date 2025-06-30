@@ -1095,6 +1095,44 @@ func (c *MockLinkManagerGracefulCloseCall) DoAndReturn(f func(context.Context, *
 	return c
 }
 
+// GracefulCloseV2 mocks base method.
+func (m *MockLinkManager) GracefulCloseV2(ctx context.Context, message *gatewayapiv1.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GracefulCloseV2", ctx, message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GracefulCloseV2 indicates an expected call of GracefulCloseV2.
+func (mr *MockLinkManagerMockRecorder) GracefulCloseV2(ctx, message any) *MockLinkManagerGracefulCloseV2Call {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GracefulCloseV2", reflect.TypeOf((*MockLinkManager)(nil).GracefulCloseV2), ctx, message)
+	return &MockLinkManagerGracefulCloseV2Call{Call: call}
+}
+
+// MockLinkManagerGracefulCloseV2Call wrap *gomock.Call
+type MockLinkManagerGracefulCloseV2Call struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockLinkManagerGracefulCloseV2Call) Return(arg0 error) *MockLinkManagerGracefulCloseV2Call {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockLinkManagerGracefulCloseV2Call) Do(f func(context.Context, *gatewayapiv1.Message) error) *MockLinkManagerGracefulCloseV2Call {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockLinkManagerGracefulCloseV2Call) DoAndReturn(f func(context.Context, *gatewayapiv1.Message) error) *MockLinkManagerGracefulCloseV2Call {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // Len mocks base method.
 func (m *MockLinkManager) Len() int64 {
 	m.ctrl.T.Helper()
@@ -1206,6 +1244,44 @@ func (c *MockLinkManagerNewLinkCall) Do(f func(context.Context, net.Conn, sessio
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockLinkManagerNewLinkCall) DoAndReturn(f func(context.Context, net.Conn, session.Session, *compression.State) (gateway.Link, error)) *MockLinkManagerNewLinkCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// PushMessage mocks base method.
+func (m *MockLinkManager) PushMessage(ctx context.Context, selector gateway.LinkSelector, message *gatewayapiv1.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PushMessage", ctx, selector, message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PushMessage indicates an expected call of PushMessage.
+func (mr *MockLinkManagerMockRecorder) PushMessage(ctx, selector, message any) *MockLinkManagerPushMessageCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushMessage", reflect.TypeOf((*MockLinkManager)(nil).PushMessage), ctx, selector, message)
+	return &MockLinkManagerPushMessageCall{Call: call}
+}
+
+// MockLinkManagerPushMessageCall wrap *gomock.Call
+type MockLinkManagerPushMessageCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockLinkManagerPushMessageCall) Return(arg0 error) *MockLinkManagerPushMessageCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockLinkManagerPushMessageCall) Do(f func(context.Context, gateway.LinkSelector, *gatewayapiv1.Message) error) *MockLinkManagerPushMessageCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockLinkManagerPushMessageCall) DoAndReturn(f func(context.Context, gateway.LinkSelector, *gatewayapiv1.Message) error) *MockLinkManagerPushMessageCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

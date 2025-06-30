@@ -20,9 +20,9 @@ func NewOnlineUserHandler() *OnlineUserHandler {
 		prometheus.GaugeOpts{
 			Namespace: "websocket_gateway",
 			Name:      "online_users",
-			Help:      "Current number of online WebSocket Gateway users.",
+			Help:      "当前在线的WebSocket网关用户数。",
 		},
-		[]string{"biz_id", "user_id"},
+		[]string{"biz_id"},
 	)
 	// 注册指标
 	registry.MustRegister(counter)
@@ -44,7 +44,6 @@ func (o *OnlineUserHandler) labelValues(lk gateway.Link) []string {
 	userInfo := lk.Session().UserInfo()
 	return []string{
 		strconv.FormatInt(userInfo.BizID, 10),
-		strconv.FormatInt(userInfo.UserID, 10),
 	}
 }
 

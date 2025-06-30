@@ -39,6 +39,12 @@ server:
     capacity: &cap 10
     # 序列化协议：支持 json, proto
     serializer: "json"
+    # 批处理配置
+    batch:
+      # 批次大小阈值
+      size: 10
+      # 批次超时时间（500ms）
+      timeout: 500000000  # 500ms in nanoseconds
     compression:
       # 是否启用 permessage-deflate 压缩扩展
       enabled: true
@@ -78,6 +84,9 @@ server:
     backoff:
       initialInterval: 1000000000
       maxInterval: 3000000000
+    limit:
+      rate: 1 # 每秒请求数
+      burst: 2 # 令牌桶容量
 
 backend:
   services:
@@ -106,6 +115,8 @@ link:
     initInterval: 1000000000
     maxInterval: 3000000000
     maxRetries: 3
+  limit:
+    rate: 2 # 每秒请求数
   eventHandler:
     requestTimeout: 3000000000
     retryStrategy:

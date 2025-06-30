@@ -30,6 +30,7 @@ func InitApp(nodeInfo *apiv1.Node) App {
 		ioc.InitEtcdClient,
 		ioc.InitMQ,
 		ioc.InitSerializer,
+		ioc.InitRateLimiter,
 
 		ioc.InitConsumers,
 		ioc.InitScaleUpEventProducer,
