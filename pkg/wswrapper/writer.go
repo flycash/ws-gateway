@@ -23,10 +23,12 @@ func NewServerSideWriter(dest io.Writer, compressed bool) *Writer {
 	w := &Writer{
 		writer:       wsutil.NewWriter(dest, state, opCode),
 		messageState: &messageState,
-		flateWriter: wsflate.NewWriter(nil, func(w io.Writer) wsflate.Compressor {
+	}
+	if compressed {
+		w.flateWriter = wsflate.NewWriter(nil, func(w io.Writer) wsflate.Compressor {
 			f, _ := flate.NewWriter(w, flate.DefaultCompression)
 			return f
-		}),
+		})
 	}
 	w.writer.SetExtensions(&messageState)
 	return w
