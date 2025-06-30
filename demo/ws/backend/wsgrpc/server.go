@@ -3,6 +3,9 @@ package wsgrpc
 import (
 	"context"
 	"encoding/json"
+	"net"
+	"time"
+
 	msgv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"github.com/ego-component/eetcd"
 	"github.com/ego-component/eetcd/registry"
@@ -11,18 +14,16 @@ import (
 	"github.com/gotomicro/ego/server"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
-	"net"
-	"time"
 )
 
 type Server struct {
 	*grpc.Server
-	name       string
-	reg        *registry.Component
-	etcd       *eetcd.Component
-	addr       string
-	bizID      int64
-	logger     *elog.Component
+	name   string
+	reg    *registry.Component
+	etcd   *eetcd.Component
+	addr   string
+	bizID  int64
+	logger *elog.Component
 }
 
 type BackendServiceInfo struct {
@@ -32,9 +33,9 @@ type BackendServiceInfo struct {
 }
 
 const (
-	timeout = 10 * time.Second
-	group   = "im"
-	key     = "gateway.backend.services"
+	key             = "gateway.backend.services"
+	serverSleepTime = 100 * time.Millisecond
+	registerTime    = 10 * time.Second
 )
 
 func NewServer(name string,
@@ -46,13 +47,13 @@ func NewServer(name string,
 	grpcServer := grpc.NewServer()
 	msgv1.RegisterBackendServiceServer(grpcServer, backendServer)
 	return &Server{
-		Server:     grpcServer,
-		name:       name,
-		reg:        reg,
-		addr:       addr,
-		bizID:      9999,
-		logger:     elog.DefaultLogger,
-		etcd:       etcd,
+		Server: grpcServer,
+		name:   name,
+		reg:    reg,
+		addr:   addr,
+		bizID:  bizID,
+		logger: elog.DefaultLogger,
+		etcd:   etcd,
 	}
 }
 
@@ -72,7 +73,7 @@ func (s *Server) Run() error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), registerTime)
 	defer cancel()
 	err = s.joinConfigPlatform(ctx)
 	if err != nil {
@@ -146,6 +147,6 @@ func (s *Server) joinConfigPlatform(ctx context.Context) error {
 			return nil
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(serverSleepTime)
 	}
 }
