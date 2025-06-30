@@ -22,10 +22,14 @@ func InitLinkManager(c codec.Codec) *link.Manager {
 		MaxInterval  time.Duration `yaml:"maxInterval"`
 		MaxRetries   int32         `yaml:"maxRetries"`
 	}
+	type LimitConfig struct {
+		Rate int `yaml:"rate"`
+	}
 	type Config struct {
 		Timeout       TimeoutConfig       `yaml:"timeout"`
 		BufferConfig  BufferConfig        `yaml:"buffer"`
 		RetryStrategy RetryStrategyConfig `yaml:"retryStrategy"`
+		Limit         LimitConfig         `yaml:"limit"`
 	}
 	var cfg Config
 	err := econf.UnmarshalKey("link", &cfg)
@@ -42,5 +46,6 @@ func InitLinkManager(c codec.Codec) *link.Manager {
 			MaxRetries:        cfg.RetryStrategy.MaxRetries,
 			SendBufferSize:    cfg.BufferConfig.SendBufferSize,
 			ReceiveBufferSize: cfg.BufferConfig.ReceiveBufferSize,
+			UserRateLimit:     cfg.Limit.Rate,
 		})
 }
