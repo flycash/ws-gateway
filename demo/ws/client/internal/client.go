@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"gitee.com/flycash/ws-gateway/pkg/jwt"
+	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -20,34 +23,39 @@ import (
 
 // WebSocketClient WebSocket客户端，表示一个连接的生命周期
 type WebSocketClient struct {
+	wsURL          string
 	conn           net.Conn
 	tokenGenerator *jwt.UserToken
 	codec          codec.Codec
 	encryptor      encrypt.Encryptor
 	bizID          int64
 	userID         int64
-	ctx            context.Context
-	cancel         context.CancelFunc
+	stats          *ClientStats
 	wg             sync.WaitGroup
+	once           sync.Once
 	stopChan       chan struct{}
+	compressed     bool
+	connMutex      sync.RWMutex // 保护连接状态的互斥锁
 }
 
 // NewWebSocketClient 创建新的WebSocket客户端
-// conn: 已建立的WebSocket连接
+// wsURL: WebSocket服务器URL
 // bizID: 业务ID
 // userID: 用户ID
-func NewWebSocketClient(conn net.Conn, bizID, userID int64) *WebSocketClient {
-	ctx, cancel := context.WithCancel(context.Background())
+// stats: 统计实现（依赖注入）
+// compressed: 是否启用压缩
+func NewWebSocketClient(wsURL string, bizID, userID int64, stats *ClientStats, compressed bool) *WebSocketClient {
 	return &WebSocketClient{
-		conn:           conn,
+		wsURL:          wsURL,
 		tokenGenerator: initTokenGenerator(),
 		codec:          codec.NewJSONCodec(),
 		encryptor:      initEncryptor(),
 		bizID:          bizID,
 		userID:         userID,
-		ctx:            ctx,
-		cancel:         cancel,
+		stats:          stats,
+		once:           sync.Once{},
 		stopChan:       make(chan struct{}),
+		compressed:     compressed,
 	}
 }
 
@@ -66,11 +74,162 @@ func initEncryptor() encrypt.Encryptor {
 	return encryptor
 }
 
+// Connect 建立WebSocket连接
+func (c *WebSocketClient) Connect(ctx context.Context) error {
+	// 生成JWT token
+	claims := jwt.UserClaims{
+		UserID: c.userID,
+		BizID:  c.bizID,
+	}
+	token, err := c.tokenGenerator.Encode(claims)
+	if err != nil {
+		return fmt.Errorf("生成token失败: %v", err)
+	}
+
+	// 构建WebSocket URL
+	wsURL := fmt.Sprintf("%s?token=%s", c.wsURL, url.QueryEscape(token))
+
+	// 建立WebSocket连接
+	conn, _, _, err := ws.Dial(ctx, wsURL)
+	if err != nil {
+		return fmt.Errorf("连接失败: %v", err)
+	}
+
+	c.conn = conn
+	return nil
+}
+
+// Start 启动消息发送流程
+func (c *WebSocketClient) Start(ctx context.Context, messagesPerSecond int, testMessage string) error {
+	if c.conn == nil {
+		return fmt.Errorf("客户端未连接")
+	}
+
+	c.stats.IncrementConnections()
+	defer c.stats.DecrementConnections()
+
+	// 启动消息循环
+	go func() {
+		if err := c.startMessageLoop(ctx); err != nil {
+			log.Printf("客户端 %d 消息循环错误: %v", c.userID, err)
+		}
+	}()
+
+	// 启动消息发送
+	go func() {
+		// 计算消息发送间隔，确保不会过于频繁
+		interval := time.Duration(1000/messagesPerSecond) * time.Millisecond
+		if interval < 50*time.Millisecond {
+			interval = 50 * time.Millisecond // 最小间隔50ms
+		}
+
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := c.SendMessage(ctx, testMessage); err != nil {
+					// 如果是连接错误，停止发送
+					if isConnectionError(err) {
+						return
+					}
+				}
+			}
+		}
+	}()
+
+	return nil
+}
+
+// isConnectionError 检查是否为连接相关错误
+func isConnectionError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errStr := err.Error()
+	return strings.Contains(errStr, "broken pipe") ||
+		strings.Contains(errStr, "connection reset") ||
+		strings.Contains(errStr, "connection refused") ||
+		strings.Contains(errStr, "use of closed network connection") ||
+		strings.Contains(errStr, "write: broken pipe") ||
+		strings.Contains(errStr, "read: broken pipe")
+}
+
+// SendMessage 发送消息并上报统计
+func (c *WebSocketClient) SendMessage(ctx context.Context, content string) error {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	err := c.SendUpstreamMessage(ctx, content)
+	c.stats.IncrementMessages(err == nil)
+	return err
+}
+
+// Stop 停止客户端
+func (c *WebSocketClient) Stop() {
+	c.once.Do(func() {
+		// 发送停止信号
+		close(c.stopChan)
+		// 等待所有goroutine结束
+		c.wg.Wait()
+		// 线程安全地关闭连接
+		c.connMutex.Lock()
+		if c.conn != nil {
+			c.conn.Close()
+			c.conn = nil
+		}
+		c.connMutex.Unlock()
+	})
+}
+
+// startMessageLoop 启动消息循环
+func (c *WebSocketClient) startMessageLoop(ctx context.Context) error {
+	// 启动心跳
+	c.startHeartbeat(ctx)
+	return nil
+}
+
+// sanitizeMessageContent 清理和验证消息内容
+func (c *WebSocketClient) sanitizeMessageContent(content string) (string, error) {
+	if content == "" {
+		return "", fmt.Errorf("消息内容不能为空")
+	}
+
+	// 检查内容长度
+	if len(content) > 1024*1024 { // 1MB限制
+		return "", fmt.Errorf("消息内容过长，最大支持1MB")
+	}
+
+	// 检查是否包含非法字符
+	for i, char := range content {
+		if char == 0 { // null字符
+			return "", fmt.Errorf("消息内容包含非法字符null (位置: %d)", i)
+		}
+	}
+
+	// 移除首尾空白字符
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return "", fmt.Errorf("消息内容不能为空（去除空白后）")
+	}
+
+	return content, nil
+}
+
 // generateUpstreamMessage 生成上行消息
 func (c *WebSocketClient) generateUpstreamMessage(content string) (*apiv1.Message, error) {
+	// 清理和验证消息内容
+	cleanContent, err := c.sanitizeMessageContent(content)
+	if err != nil {
+		return nil, fmt.Errorf("消息内容验证失败: %v", err)
+	}
+
 	// 业务消息
 	businessMessage := &wrapperspb.StringValue{
-		Value: content,
+		Value: cleanContent,
 	}
 
 	// 序列化业务消息
@@ -79,10 +238,20 @@ func (c *WebSocketClient) generateUpstreamMessage(content string) (*apiv1.Messag
 		return nil, fmt.Errorf("序列化业务消息失败: %v", err)
 	}
 
+	// 验证序列化结果
+	if len(bytes) == 0 {
+		return nil, fmt.Errorf("序列化后的消息为空")
+	}
+
 	// 加密业务消息
 	encryptedBody, err := c.encryptor.Encrypt(bytes)
 	if err != nil {
 		return nil, fmt.Errorf("加密业务消息失败: %v", err)
+	}
+
+	// 验证加密结果
+	if len(encryptedBody) == 0 {
+		return nil, fmt.Errorf("加密后的消息为空")
 	}
 
 	// 生成唯一key
@@ -121,28 +290,44 @@ func generateUniqueKey() string {
 	return fmt.Sprintf("%x", b)
 }
 
-// sendMessage 发送消息
-func (c *WebSocketClient) sendMessage(msg *apiv1.Message) error {
+// sendMessageSafe 并发安全的消息发送接口
+func (c *WebSocketClient) sendMessageSafe(msg *apiv1.Message) error {
+	c.connMutex.Lock()
+	defer c.connMutex.Unlock()
+	if c.conn == nil {
+		return fmt.Errorf("连接关闭")
+	}
+
 	// 序列化消息
 	payload, err := c.codec.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("序列化消息失败: %v", err)
 	}
 
-	// 发送消息
-	err = wsutil.WriteClientBinary(c.conn, payload)
+	// 每次发送都新建ClientWriter
+	writer := NewClientWriter(c.conn, c.compressed)
+	_, err = writer.Write(payload)
 	if err != nil {
 		return fmt.Errorf("发送消息失败: %v", err)
 	}
 
-	log.Printf("发送消息: %s", string(payload))
 	return nil
+}
+
+// sendMessage 发送消息（内部方法，已废弃，请使用sendMessageSafe）
+func (c *WebSocketClient) sendMessage(msg *apiv1.Message) error {
+	return c.sendMessageSafe(msg)
 }
 
 // receiveMessage 接收消息
 func (c *WebSocketClient) receiveMessage() (*apiv1.Message, error) {
-	// 读取消息
-	payload, err := wsutil.ReadServerBinary(c.conn)
+	c.connMutex.Lock()
+	defer c.connMutex.Unlock()
+	if c.conn == nil {
+		return nil, fmt.Errorf("连接关闭")
+	}
+	// 读取消息 - 使用标准的WebSocket读取方式
+	payload, _, err := wsutil.ReadServerData(c.conn)
 	if err != nil {
 		return nil, fmt.Errorf("读取消息失败: %v", err)
 	}
@@ -154,7 +339,6 @@ func (c *WebSocketClient) receiveMessage() (*apiv1.Message, error) {
 		return nil, fmt.Errorf("反序列化消息失败: %v", err)
 	}
 
-	log.Printf("接收消息: %s", string(payload))
 	return msg, nil
 }
 
@@ -162,17 +346,15 @@ func (c *WebSocketClient) receiveMessage() (*apiv1.Message, error) {
 func (c *WebSocketClient) handleMessage(msg *apiv1.Message) error {
 	switch msg.GetCmd() {
 	case apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK:
-		log.Printf("收到上行确认消息，key: %s", msg.GetKey())
 		return nil
 
 	case apiv1.Message_COMMAND_TYPE_DOWNSTREAM_MESSAGE:
-		log.Printf("收到下行消息，key: %s", msg.GetKey())
 		// 发送下行确认
 		ackMsg := c.generateDownstreamAck(msg.GetKey())
-		return c.sendMessage(ackMsg)
+		return c.sendMessageSafe(ackMsg)
 
 	case apiv1.Message_COMMAND_TYPE_HEARTBEAT:
-		log.Printf("收到心跳消息")
+		// 心跳消息不打印日志
 		return nil
 
 	default:
@@ -182,7 +364,7 @@ func (c *WebSocketClient) handleMessage(msg *apiv1.Message) error {
 }
 
 // SendUpstreamMessage 发送上行消息并等待确认
-func (c *WebSocketClient) SendUpstreamMessage(content string) error {
+func (c *WebSocketClient) SendUpstreamMessage(ctx context.Context, content string) error {
 	// 生成上行消息
 	msg, err := c.generateUpstreamMessage(content)
 	if err != nil {
@@ -190,13 +372,19 @@ func (c *WebSocketClient) SendUpstreamMessage(content string) error {
 	}
 
 	// 发送消息
-	err = c.sendMessage(msg)
+	err = c.sendMessageSafe(msg)
 	if err != nil {
 		return fmt.Errorf("发送上行消息失败: %v", err)
 	}
 
-	// 等待确认
-	ackMsg, err := c.receiveMessage()
+	// 添加短暂延迟，确保消息完全发送
+	time.Sleep(10 * time.Millisecond)
+
+	// 等待确认（添加超时）
+	ackCtx, ackCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer ackCancel()
+
+	ackMsg, err := c.receiveMessageWithTimeout(ackCtx)
 	if err != nil {
 		return fmt.Errorf("接收确认消息失败: %v", err)
 	}
@@ -206,7 +394,7 @@ func (c *WebSocketClient) SendUpstreamMessage(content string) error {
 }
 
 // startHeartbeat 开始心跳
-func (c *WebSocketClient) startHeartbeat() {
+func (c *WebSocketClient) startHeartbeat(ctx context.Context) {
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
@@ -217,146 +405,38 @@ func (c *WebSocketClient) startHeartbeat() {
 			select {
 			case <-ticker.C:
 				heartbeat := c.generateHeartbeat()
-				if err := c.sendMessage(heartbeat); err != nil {
-					log.Printf("发送心跳失败: %v", err)
+				if err := c.sendMessageSafe(heartbeat); err != nil {
 					return
 				}
 			case <-c.stopChan:
 				return
-			case <-c.ctx.Done():
+			case <-ctx.Done():
 				return
 			}
 		}
 	}()
 }
 
-// startMessageReceiver 开始消息接收器
-func (c *WebSocketClient) startMessageReceiver() {
-	c.wg.Add(1)
+// receiveMessageWithTimeout 带超时的消息接收
+func (c *WebSocketClient) receiveMessageWithTimeout(ctx context.Context) (*apiv1.Message, error) {
+	// 创建一个带缓冲的通道用于接收结果
+	resultCh := make(chan struct {
+		msg *apiv1.Message
+		err error
+	}, 1)
+
 	go func() {
-		defer c.wg.Done()
-		for {
-			select {
-			case <-c.stopChan:
-				return
-			case <-c.ctx.Done():
-				return
-			default:
-				msg, err := c.receiveMessage()
-				if err != nil {
-					log.Printf("接收消息失败: %v", err)
-					return
-				}
-				if err := c.handleMessage(msg); err != nil {
-					log.Printf("处理消息失败: %v", err)
-				}
-			}
-		}
+		msg, err := c.receiveMessage()
+		resultCh <- struct {
+			msg *apiv1.Message
+			err error
+		}{msg, err}
 	}()
-}
 
-// Loop 启动消息循环，持续处理消息的发送和接收
-func (c *WebSocketClient) Loop() error {
-	log.Printf("WebSocket客户端开始消息循环")
-
-	// 启动心跳
-	c.startHeartbeat()
-
-	// 启动消息接收器
-	c.startMessageReceiver()
-
-	// 等待停止信号
-	<-c.stopChan
-
-	log.Printf("WebSocket客户端消息循环结束")
-	return nil
-}
-
-// Start 启动客户端（保持向后兼容）
-func (c *WebSocketClient) Start(ctx context.Context) error {
-	log.Printf("WebSocket客户端开始消息循环")
-
-	// 启动心跳
-	c.startHeartbeat()
-
-	// 启动消息接收器
-	c.startMessageReceiver()
-
-	// 等待停止信号或上下文取消
 	select {
-	case <-c.stopChan:
-		log.Printf("收到停止信号")
+	case result := <-resultCh:
+		return result.msg, result.err
 	case <-ctx.Done():
-		log.Printf("上下文已取消")
-		c.Stop()
-	case <-c.ctx.Done():
-		log.Printf("客户端上下文已取消")
+		return nil, fmt.Errorf("接收消息超时: %v", ctx.Err())
 	}
-
-	log.Printf("WebSocket客户端消息循环结束")
-	return nil
-}
-
-// Stop 停止客户端
-func (c *WebSocketClient) Stop() {
-	log.Printf("正在停止WebSocket客户端...")
-
-	// 发送停止信号
-	close(c.stopChan)
-
-	// 取消上下文
-	c.cancel()
-
-	// 等待所有goroutine结束
-	c.wg.Wait()
-
-	// 关闭连接
-	if c.conn != nil {
-		c.conn.Close()
-	}
-
-	log.Printf("WebSocket客户端已停止")
-}
-
-// RunCommunicationFlow 运行通信流程
-func (c *WebSocketClient) RunCommunicationFlow() {
-	// 创建上下文，5秒后自动取消
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	// 启动消息循环
-	if err := c.Start(ctx); err != nil {
-		log.Fatalf("启动消息循环失败: %v", err)
-	}
-	defer c.Stop()
-
-	// 发送上行消息
-	content := fmt.Sprintf("Hello from User%d, round %d", c.userID, 1)
-	if err := c.SendUpstreamMessage(content); err != nil {
-		log.Printf("发送上行消息失败: %v", err)
-	}
-
-	log.Printf("通信流程完成")
-}
-
-// Run 运行客户端示例（需要上层先建立连接）
-func Run() {
-	// 注意：这里需要上层先建立WebSocket连接
-	// 示例代码，实际使用时需要先建立连接
-	log.Printf("请先建立WebSocket连接，然后传入连接对象")
-
-	// 示例：如何建立连接并创建客户端
-	/*
-		// 建立WebSocket连接
-		conn, _, _, err := ws.Dial(context.Background(), "ws://localhost:9002/ws?token=xxx")
-		if err != nil {
-			log.Fatalf("连接WebSocket失败: %v", err)
-		}
-
-		// 创建客户端
-		client := NewWebSocketClient(conn, 9999, 12345)
-
-		// 运行通信流程
-		client.RunCommunicationFlow()
-	*/
 }
