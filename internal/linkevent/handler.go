@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gitee.com/flycash/ws-gateway/internal/event"
 	"time"
 
 	gateway "gitee.com/flycash/ws-gateway"
@@ -57,6 +58,8 @@ type Handler struct {
 	pushRetryManager *pushretry.Manager
 
 	logger *elog.Component
+
+	bizToProducer *syncx.Map[int64, event.SendToBackendEventProducer]
 }
 
 // NewHandler 创建一个Link生命周期事件管理器
