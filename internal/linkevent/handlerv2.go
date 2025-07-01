@@ -3,12 +3,15 @@ package linkevent
 import (
 	"context"
 	"fmt"
+
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"github.com/gotomicro/ego/core/elog"
 )
 
 // handleOnUpstreamMessageCmd 发送到kafka队列里
+//
+//nolint:unused // 演示用
 func (l *Handler) handleOnUpstreamMessageCmdV2(lk gateway.Link, msg *apiv1.Message) error {
 	// 收到有意义的上行消息，更新活跃时间
 	lk.UpdateActiveTime()
@@ -28,6 +31,7 @@ func (l *Handler) handleOnUpstreamMessageCmdV2(lk gateway.Link, msg *apiv1.Messa
 	return l.sendUpstreamMessageAckV2(lk, msg.GetKey())
 }
 
+//nolint:unused // 演示用
 func (l *Handler) sendUpstreamMessageAckV2(lk gateway.Link, key string) error {
 	err := l.push(lk, &apiv1.Message{
 		Cmd: apiv1.Message_COMMAND_TYPE_UPSTREAM_ACK,

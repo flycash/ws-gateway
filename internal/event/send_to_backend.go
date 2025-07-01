@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+
 	msgv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
 	"github.com/ecodeclub/mq-api"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -10,7 +11,6 @@ import (
 type SendToBackendEventProducer interface {
 	Produce(ctx context.Context, msg *msgv1.Message) error
 }
-
 
 type sendToBackendEventProducer struct {
 	producer mq.Producer
@@ -25,7 +25,7 @@ func NewSendToBackendEventProducer(p mq.Producer, topic string) SendToBackendEve
 }
 
 func (p *sendToBackendEventProducer) Produce(ctx context.Context, msg *msgv1.Message) error {
-	v,err := protojson.Marshal(msg)
+	v, err := protojson.Marshal(msg)
 	if err != nil {
 		return err
 	}

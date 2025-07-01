@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gitee.com/flycash/ws-gateway/internal/event"
 	"time"
+
+	"gitee.com/flycash/ws-gateway/internal/event"
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
@@ -59,6 +60,7 @@ type Handler struct {
 
 	logger *elog.Component
 
+	//nolint:unused // 演示用每个bizid一个producer
 	bizToProducer *syncx.Map[int64, event.SendToBackendEventProducer]
 }
 
