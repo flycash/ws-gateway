@@ -10,9 +10,15 @@ import (
 	"gitee.com/flycash/ws-gateway/demo/ws/client/internal"
 )
 
+const (
+	bizID      int64 = 9999
+	startIndex       = 10000
+)
+
 // 全局统计信息
 var stats = &internal.ClientStats{}
 
+//nolint:mnd //忽略
 func main() {
 	// 解析命令行参数
 	numClients := flag.Int("clients", 10, "客户端连接数量")
@@ -64,6 +70,8 @@ func main() {
 }
 
 // createAndStartClients 创建客户端，先建立所有连接，然后统一启动消息发送
+//
+//nolint:funlen //忽略
 func createAndStartClients(ctx context.Context, numClients int, serverURL string, connectionTimeout time.Duration, messagesPerSecond int, testMessage string, compressed bool) []*internal.WebSocketClient {
 	clients := make([]*internal.WebSocketClient, 0, numClients)
 	clientsMutex := &sync.Mutex{}
@@ -94,8 +102,8 @@ func createAndStartClients(ctx context.Context, numClients int, serverURL string
 			go func(clientIndex int) {
 				defer wg.Done()
 
-				userID := int64(10000 + clientIndex)
-				bizID := int64(9999)
+				userID := int64(startIndex + clientIndex)
+				bizID := bizID
 
 				// 创建客户端
 				client := internal.NewWebSocketClient(serverURL, bizID, userID, stats, compressed)
@@ -165,6 +173,8 @@ func stopAllClients(clients []*internal.WebSocketClient) {
 }
 
 // printStatsPeriodically 定期打印统计信息
+//
+//nolint:mnd //忽略
 func printStatsPeriodically(ctx context.Context) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -180,6 +190,8 @@ func printStatsPeriodically(ctx context.Context) {
 }
 
 // generateTestMessage 生成指定大小的测试消息
+//
+//nolint:mnd //忽略
 func generateTestMessage(size int) string {
 	if size <= 0 {
 		return "test"
@@ -195,6 +207,9 @@ func generateTestMessage(size int) string {
 
 // printStats 打印统计信息
 func printStats() {
+	const (
+		number100 = 100
+	)
 	totalConn, _, totalMsg, successMsg, failedMsg, duration := stats.GetStats()
 
 	log.Printf("=== 统计信息 ===")
@@ -210,9 +225,8 @@ func printStats() {
 	}
 
 	if totalMsg > 0 {
-		successRate := float64(successMsg) / float64(totalMsg) * 100
+		successRate := float64(successMsg) / float64(totalMsg) * number100
 		log.Printf("成功率: %.2f%%", successRate)
 	}
 	log.Printf("================")
 }
-

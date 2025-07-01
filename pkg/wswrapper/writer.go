@@ -26,7 +26,7 @@ func NewServerSideWriter(dest io.Writer, compressed bool) *Writer {
 	}
 	if compressed {
 		w.flateWriter = wsflate.NewWriter(nil, func(w io.Writer) wsflate.Compressor {
-			f, _ := flate.NewWriter(w, flate.BestCompression)
+			f, _ := flate.NewWriter(w, flate.DefaultCompression)
 			return f
 		})
 	}

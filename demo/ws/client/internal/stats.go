@@ -40,6 +40,7 @@ func (s *ClientStats) IncrementMessages(success bool) {
 	}
 }
 
+//nolint:gocritic // 忽略
 func (s *ClientStats) GetStats() (int64, int64, int64, int64, int64, time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

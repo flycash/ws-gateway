@@ -18,5 +18,5 @@ func InitGrpcServer() *wsgrpc.Server {
 	if err != nil {
 		panic(err)
 	}
-	return wsgrpc.NewServer(conf.Name, conf.Addr,  mockServer, reg, etcdClient)
+	return wsgrpc.NewServer(conf.Name, conf.Addr, mockServer, reg, etcdClient)
 }
