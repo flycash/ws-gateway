@@ -356,7 +356,7 @@ func (s *WebSocketServer) GracefulStop(ctx context.Context) error {
 	// 关闭消费者
 	for key := range s.consumers {
 		err1 := s.consumers[key].Stop()
-		if err != nil {
+		if err1 != nil {
 			s.logger.Error("关闭消费者失败",
 				elog.String("name", s.consumers[key].Name()),
 				elog.FieldErr(err1))
