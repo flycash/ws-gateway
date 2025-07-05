@@ -110,9 +110,6 @@ func (l *LinkV2) readWriteLoop() {
 		_ = l.Close()
 	}()
 
-	// 初始设置一个常规的 idle read deadline
-	_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
-
 	for {
 		// select 保证了对写操作、关闭信号的优先响应。
 		// 只有在没有写任务和关闭信号时，才会在 default 分支中尝试"读"。
@@ -128,9 +125,6 @@ func (l *LinkV2) readWriteLoop() {
 			if !l.sendWithRetry(payload) {
 				return
 			}
-			// 写操作成功后，重置连接的空闲读超时，因为一次成功的写也代表连接是活跃的
-			_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
-
 		default:
 			// 没有写任务，执行非阻塞读
 			// 设置一个极短的 deadline，使 Read 操作几乎立即返回
@@ -139,27 +133,15 @@ func (l *LinkV2) readWriteLoop() {
 
 			if err == nil {
 				// 成功读取到数据
-				if l.limiter != nil && !l.limiter.Allow() {
-					l.logger.Warn("接收消息速率超限，消息被丢弃",
+				select {
+				case l.receiveCh <- payload:
+					// 成功发送
+				default:
+					// receiveCh 满了，丢弃消息，这是必要的反压保护
+					l.logger.Warn("接收通道已满，消息被丢弃",
 						elog.String("linkID", l.id),
 						elog.Any("userInfo", l.sess.UserInfo()))
-					// 丢弃消息，继续下一次循环
-				} else {
-					// 使用非阻塞方式发送到 receiveCh，防止业务层阻塞 IO 循环
-					select {
-					case l.receiveCh <- payload:
-						// 成功发送
-					default:
-						// receiveCh 满了，丢弃消息，这是必要的反压保护
-						l.logger.Warn("接收通道已满，消息被丢弃",
-							elog.String("linkID", l.id),
-							elog.Any("userInfo", l.sess.UserInfo()))
-					}
 				}
-				// 无论消息是发送成功还是被丢弃，读操作成功都代表连接活跃，
-				// 重置为一个长的 idle deadline，等待下一次的 select 循环
-				_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
-				continue // 继续循环，优先处理可能到来的写任务
 			}
 
 			// 检查读取错误
@@ -184,9 +166,6 @@ func (l *LinkV2) readWriteLoop() {
 				}
 				return // 退出循环
 			}
-
-			// 仅在因 veryShortReadTimeout 导致超时后，才重置为长超时
-			_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
 		}
 	}
 }
