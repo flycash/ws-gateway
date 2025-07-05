@@ -1,5 +1,5 @@
 log:
-  debug: true
+  debug: false
 
 redis:
   addr: "localhost:6379"
@@ -36,7 +36,7 @@ server:
     weight: 1
     labels:
       - "core"
-    capacity: &cap 10
+    capacity: &cap 10000
     # 序列化协议：支持 json, proto
     serializer: "json"
     # 批处理配置
@@ -79,14 +79,14 @@ server:
     tokenLimiter:
       initialCapacity: 1
       maxCapacity: *cap
-      increaseStep: 1
+      increaseStep: 10000
       increaseInterval: 2000000000
     backoff:
       initialInterval: 1000000000
       maxInterval: 3000000000
     limit:
-      rate: 1 # 每秒请求数
-      burst: 2 # 令牌桶容量
+      rate: 10000 # 每秒请求数
+      burst: 20000 # 令牌桶容量
 
 backend:
   services:

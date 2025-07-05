@@ -14,4 +14,4 @@ mock_backend:
 
 .PHONY: run_gateway_only
 run_gateway_only:
-	@cd ../../cmd  &&  GATEWAY_NODE_ID=1 GATEWAY_NODE_LOCATION=beijing GATEWAY_STOP_TIMEOUT=25 && go run main.go --config=../config/config.stress.yaml
+	@cd ../../cmd  &&  GATEWAY_NODE_ID=1 GATEWAY_NODE_LOCATION=beijing GATEWAY_STOP_TIMEOUT=25 && go run main.go --config=../config/config.yaml
