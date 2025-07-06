@@ -144,9 +144,6 @@ func (l *LinkV3) readWriteLoop() {
 		_ = l.Close()
 	}()
 
-	retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(
-		l.initRetryInterval, l.maxRetryInterval, l.maxRetries)
-
 	for {
 		// ------------- 批量发送 -------------
 		for i := 0; i < sendBatch; i++ {
@@ -163,7 +160,8 @@ func (l *LinkV3) readWriteLoop() {
 			if outbound == nil {
 				break // 立刻进入读
 			}
-
+			retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(
+				l.initRetryInterval, l.maxRetryInterval, l.maxRetries)
 			if !l.sendWithRetryInternal(outbound, retryStrategy) {
 				return
 			}

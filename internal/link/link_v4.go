@@ -1,336 +1,244 @@
+// package link 实现了对 websocket 连接的抽象和管理。
+// 这个文件中的 LinkV4 结构体通过在单个 goroutine 中管理两个连接，
+// 旨在优化和减少高并发场景下 goroutine 的开销。
 package link
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"gitee.com/flycash/ws-gateway/pkg/compression"
-	"gitee.com/flycash/ws-gateway/pkg/session"
-	"gitee.com/flycash/ws-gateway/pkg/wswrapper"
-	"github.com/ecodeclub/ekit/retry"
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 	"github.com/gotomicro/ego/core/elog"
-	"golang.org/x/time/rate"
 )
 
+// =================================================================
+// 第二部分: LinkV4 协程聚合版
+// =================================================================
+
+// Message 统一的消息结构
+type Message struct {
+	LinkID  string // 来源Link的ID
+	Payload []byte // 消息内容
+}
+
+var (
+	ErrLinkV4Closed       = errors.New("LinkV4: 连接组已关闭")
+	ErrSubLinkInV5Closed  = errors.New("LinkV4: 组内子连接已关闭")
+	ErrTargetLinkNotFound = errors.New("LinkV4: 未找到目标连接ID")
+)
+
+// LinkV4 使用单个goroutine管理两个Link
 type LinkV4 struct {
-	// 基本信息
-	id   string
-	sess session.Session
+	linkA *Link
+	linkB *Link
 
-	// 连接
-	conn         net.Conn
-	reader       *wswrapper.Reader
-	writer       *wswrapper.Writer
-	readTimeout  time.Duration
-	writeTimeout time.Duration
+	unifiedReceiveCh chan Message
 
-	// 压缩
-	compressionState *compression.State
-
-	// 重试
-	initRetryInterval time.Duration
-	maxRetryInterval  time.Duration
-	maxRetries        int32
-
-	// 通信通道
-	sendCh    chan []byte
-	receiveCh chan []byte
-
-	// 生命周期
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	// 关闭控制
+	linkAAlive *atomic.Bool
+	linkBAlive *atomic.Bool
+
 	closeOnce sync.Once
-	closeErr  error
-
-	// 空闲检测
-	mu             sync.RWMutex
-	autoClose      bool
-	lastActiveTime time.Time
-
-	// 限流
-	limiter *rate.Limiter
-
-	// 日志
-	logger *elog.Component
+	logger    *elog.Component
 }
 
-type OptionV4 func(*LinkV4)
-
-// ---------------- Options ----------------
-
-func WithTimeoutsV4(read, write time.Duration) OptionV4 {
-	return func(l *LinkV4) {
-		l.readTimeout = read
-		l.writeTimeout = write
-	}
-}
-
-func WithCompressionV4(state *compression.State) OptionV4 {
-	return func(l *LinkV4) {
-		l.compressionState = state
-	}
-}
-
-func WithRetryV4(initInterval, maxInterval time.Duration, maxRetries int32) OptionV4 {
-	return func(l *LinkV4) {
-		l.initRetryInterval = initInterval
-		l.maxRetryInterval = maxInterval
-		l.maxRetries = maxRetries
-	}
-}
-
-func WithBufferV4(sendBuf, recvBuf int) OptionV4 {
-	return func(l *LinkV4) {
-		l.sendCh = make(chan []byte, sendBuf)
-		l.receiveCh = make(chan []byte, recvBuf)
-	}
-}
-
-func WithAutoCloseV4(autoClose bool) OptionV4 {
-	return func(l *LinkV4) {
-		l.autoClose = autoClose
-	}
-}
-
-func WithRateLimitV4(qps int) OptionV4 {
-	return func(l *LinkV4) {
-		if qps > 0 {
-			l.limiter = rate.NewLimiter(rate.Limit(qps), qps)
-		}
-	}
-}
-
-// ---------------- Constructor ----------------
-
-func NewV4(parent context.Context, id string, sess session.Session, conn net.Conn, opts ...OptionV4) *LinkV4 {
+// NewLinkV4 创建LinkV4实例
+func NewLinkV4(parent context.Context, linkA, linkB *Link) *LinkV4 {
 	ctx, cancel := context.WithCancel(parent)
-	l := &LinkV4{
-		id:                id,
-		sess:              sess,
-		conn:              conn,
-		readTimeout:       DefaultReadTimeout,
-		writeTimeout:      DefaultWriteTimeout,
-		initRetryInterval: DefaultInitRetryInterval,
-		maxRetryInterval:  DefaultMaxRetryInterval,
-		maxRetries:        DefaultMaxRetries,
-		sendCh:            make(chan []byte, DefaultWriteBufferSize),
-		receiveCh:         make(chan []byte, DefaultReadBufferSize),
-		ctx:               ctx,
-		cancel:            cancel,
-		lastActiveTime:    time.Now(),
-		logger:            elog.EgoLogger.With(elog.FieldComponent("LinkV4")),
+
+	lv5 := &LinkV4{
+
+		linkA:            linkA,
+		linkB:            linkB,
+		unifiedReceiveCh: make(chan Message, 128),
+		ctx:              ctx,
+		cancel:           cancel,
+		linkBAlive:       &atomic.Bool{},
+		linkAAlive:       &atomic.Bool{},
+		logger:           elog.EgoLogger.With(elog.FieldComponent("LinkV4")),
 	}
 
-	// 应用选项
-	for _, opt := range opts {
-		opt(l)
-	}
+	lv5.linkAAlive.Store(linkA != nil)
+	lv5.linkBAlive.Store(linkB != nil)
 
-	// 初始化读写器
-	l.reader = wswrapper.NewServerSideReader(conn)
-	var compress bool
-	if l.compressionState != nil {
-		compress = l.compressionState.Enabled
-	}
-	l.writer = wswrapper.NewServerSideWriter(conn, compress)
+	go lv5.readWriteLoop()
 
-	// 启动单协程
-	go l.readWriteLoop()
-	return l
+	return lv5
 }
 
-// ---------------- Public API ----------------
+func (lv4 *LinkV4) SetLinkB(l *Link) {
+	lv4.linkB = l
+}
 
-func (l *LinkV4) ID() string                 { return l.id }
-func (l *LinkV4) Session() session.Session   { return l.sess }
-func (l *LinkV4) Receive() <-chan []byte     { return l.receiveCh }
-func (l *LinkV4) HasClosed() <-chan struct{} { return l.ctx.Done() }
+// --- 公共 API (安全且统一) ---
 
-func (l *LinkV4) Send(payload []byte) error {
+// Receive 返回统一的接收通道，这是从LinkV4获取消息的唯一正确方式。
+func (lv4 *LinkV4) Receive() <-chan Message {
+	return lv4.unifiedReceiveCh
+}
+
+// Send 将消息路由到正确的子连接。
+func (lv4 *LinkV4) Send(msg Message) error {
+	var targetLink *Link
+	var isAlive *atomic.Bool
+
+	if lv4.linkAAlive.Load() && msg.LinkID == lv4.linkA.id {
+		targetLink = lv4.linkA
+		isAlive = lv4.linkAAlive
+	} else if lv4.linkBAlive.Load() && msg.LinkID == lv4.linkB.id {
+		targetLink = lv4.linkB
+		isAlive = lv4.linkBAlive
+	} else {
+		return ErrTargetLinkNotFound
+	}
+
+	if !isAlive.Load() {
+		return ErrSubLinkInV5Closed
+	}
+
 	select {
-	case <-l.ctx.Done():
-		return fmt.Errorf("%w", ErrLinkClosed)
-	case l.sendCh <- payload:
-		// 双重检查，防止在发送到channel后连接恰好关闭
-		if l.ctx.Err() != nil {
-			return fmt.Errorf("%w", ErrLinkClosed)
-		}
+	case <-lv4.ctx.Done():
+		return ErrLinkV4Closed
+	case targetLink.sendCh <- msg.Payload:
 		return nil
 	}
 }
 
-func (l *LinkV4) Close() error {
-	l.closeOnce.Do(func() {
-		// 发送关闭帧
-		_ = l.conn.SetWriteDeadline(time.Now().Add(DefaultCloseTimeout))
-		_ = wsutil.WriteServerMessage(l.conn, ws.OpClose, nil)
-
-		// 取消上下文并关闭连接
-		l.cancel()
-		l.closeErr = l.conn.Close()
+// Close 关闭整个LinkV4
+func (lv4 *LinkV4) Close() {
+	lv4.closeOnce.Do(func() {
+		lv4.cancel()
 	})
-	return l.closeErr
 }
 
-func (l *LinkV4) readWriteLoop() {
+// --- 核心循环 ---
+
+func (lv4 *LinkV4) readWriteLoop() {
 	defer func() {
-		close(l.receiveCh) // 只由这个goroutine关闭
-		_ = l.Close()
+		lv4.logger.Info("LinkV4 读写循环退出")
+		// 确保底层连接和通道都被正确关闭
+		_ = lv4.linkA.Close()
+		_ = lv4.linkB.Close()
+		close(lv4.unifiedReceiveCh)
 	}()
 
-	// 创建重试策略实例
-	retryStrategy, _ := retry.NewExponentialBackoffRetryStrategy(
-		l.initRetryInterval, l.maxRetryInterval, l.maxRetries)
+	// 使用 Ticker 来替代 time.Sleep，更精确且能避免空闲时持续空转
+	// 建议值 10ms-50ms，避免空闲时CPU空转
+	idleTicker := time.NewTicker(20 * time.Millisecond)
+	defer idleTicker.Stop()
 
 	for {
-		// ------------- 批量发送阶段 -------------
-		sendCount := 0
-		for sendCount < sendBatch {
-			select {
-			case <-l.ctx.Done():
-				return
-			case payload := <-l.sendCh:
-				if !l.sendWithRetryInternal(payload, retryStrategy) {
-					return // 发送失败，关闭连接
-				}
-				sendCount++
-			default:
-				// 没有更多待发送消息，跳出发送循环
-				goto READ_PHASE
-			}
-		}
-
-	READ_PHASE:
-		// ------------- 限流检查 -------------
-		if l.limiter != nil && !l.limiter.Allow() {
-			// 被限流，跳过本次读取，继续下一轮循环
-			continue
-		}
-
-		// ------------- 读取阶段 -------------
-		_ = l.conn.SetReadDeadline(time.Now().Add(l.readTimeout))
-		payload, err := l.reader.Read()
-
-		if err != nil {
-			// 检查是否为读超时
-			if ne, ok := err.(net.Error); ok && ne.Timeout() {
-				// 读超时是正常的，继续下一轮循环处理发送
-				continue
-			}
-
-			// 检查是否为客户端正常关闭
-			var wsErr wsutil.ClosedError
-			if errors.As(err, &wsErr) &&
-				(wsErr.Code == ws.StatusNoStatusRcvd || wsErr.Code == ws.StatusGoingAway) {
-				l.logger.Info("客户端关闭连接",
-					elog.String("linkID", l.id),
-					elog.Any("userInfo", l.sess.UserInfo()))
-				return
-			}
-
-			// 其他错误，记录并关闭连接
-			l.logger.Error("读取客户端消息失败",
-				elog.String("linkID", l.id),
-				elog.FieldErr(err))
-			return
-		}
-
-		// ------------- 消息投递阶段 -------------
-		// 使用非阻塞发送，防止业务层处理慢导致IO循环阻塞
+		// 优先处理关闭信号
 		select {
-		case <-l.ctx.Done():
+		case <-lv4.ctx.Done():
 			return
-		case l.receiveCh <- payload:
-			// 成功投递消息
 		default:
-			// 接收通道已满，丢弃消息并记录警告
-			// 这是必要的反压保护，防止内存无限增长和IO循环阻塞
-			l.logger.Warn("接收通道已满，消息被丢弃，请检查业务处理能力",
-				elog.String("linkID", l.id),
-				elog.Any("userInfo", l.sess.UserInfo()),
-				elog.Int("payloadSize", len(payload)))
+		}
+
+		// 检查是否所有连接都已关闭
+		if !lv4.linkAAlive.Load() && !lv4.linkBAlive.Load() {
+			lv4.logger.Info("所有连接均已关闭，退出循环")
+			return
+		}
+
+		// 执行一轮读写，优先写
+		hasActivity := lv4.performWrite()
+		hasActivity = lv4.performRead() || hasActivity
+
+		// 如果没有活动，等待 Ticker 信号以避免CPU空转
+		if !hasActivity {
+			select {
+			case <-lv4.ctx.Done():
+				return
+			case <-idleTicker.C:
+			}
 		}
 	}
 }
 
-func (l *LinkV4) sendWithRetryInternal(payload []byte, rs retry.Strategy) bool {
-	for {
-		select {
-		case <-l.ctx.Done():
-			return false
-		default:
-		}
+// performWrite 执行一轮写操作
+func (lv4 *LinkV4) performWrite() bool {
+	w1 := lv4.tryWrite(lv4.linkA, lv4.linkAAlive)
+	w2 := lv4.tryWrite(lv4.linkB, lv4.linkBAlive)
+	return w1 || w2
+}
 
-		_ = l.conn.SetWriteDeadline(time.Now().Add(l.writeTimeout))
-		_, err := l.writer.Write(payload)
-		if err == nil {
-			return true // 发送成功
-		}
+// performRead 执行一轮读操作
+func (lv4 *LinkV4) performRead() bool {
+	r1 := lv4.tryRead(lv4.linkA, lv4.linkAAlive)
+	r2 := lv4.tryRead(lv4.linkB, lv4.linkBAlive)
+	return r1 || r2
+}
 
-		l.logger.Error("发送消息失败",
-			elog.String("linkID", l.id),
-			elog.Int("payloadLen", len(payload)),
-			elog.FieldErr(err))
-
-		// 只对网络超时错误进行重试
-		var ne net.Error
-		if errors.As(err, &ne) && ne.Timeout() {
-			duration, canRetry := rs.Next()
-			if !canRetry {
-				l.logger.Error("重试次数耗尽，放弃发送",
-					elog.String("linkID", l.id))
-				return false
-			}
-
-			// 等待重试间隔
-			select {
-			case <-l.ctx.Done():
-				return false
-			case <-time.After(duration):
-				continue // 继续重试
-			}
-		}
-
-		// 非超时错误，直接失败
+// tryRead 尝试非阻塞读取
+func (lv4 *LinkV4) tryRead(l *Link, alive *atomic.Bool) bool {
+	if !alive.Load() {
 		return false
 	}
-}
+	// 设置极短超时，模拟非阻塞读
+	_ = l.conn.SetReadDeadline(time.Now().Add(time.Millisecond))
+	payload, err := l.reader.Read()
 
-// ---------------- 活跃时间管理 ----------------
-
-func (l *LinkV4) UpdateActiveTime() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.ctx.Err() == nil {
-		l.lastActiveTime = time.Now()
-	}
-}
-
-func (l *LinkV4) TryCloseIfIdle(timeout time.Duration) bool {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.ctx.Err() != nil {
-		return true // 已经关闭
-	}
-	if !l.autoClose || time.Since(l.lastActiveTime) <= timeout {
-		return false // 不需要关闭
+	if err != nil {
+		var ne net.Error
+		if errors.As(err, &ne) && ne.Timeout() {
+			return false // 超时是正常情况，代表没数据可读
+		}
+		// 其他错误，标记连接为关闭
+		lv4.logger.Error("读取消息失败，关闭子连接", elog.String("linkID", l.id), elog.FieldErr(err))
+		lv4.markLinkClosed(l, alive)
+		return true // 错误也是一种活动
 	}
 
-	// 执行空闲关闭
-	if err := l.Close(); err != nil {
-		l.logger.Error("关闭空闲连接失败",
-			elog.String("linkID", l.id),
-			elog.Any("userInfo", l.sess.UserInfo()),
-			elog.FieldErr(err))
+	l.UpdateActiveTime()
+	select {
+	case lv4.unifiedReceiveCh <- Message{LinkID: l.id, Payload: payload}:
+	default:
+		lv4.logger.Warn("统一接收通道已满，消息被丢弃", elog.String("linkID", l.id))
 	}
 	return true
+}
+
+// tryWrite 尝试非阻塞写入
+func (lv4 *LinkV4) tryWrite(l *Link, alive *atomic.Bool) bool {
+	if !alive.Load() {
+		return false
+	}
+	select {
+	case payload, ok := <-l.sendCh:
+		if !ok {
+			lv4.markLinkClosed(l, alive)
+			return true // 通道关闭是一种活动
+		}
+
+		// 执行单次非阻塞写，不带循环重试，以避免阻塞整个 readWriteLoop
+		_ = l.conn.SetWriteDeadline(time.Now().Add(l.writeTimeout))
+		_, err := l.writer.Write(payload)
+
+		if err != nil {
+			// 任何写入失败（包括超时）都将导致连接关闭。
+			// 这是为了保证 readWriteLoop 的非阻塞性所做的必要权衡。
+			lv4.logger.Error("写入消息失败，关闭子连接", elog.String("linkID", l.id), elog.FieldErr(err))
+			lv4.markLinkClosed(l, alive)
+		} else {
+			// 写入成功，更新活跃时间
+			l.UpdateActiveTime()
+		}
+		return true // 有写入活动
+
+	default:
+		return false // 没有数据要写
+	}
+}
+
+// markLinkClosed 标记连接为已关闭，确保操作的原子性
+func (lv4 *LinkV4) markLinkClosed(l *Link, alive *atomic.Bool) {
+	if alive.CompareAndSwap(true, false) {
+		_ = l.Close()
+	}
 }
