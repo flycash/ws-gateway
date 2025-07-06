@@ -8,7 +8,6 @@ import (
 
 	gateway "gitee.com/flycash/ws-gateway"
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	"gitee.com/flycash/ws-gateway/pkg/batch"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"gitee.com/flycash/ws-gateway/pkg/pushretry"
@@ -26,7 +25,7 @@ type BatchHandler struct {
 	encryptor                       encrypt.Encryptor
 	onFrontendSendMessageHandleFunc map[apiv1.Message_CommandType]func(lk gateway.Link, msg *apiv1.Message) error
 
-	coordinator *batch.Coordinator
+	coordinator *Coordinator
 
 	pushRetryManager *pushretry.Manager
 
@@ -40,7 +39,7 @@ func NewBatchHandler(
 	cacheValueExpiration time.Duration,
 	codecHelper codec.Codec,
 	encryptor encrypt.Encryptor,
-	coordinator *batch.Coordinator,
+	coordinator *Coordinator,
 	pushRetryInterval time.Duration,
 	pushMaxRetries int,
 ) *BatchHandler {

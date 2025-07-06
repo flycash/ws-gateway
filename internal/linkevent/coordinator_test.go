@@ -1,14 +1,14 @@
 //go:build unit
 
-package batch_test
+package linkevent_test
 
 import (
 	"errors"
+	"gitee.com/flycash/ws-gateway/internal/linkevent"
 	"testing"
 	"time"
 
 	apiv1 "gitee.com/flycash/ws-gateway/api/proto/gen/gatewayapi/v1"
-	"gitee.com/flycash/ws-gateway/pkg/batch"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -34,7 +34,7 @@ func TestCoordinator_AddRequest_BatchSizeThreshold(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(2, time.Second, processor, logger)
+	coordinator := linkevent.NewCoordinator(2, time.Second, processor, logger)
 
 	bizID := int64(123)
 	linkID1 := "link1"
@@ -100,7 +100,7 @@ func TestCoordinator_AddRequest_TimeoutThreshold(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(10, 100*time.Millisecond, processor, logger) // 100ms超时
+	coordinator := linkevent.NewCoordinator(10, 100*time.Millisecond, processor, logger) // 100ms超时
 
 	bizID := int64(456)
 	linkID := "link1"
@@ -133,7 +133,7 @@ func TestCoordinator_Stop(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(10, time.Second, processor, logger)
+	coordinator := linkevent.NewCoordinator(10, time.Second, processor, logger)
 
 	// 执行
 	coordinator.Stop()
@@ -148,7 +148,7 @@ func TestCoordinator_Stop(t *testing.T) {
 
 	resp, err := coordinator.OnReceive(bizID, linkID, req)
 	assert.Error(t, err)
-	assert.Equal(t, batch.ErrCoordinatorStopped, err)
+	assert.Equal(t, linkevent.ErrCoordinatorStopped, err)
 	assert.Nil(t, resp)
 }
 
@@ -156,7 +156,7 @@ func TestCoordinator_GracefulStop(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(10, 500*time.Millisecond, processor, logger) // 500ms超时
+	coordinator := linkevent.NewCoordinator(10, 500*time.Millisecond, processor, logger) // 500ms超时
 
 	bizID := int64(123)
 	linkID := "link1"
@@ -207,7 +207,7 @@ func TestCoordinator_StopWithMultipleBatches(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(10, time.Second, processor, logger)
+	coordinator := linkevent.NewCoordinator(10, time.Second, processor, logger)
 
 	// 设置期望 - 两个bizID的批次都会被处理
 	processor.On("Process", int64(123), mock.MatchedBy(func(reqs []*apiv1.OnReceiveRequest) bool {
@@ -268,7 +268,7 @@ func TestCoordinator_ProcessorError(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(2, time.Second, processor, logger)
+	coordinator := linkevent.NewCoordinator(2, time.Second, processor, logger)
 
 	bizID := int64(123)
 	processingError := errors.New("处理器错误")
@@ -325,7 +325,7 @@ func TestCoordinator_ResponseMismatch(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(2, time.Second, processor, logger)
+	coordinator := linkevent.NewCoordinator(2, time.Second, processor, logger)
 
 	bizID := int64(123)
 
@@ -362,7 +362,7 @@ func TestCoordinator_ResponseMismatch(t *testing.T) {
 	case <-resultCh1:
 		err1 := <-errCh1
 		assert.Error(t, err1)
-		assert.Equal(t, batch.ErrBatchResponseMismatch, err1)
+		assert.Equal(t, linkevent.ErrBatchResponseMismatch, err1)
 	case <-time.After(time.Second):
 		t.Fatal("请求1没有收到错误响应")
 	}
@@ -371,7 +371,7 @@ func TestCoordinator_ResponseMismatch(t *testing.T) {
 	case <-resultCh2:
 		err2 := <-errCh2
 		assert.Error(t, err2)
-		assert.Equal(t, batch.ErrBatchResponseMismatch, err2)
+		assert.Equal(t, linkevent.ErrBatchResponseMismatch, err2)
 	case <-time.After(time.Second):
 		t.Fatal("请求2没有收到错误响应")
 	}
@@ -383,7 +383,7 @@ func TestCoordinator_GetStats(t *testing.T) {
 	// 准备
 	logger := elog.DefaultLogger
 	processor := &MockProcessor{}
-	coordinator := batch.NewCoordinator(5, time.Minute, processor, logger)
+	coordinator := linkevent.NewCoordinator(5, time.Minute, processor, logger)
 
 	// 执行
 	stats := coordinator.GetStats()

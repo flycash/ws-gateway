@@ -7,7 +7,6 @@ import (
 	gateway "gitee.com/flycash/ws-gateway"
 	"gitee.com/flycash/ws-gateway/internal/event"
 	"gitee.com/flycash/ws-gateway/internal/linkevent"
-	"gitee.com/flycash/ws-gateway/pkg/batch"
 	"gitee.com/flycash/ws-gateway/pkg/codec"
 	"gitee.com/flycash/ws-gateway/pkg/encrypt"
 	"github.com/ecodeclub/ecache"
@@ -152,7 +151,7 @@ func initBatchHandler(
 	)
 
 	// 创建批处理协调器
-	coordinator := batch.NewCoordinator(
+	coordinator := linkevent.NewCoordinator(
 		batchConfig.Size,
 		batchConfig.Timeout,
 		batchProcessor,

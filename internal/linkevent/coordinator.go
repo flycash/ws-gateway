@@ -1,4 +1,4 @@
-package batch
+package linkevent
 
 import (
 	"errors"
@@ -11,8 +11,7 @@ import (
 )
 
 var (
-	ErrCoordinatorStopped    = errors.New("批处理协调器已停止")
-	ErrBatchResponseMismatch = errors.New("批量响应数量与请求不匹配")
+	ErrCoordinatorStopped = errors.New("批处理协调器已停止")
 )
 
 // Processor 批量处理器接口，由具体的Handler实现
