@@ -51,7 +51,7 @@ type LinkV4 struct {
 func NewLinkV4(parent context.Context, linkA, linkB *Link) *LinkV4 {
 	ctx, cancel := context.WithCancel(parent)
 
-	lv5 := &LinkV4{
+	lv4 := &LinkV4{
 
 		linkA:            linkA,
 		linkB:            linkB,
@@ -63,12 +63,12 @@ func NewLinkV4(parent context.Context, linkA, linkB *Link) *LinkV4 {
 		logger:           elog.EgoLogger.With(elog.FieldComponent("LinkV4")),
 	}
 
-	lv5.linkAAlive.Store(linkA != nil)
-	lv5.linkBAlive.Store(linkB != nil)
+	lv4.linkAAlive.Store(linkA != nil)
+	lv4.linkBAlive.Store(linkB != nil)
 
-	go lv5.readWriteLoop()
+	go lv4.readWriteLoop()
 
-	return lv5
+	return lv4
 }
 
 func (lv4 *LinkV4) SetLinkB(l *Link) {
